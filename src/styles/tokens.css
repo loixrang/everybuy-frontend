@@ -1,0 +1,86 @@
+/* Shared design tokens. Font licenses accompany these assets. */
+@font-face{font-family:Manrope;src:url(./Fonts/Manrope.ttf) format("truetype");font-weight:200 800;font-display:swap;}
+@font-face{font-family:Inter;src:url(./Fonts/Inter.ttf) format("truetype");font-weight:100 900;font-display:swap;}
+:root, [data-theme="light"] {
+  color-scheme: light;
+  --color-canvas: #FAFAF7;
+  --color-surface: #FFFFFF;
+  --color-subtle: #F0F2EB;
+  --color-ink: #242B25;
+  --color-muted: #647064;
+  --color-quiet: #747C71;
+  --color-border: #E0E5DA;
+  --color-accent: #365E48;
+  --color-accent-hover: #294B38;
+  --color-on-accent: #FFFFFF;
+  --color-accent-soft: #E8EFE2;
+  --color-accent-ink: #365E48;
+  --color-success-bg: #E8F2E6;
+  --color-success-ink: #2D5A38;
+  --color-warning-bg: #FBF0D9;
+  --color-warning-ink: #80591D;
+  --color-danger-bg: #F9E9E4;
+  --color-danger-ink: #934F39;
+  --color-hero: #EDEEE4;
+  --color-glass: #FFFFFFE8;
+  --color-scrim: #14201966;
+  --color-art-green: #CFDCC6;
+  --color-art-rose: #E8C8BF;
+  --color-art-gold: #EBDCB9;
+  --color-art-blue: #C8D5D7;
+  --color-art-ink: #284C39;
+  --color-art-white: #FFFDF5;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: #141916;
+  --color-surface: #1C231F;
+  --color-subtle: #252E28;
+  --color-ink: #F0F3EC;
+  --color-muted: #ADB8AD;
+  --color-quiet: #97A696;
+  --color-border: #354138;
+  --color-accent: #B7D5A8;
+  --color-accent-hover: #C9E4BC;
+  --color-on-accent: #18291C;
+  --color-accent-soft: #2A3B2D;
+  --color-accent-ink: #B7D5A8;
+  --color-success-bg: #233A2B;
+  --color-success-ink: #B4DAAE;
+  --color-warning-bg: #44381F;
+  --color-warning-ink: #EFCC8D;
+  --color-danger-bg: #442922;
+  --color-danger-ink: #F0B6A1;
+  --color-hero: #26332A;
+  --color-glass: #1C231FE8;
+  --color-scrim: #080D0B99;
+  --color-art-green: #CFDCC6;
+  --color-art-rose: #E8C8BF;
+  --color-art-gold: #EBDCB9;
+  --color-art-blue: #C8D5D7;
+  --color-art-ink: #284C39;
+  --color-art-white: #FFFDF5;
+}
+:root {
+  --font-family: Manrope, Inter, system-ui, sans-serif;
+  --header-blur: 16px;
+  --space-0: 0px;
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-64: 64px;
+  --space-80: 80px;
+  --radius-0: 0px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-24: 24px;
+  --radius-999: 999px;
+}
