@@ -1,75 +1,49 @@
 # Current Task
 
-## FE-001: Frontend Foundation
+## FE-012: Inventory and Stock Movements
 
-Status: WORKING
+Status: READY
 
 ## Goal
 
-Create the initial React frontend foundation for Everybuy using the supplied physical inventory design and the existing backend contract.
+Display product stock movement history, available balances, and implement stock adjustments and addition tracking according to verified backend capabilities.
 
 ## Scope
 
-- Scaffold React, TypeScript, and Vite.
-- Configure Tailwind CSS.
-- Configure routing.
-- Establish the application structure.
-- Integrate design tokens and typography.
-- Support light and dark themes.
-- Implement the responsive inventory application shell.
-- Establish the API client foundation.
-- Verify the existing backend authentication and API contract.
-- Configure type checking, linting, and production build checks.
-- Update project documentation.
+- Inspect stock movement endpoints (`GET /api/v1/stock/movements`, `GET /api/v1/stock/movements/:id`).
+- Inspect stock adjustment endpoint (`POST /api/v1/stock/adjustments`, guarded by `OwnerGuard`).
+- Inspect stock addition endpoint (`POST /api/v1/stock/additions`, guarded by `StaffGuard`).
+- Display stock movements list view and per-product movement history.
+- Handle loading, empty, and error states.
 
 ## Out of Scope
 
-- Complete product management
-- Complete inventory management workflows
-- Recording sales
-- Recording payments
-- Recording purchases
-- Stock receiving workflows
-- Online store pages
-- New backend endpoints
-- Backend schema or migration changes
+- Recording sales (FE-020)
+- Purchases management (FE-030)
+- Stocktaking review and approval (FE-041)
 
-## Acceptance Criteria
+---
 
-- [ ] Project uses React, TypeScript, Vite, Tailwind CSS, and Bun.
-- [ ] Application starts using the documented command.
-- [ ] Production build passes.
-- [ ] Type checking and linting are configured and pass.
-- [ ] Design tokens are integrated.
-- [ ] Light and dark themes work.
-- [ ] Inventory layout responds correctly to mobile, tablet, and desktop widths.
-- [ ] Shared components and routes have a clear structure.
-- [ ] API base URL is configurable.
-- [ ] Backend API and authentication findings are documented.
-- [ ] No backend files were modified.
-- [ ] No out-of-scope business workflows were implemented.
-- [ ] Documentation is updated to reflect the actual implementation.
+## Completed: FE-011 Product Details and Setup
 
-## Completion Notes
+Status: COMPLETED
 
-**Implemented:**
-- Scaffolded React + TypeScript + Vite app with Bun. Installed Tailwind CSS v4, React Router DOM.
-- Integrated design tokens from `design/Everyday_Offline_Design/tokens.css` and copied fonts to `src/assets/fonts/`. Global styles use Manrope/Inter with theme variables.
-- Added light/dark theme support with persistence and toggle in header.
-- Built responsive inventory application shell: desktop sidebar (228px), mobile bottom navigation, workspace layout, sticky header with blur.
-- Created API client foundation (`src/lib/api/client.ts`) with configurable base URL (`VITE_API_BASE_URL`) and `credentials: 'include'` for Better Auth sessions.
-- Router configured with overview placeholder and 404; no business workflows implemented.
-- Added `.env.example` for API configuration.
+### Implemented:
+- `fetchProductById`, `createProduct`, and `updateProduct` API methods in `src/lib/api/products.ts`.
+- Input validation types (`CreateProductInput`, `UpdateProductInput`) in `src/types/product.ts`.
+- `ProductDetailPage` (`/inventory/:id`):
+  - Summary metrics: available stock (with cartons/packs breakdown), pack price, carton price.
+  - Product setup card: brand, category, base unit, carton conversion, pieces per pack, active status.
+  - Action buttons: "Edit product", "Receive stock", "View movements".
+  - Loading, 404 not found, and error states with retry.
+- `ProductSetupPage` (`/inventory/new` and `/inventory/:id/edit`):
+  - Form fields matching backend schema: name, brand, category, pack type, size, pieces per pack, packs per carton, retail pack price, carton bag price, active status.
+  - Form validation: positive integers for quantities, positive prices, required brand/category.
+  - Authorization feedback: clear messaging when mutations are rejected by `OwnerGuard` (403 Forbidden).
+  - Clean cancel and save actions with submit loading indicators.
+- Registered `/inventory/new`, `/inventory/:id`, and `/inventory/:id/edit` routes in `AppRouter`.
 
-**Backend verification (documented in docs/API_CONTRACT.md):**
-- API prefix `/api/v1`, Better Auth at `/api/v1/auth` (basePath), cookies/sessions, CORS with credentials from `FRONTEND_URL`. email/password auth with verification, 2FA plugin, rate limiting. Roles `Owner`/`Staff` in schema; `OwnerGuard` used on some product mutations (POST/PATCH). Products: GET `/api/v1/products` AllowAnonymous, others authenticated/guarded as implemented.
-
-**Checks performed:**
-- `bun run build` - passed (tsc -b && vite build)
-- `bunx tsc -b --noEmit` - passed
-- `bun run lint` - completed (oxlint)
-- No backend files modified.
-
-**Remaining blockers / notes:**
-- Authentication UI not implemented (backend auth verified; can be added when needed). Staff provisioning flow exists on backend.
-- Business features (products/sales/purchases) are out of scope for this task.
+### Checks:
+- `bun run build`: passed
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed (oxlint, 0 warnings, 0 errors)

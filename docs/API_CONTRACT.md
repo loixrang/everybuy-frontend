@@ -54,9 +54,11 @@ Verified from schema (dist/database/schema/auth.schema.js):
 
 | Action | Owner | Staff | Verification |
 |---|---|---|---|
-| View products | Allowed (GET /api/v1/products has AllowAnonymous in controller? GET / is AllowAnonymous per controller; options and GET :id not marked anonymous - need to confirm) | Unverified - depends on guards | Partially verified (see Products) |
-| Create products | Guarded by OwnerGuard (POST /) | Likely forbidden by OwnerGuard | Verified from controller |
-| Update products | Guarded by OwnerGuard (PATCH /:id) | Likely forbidden | Verified from controller |
+| View products | Allowed | Allowed (StaffGuard on ProductsController requires staff/owner active session) | Verified from ProductsController |
+| Create products | Guarded by OwnerGuard (POST /api/v1/products) | Forbidden by OwnerGuard | Verified from controller |
+| Update products | Guarded by OwnerGuard (PATCH /api/v1/products/:id) | Forbidden by OwnerGuard | Verified from controller |
+| View categories | Allowed | Allowed (StaffGuard on CategoriesController) | Verified from CategoriesController |
+| View brands | Allowed | Allowed (StaffGuard on BrandController) | Verified from BrandController |
 | Record sales | Unverified | Unverified | Pending |
 | Record payments/repayments | Unverified | Unverified | Pending |
 | Receive stock | Unverified | Unverified | Pending |
@@ -70,24 +72,29 @@ Do not treat as full policy - verify per endpoint.
 | Feature | Method and Path | Request | Response | Access | Status |
 |---|---|---|---|---|---|
 | Auth (Better Auth) | Mounted at /api/v1/auth/* (Better Auth handlers) | Better Auth API shapes (see better-auth docs) | Better Auth responses | Varies | Verified (mounted) |
-| Products | POST /api/v1/products | createProductSchema (validated) | Created product | OwnerGuard | Verified (controller) |
-| Products | GET /api/v1/products | findProductSchema (query) | List of products | AllowAnonymous() | Verified (controller) |
-| Products | GET /api/v1/products/options | findProductSchema (query) | Options/list variant | Authenticated? (no AllowAnonymous) | Verified (controller) |
-| Products | GET /api/v1/products/:id | findProductSchema (query) | Product detail | Authenticated? (no AllowAnonymous) | Verified (controller) |
-| Products | PATCH /api/v1/products/:id | updateProductSchema (body) | Updated product | OwnerGuard | Verified (controller) |
-| Staff (invites/create) | See StaffController/Service | InviteStaffDto, CreateStaffDto, AcceptInviteDto | Various | Staff module exists; specific guards not fully read - treat as needs verification | Partially verified |
-| Sales/Stock/Customers/Suppliers/Brands/Categories/Reports | Modules exist in AppModule | Varies | Varies | Unverified details | Unverified |
+| Products | GET /api/v1/products | `findProductSchema` query: `page` (default 1), `limit` (default 10, max 100), `packName` (enum), `categoryId` (uuid), `brandId` (uuid), `size` (string) | Array of product objects: `{ id, name, categoryId, brandId, packName, size, packsPerBag, piecesPerPack, bagPrice, retailPrice, stockPacks, active, createdAt, updatedAt }` | StaffGuard (staff/owner) | Verified (controller & repo) |
+| Products | GET /api/v1/products/options | `findProductSchema` query | Distinct `{ packName, sizes, bagPrice, retailPrice }[]` | StaffGuard | Verified (controller & repo) |
+| Products | GET /api/v1/products/:id | `findProductSchema` query | Product detail array | StaffGuard | Verified (controller & repo) |
+| Products | POST /api/v1/products | `createProductSchema` (body) | Created product | OwnerGuard | Verified (controller) |
+| Products | PATCH /api/v1/products/:id | `updateProductSchema` (body) | Updated product | OwnerGuard | Verified (controller) |
+| Categories | GET /api/v1/categories | None | Array of `{ id, name, active }` | StaffGuard | Verified (controller) |
+| Brands | GET /api/v1/brands | None | Array of `{ id, name, active }` | StaffGuard | Verified (controller) |
+| Staff (invites/create) | See StaffController/Service | InviteStaffDto, CreateStaffDto, AcceptInviteDto | Various | StaffGuard + OwnerGuard | Partially verified |
+
+### Product Schema Limitations & Notes:
+- **No Free-Text Search**: Backend `findProductSchema` does not have a `search` or `q` parameter. Free-text search is filtered client-side across fetched records.
+- **No SKU Field**: Backend `products` table does not contain an `sku` column. Products are distinguished by name, packName, size, and piecesPerPack.
+- **Prices**: `retailPrice` (pack price) and `bagPrice` (carton price) are stored as PostgreSQL `numeric(14,2)` string values (e.g., `"4500.00"`).
 
 ## Money and Quantities
 
-From design handoff (must be confirmed against backend DTOs/schemas):
-- Money stored as integer kobo (design states). Need to verify actual representation in backend.
-- Product base unit is pack; stock tracked in integer packs.
-- Packs per carton per product; carton rule (sealed only or loose may form carton).
-- Carton/pack prices stored separately.
-- Quantities validated server-side.
-
-Do not assume - verify DTOs when implementing specific features.
+Verified from backend `products-and-stocks.ts` schema:
+- `retailPrice`: numeric(14, 2) string representing pack price in Naira.
+- `bagPrice`: numeric(14, 2) string representing bag/carton price in Naira.
+- `stockPacks`: integer representing base stock in packs (cannot be negative: `stock_cannot_be_negative` check constraint).
+- `packsPerBag`: integer (> 0).
+- `piecesPerPack`: integer (nullable, > 0 if present).
+- `packName`: enum `'Small Pack' | 'Twin Pack' | 'Jumbo Pack' | 'Wipes' | 'Pad' | 'Tissue'`.
 
 ## Errors
 Global pipes: ValidationPipe with whitelist/forbidNonWhitelisted/transform, StandardSchemaValidationPipe. Better Auth errors follow its format. Handle standard HTTP errors and network failures.

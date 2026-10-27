@@ -28,7 +28,7 @@ Status: COMPLETED
 ## Phase 1: Products and Stock
 
 ### FE-010: Product List and Search
-Status: BLOCKED
+Status: COMPLETED
 
 - Inspect available product endpoints.
 - Display products using the verified response format.
@@ -36,7 +36,7 @@ Status: BLOCKED
 - Handle loading, empty, and error states.
 
 ### FE-011: Product Details and Setup
-Status: BLOCKED
+Status: COMPLETED
 
 - Inspect product creation and update endpoints.
 - Display product details.
@@ -45,7 +45,7 @@ Status: BLOCKED
 - Respect actual permissions.
 
 ### FE-012: Inventory and Stock Movements
-Status: BLOCKED
+Status: READY
 
 - Inspect stock and stock movement endpoints.
 - Display available stock.

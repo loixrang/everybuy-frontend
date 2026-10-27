@@ -26,6 +26,7 @@ The online store is separate future scope.
 
 ## Implemented Structure
 
+```text
 src/
   app/
     router.tsx
@@ -33,19 +34,29 @@ src/
     layout/
       InventoryLayout.tsx
     ui/
-  hooks/
+      Icons.tsx
   lib/
     api/
       client.ts
+      products.ts
+    utils/
+      format.ts
+  pages/
+    inventory/
+      InventoryPage.tsx
+      ProductDetailPage.tsx
+      ProductSetupPage.tsx
   styles/
     index.css
     tokens.css
+    Fonts/
+      Inter.ttf
+      Manrope.ttf
   types/
+    product.ts
   main.tsx
   App.tsx
-  assets/fonts/ (from design)
-
-Feature folders can be added as needed.
+```
 
 
 ## Responsibilities
