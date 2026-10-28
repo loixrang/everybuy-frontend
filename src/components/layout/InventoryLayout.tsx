@@ -8,6 +8,7 @@ import {
   UsersIcon,
   MenuIcon,
   PlusIcon,
+  HistoryIcon,
 } from '../ui/Icons';
 
 type Theme = 'light' | 'dark';
@@ -32,6 +33,7 @@ export function InventoryLayout() {
   const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'));
 
   const isInventoryActive = location.pathname.startsWith('/inventory');
+  const isMovementsActive = location.pathname.startsWith('/movements');
   const isOverviewActive = location.pathname === '/overview';
 
   return (
@@ -100,6 +102,12 @@ export function InventoryLayout() {
                 to="/customers"
                 label="Customers"
                 icon={<UsersIcon size={18} />}
+              />
+              <SidebarNavLink
+                to="/movements"
+                label="Movements"
+                active={isMovementsActive}
+                icon={<HistoryIcon size={18} />}
               />
               <SidebarNavLink
                 to="/team"

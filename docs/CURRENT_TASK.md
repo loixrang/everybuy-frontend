@@ -2,7 +2,7 @@
 
 ## FE-012: Inventory and Stock Movements
 
-Status: READY
+Status: COMPLETED
 
 ## Goal
 
@@ -21,6 +21,41 @@ Display product stock movement history, available balances, and implement stock 
 - Recording sales (FE-020)
 - Purchases management (FE-030)
 - Stocktaking review and approval (FE-041)
+
+### Implemented:
+
+- `src/types/stock.ts`: verified stock domain types (`StockMovement`, `StockMovementsPage`, `UpdatedProductStock`, `Supplier`, mutation input types with `requestId` and `unit`).
+- `src/lib/api/stock.ts`:
+  - `fetchStockMovements(page, limit)` for the paginated `{ data, page, limit, total }` response.
+  - `fetchAllStockMovements(maxPages)` accumulating pages client-side (backend has no `productId` filter on movements).
+  - `createStockAddition` and `createStockAdjustment` sending client-generated UUID `requestId` and `unit: 'Pack'` per the verified schema.
+  - `fetchSuppliers` (full error propagation).
+- `src/pages/stock/ReceiveStockPage.tsx` (`/inventory/receive`):
+  - Cartons + loose packs entry combined into a single pack-denominated receipt.
+  - Idempotent submission: `requestId` kept in a ref across retries, cleared only on success.
+  - Supplier selection (optional), non-blocking supplier-load warning via `Promise.allSettled`.
+  - 403/404/409 error mapping; quantity cap 1,000,000.
+- `src/pages/stock/StockMovementsPage.tsx` (`/movements`):
+  - Paginated ledger load (all pages accumulated, capped) with client-side product/type/free-text filters.
+  - Desktop table and mobile record cards; loading, empty, filtered-empty, and error states with retry.
+  - Adjust-stock action with product selector (defaults to URL `productId` filter).
+- `src/components/stock/StockAdjustmentModal.tsx`:
+  - Add/Sub direction toggle, quantity (1..1,000,000) and required reason (1..500) per backend rules.
+  - Idempotent `requestId` ref pattern; projected-balance preview; 403/404/409 error mapping (`OwnerGuard` messaging for 403).
+- `src/pages/inventory/ProductDetailPage.tsx`: per-product movement history (last 5) via `fetchAllStockMovements`, adjustment success merges partial `{ id, stockPacks }` updates and refreshes history.
+- Registered `/inventory/receive` and `/movements` routes in `AppRouter`.
+
+### Checks:
+
+- `bun run build`: passed
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed (oxlint, 0 warnings, 0 errors)
+
+### Notes / Limitations:
+
+- `GET /api/v1/stock/movements` has no `productId` filter; per-product history is filtered client-side over accumulated pages (capped at 10 pages x 100).
+- Backend addition/adjustment responses return only `{ id, stockPacks }` for products (`UpdatedProductStock`), not full product objects; pages merge the balance into local state.
+- Receipt reference/notes inputs were removed from the receive form because `createStockSchema` has no note/reference fields.
 
 ---
 

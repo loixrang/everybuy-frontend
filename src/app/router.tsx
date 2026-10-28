@@ -3,6 +3,8 @@ import { InventoryLayout } from '../components/layout/InventoryLayout';
 import { InventoryPage } from '../pages/inventory/InventoryPage';
 import { ProductDetailPage } from '../pages/inventory/ProductDetailPage';
 import { ProductSetupPage } from '../pages/inventory/ProductSetupPage';
+import { StockMovementsPage } from '../pages/stock/StockMovementsPage';
+import { ReceiveStockPage } from '../pages/stock/ReceiveStockPage';
 
 export function AppRouter() {
   return (
@@ -11,8 +13,10 @@ export function AppRouter() {
         <Route index element={<Navigate to="/inventory" replace />} />
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/inventory/new" element={<ProductSetupPage />} />
+        <Route path="/inventory/receive" element={<ReceiveStockPage />} />
         <Route path="/inventory/:id" element={<ProductDetailPage />} />
         <Route path="/inventory/:id/edit" element={<ProductSetupPage />} />
+        <Route path="/movements" element={<StockMovementsPage />} />
         <Route path="/overview" element={<OverviewPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

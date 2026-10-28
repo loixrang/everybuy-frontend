@@ -45,12 +45,13 @@ Status: COMPLETED
 - Respect actual permissions.
 
 ### FE-012: Inventory and Stock Movements
-Status: READY
+Status: COMPLETED
 
 - Inspect stock and stock movement endpoints.
 - Display available stock.
 - Display movement history.
 - Implement only stock actions supported by the backend.
+- Note: the stock receiving form (`/inventory/receive`) was implemented here as the stock-additions flow; broader purchase workflows remain in FE-030/FE-031.
 
 ## Phase 2: Sales and Payments
 

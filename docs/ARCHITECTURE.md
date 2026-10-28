@@ -33,12 +33,15 @@ src/
   components/
     layout/
       InventoryLayout.tsx
+    stock/
+      StockAdjustmentModal.tsx
     ui/
       Icons.tsx
   lib/
     api/
       client.ts
       products.ts
+      stock.ts
     utils/
       format.ts
   pages/
@@ -46,6 +49,9 @@ src/
       InventoryPage.tsx
       ProductDetailPage.tsx
       ProductSetupPage.tsx
+    stock/
+      ReceiveStockPage.tsx
+      StockMovementsPage.tsx
   styles/
     index.css
     tokens.css
@@ -54,6 +60,7 @@ src/
       Manrope.ttf
   types/
     product.ts
+    stock.ts
   main.tsx
   App.tsx
 ```

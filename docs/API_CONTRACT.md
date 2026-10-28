@@ -61,7 +61,10 @@ Verified from schema (dist/database/schema/auth.schema.js):
 | View brands | Allowed | Allowed (StaffGuard on BrandController) | Verified from BrandController |
 | Record sales | Unverified | Unverified | Pending |
 | Record payments/repayments | Unverified | Unverified | Pending |
-| Receive stock | Unverified | Unverified | Pending |
+| Receive stock (additions) | Allowed (StaffGuard on StockController) | Allowed (StaffGuard) | Verified from StockController |
+| Adjust stock | Allowed (OwnerGuard on POST /api/v1/stock/adjustments) | Forbidden by OwnerGuard | Verified from StockController |
+| View stock movements | Allowed | Allowed (StaffGuard) | Verified from StockController |
+| Manage suppliers | Allowed (OwnerGuard on POST /add and PATCH /update/:id; StaffGuard on reads) | Read-only | Verified from SuppliersController |
 | Approve stocktakes | Unverified (stated in design Owner only) | Unverified | Pending - enforce server-side |
 | Manage staff | Unverified (staff module exists) | Unverified | Pending |
 
@@ -79,12 +82,29 @@ Do not treat as full policy - verify per endpoint.
 | Products | PATCH /api/v1/products/:id | `updateProductSchema` (body) | Updated product | OwnerGuard | Verified (controller) |
 | Categories | GET /api/v1/categories | None | Array of `{ id, name, active }` | StaffGuard | Verified (controller) |
 | Brands | GET /api/v1/brands | None | Array of `{ id, name, active }` | StaffGuard | Verified (controller) |
+| Stock Movements | GET /api/v1/stock/movements | `findStockSchema` query: `page` (default 1, min 1), `limit` (default 20, min 1, max 100) | Paginated envelope `{ data: StockMovement[], page, limit, total }`; ordered by createdAt desc, id desc | StaffGuard | Verified (controller, service & DTO) |
+| Stock Movement | GET /api/v1/stock/movements/:id | None (id via `ParseUUIDPipe`; invalid UUID is rejected) | Single StockMovement object `{ id, productId, type, changePacks, supplierId, saleItemId, requestId, note, createdBy, createdAt }`; 404 `Stock movement not found` if missing | StaffGuard | Verified (controller & service) |
+| Stock Additions | POST /api/v1/stock/additions | `createStockSchema`: `{ requestId: uuid (required, client-generated idempotency key), productId: uuid, type?: 'Opening' \| 'Receipt' (default 'Receipt'), unit: 'Bag' \| 'Pack', quantity: int 1..1,000,000, supplierId?: int }` | `{ addStock: StockMovement[], updateProduct: { id, stockPacks }[], replayed: boolean }`; `replayed: true` means the same requestId was retried and the original result is returned | StaffGuard | Verified (controller, service & DTO) |
+| Stock Adjustments | POST /api/v1/stock/adjustments | `adjustStockSchema`: `{ requestId: uuid (required, client-generated idempotency key), productId: uuid, type?: 'Adjustment' (default), unit: 'Bag' \| 'Pack', quantity: int 1..1,000,000, changePack: 'Add' \| 'Sub', note: string (trimmed, 1..500, required), supplierId?: int }` | `{ addStock: StockMovement[], updateProduct: { id, stockPacks }[], replayed: boolean }` | OwnerGuard (owners only) | Verified (controller, service & DTO) |
+| Suppliers | GET /api/v1/suppliers | None | Array of `{ id, name, phone, active, createdAt, updatedAt }` | StaffGuard | Verified (controller & service) |
+| Supplier | GET /api/v1/suppliers/:id | None (id via `ParseIntPipe`) | Single supplier object | StaffGuard | Verified (controller) |
+| Supplier create | POST /api/v1/suppliers/add | `createSupplierSchema` (drizzle-zod insert schema of suppliers table) | Created supplier | OwnerGuard | Verified (controller) |
+| Supplier update | PATCH /api/v1/suppliers/update/:id | `updateSupplierSchema` (drizzle-zod update schema of suppliers table) | Updated supplier | OwnerGuard | Verified (controller) |
 | Staff (invites/create) | See StaffController/Service | InviteStaffDto, CreateStaffDto, AcceptInviteDto | Various | StaffGuard + OwnerGuard | Partially verified |
 
 ### Product Schema Limitations & Notes:
 - **No Free-Text Search**: Backend `findProductSchema` does not have a `search` or `q` parameter. Free-text search is filtered client-side across fetched records.
 - **No SKU Field**: Backend `products` table does not contain an `sku` column. Products are distinguished by name, packName, size, and piecesPerPack.
 - **Prices**: `retailPrice` (pack price) and `bagPrice` (carton price) are stored as PostgreSQL `numeric(14,2)` string values (e.g., `"4500.00"`).
+
+### Stock Contract Notes:
+- **Idempotency**: Both `POST /api/v1/stock/additions` and `POST /api/v1/stock/adjustments` require a client-generated `requestId` (UUID). Retrying the same `requestId` replays the original result (`replayed: true`) instead of applying the change twice. The frontend generates it with `crypto.randomUUID()` and keeps it across retry attempts until the backend confirms success.
+- **Unit Conversion**: `unit: 'Bag'` means `quantity` is in cartons (converted to packs via the product's `packsPerBag` server-side); `unit: 'Pack'` means `quantity` is already in packs.
+- **Quantity Limits**: `quantity` must be an integer from 1 to 1,000,000. Stock balances cannot go negative (DB check constraint `stock_cannot_be_negative`); violations return 409 Conflict.
+- **Additions Rules**: `type: 'Opening'` is only allowed when the product has zero stock and no prior movements (409 otherwise). Inactive products reject additions (409). A provided `supplierId` must reference an active supplier (404 otherwise).
+- **Adjustments Rules**: Adjustments are always recorded as `type: 'Adjustment'` movements with a required `note` (1..500 chars). `changePack: 'Sub'` rejects if stock is insufficient (409).
+- **Response Shape**: Mutations return `{ addStock: StockMovement[], updateProduct: { id, stockPacks }[], replayed: boolean }`. `updateProduct` contains only the product id and new balance — not a full product object.
+- **Movements Pagination**: `GET /api/v1/stock/movements` is paginated (`page` default 1, `limit` default 20 max 100) and returns `{ data, page, limit, total }`. There is no `productId` filter — per-product history must be filtered client-side.
 
 ## Money and Quantities
 

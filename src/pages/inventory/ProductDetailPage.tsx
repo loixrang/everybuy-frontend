@@ -1,13 +1,17 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchProductById, fetchCategories, fetchBrands } from '../../lib/api/products';
+import { fetchAllStockMovements } from '../../lib/api/stock';
 import { ApiError } from '../../lib/api/client';
-import { formatNaira } from '../../lib/utils/format';
+import { formatNaira, formatMovementDate, formatMovementLabel } from '../../lib/utils/format';
 import {
   AlertCircleIcon,
   RefreshCwIcon,
+  SlidersIcon,
 } from '../../components/ui/Icons';
 import type { Product, Category, Brand } from '../../types/product';
+import type { StockMovement } from '../../types/stock';
+import { StockAdjustmentModal } from '../../components/stock/StockAdjustmentModal';
 
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +19,8 @@ export function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [movements, setMovements] = useState<StockMovement[]>([]);
+  const [isAdjustmentOpen, setIsAdjustmentOpen] = useState<boolean>(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<{ message: string; status?: number } | null>(null);
@@ -31,10 +37,11 @@ export function ProductDetailPage() {
       }
 
       try {
-        const [prodRes, catsRes, brandsRes] = await Promise.allSettled([
+        const [prodRes, catsRes, brandsRes, movRes] = await Promise.allSettled([
           fetchProductById(id),
           fetchCategories(),
           fetchBrands(),
+          fetchAllStockMovements(),
         ]);
 
         if (ignore) return;
@@ -59,6 +66,13 @@ export function ProductDetailPage() {
         }
         if (brandsRes.status === 'fulfilled') {
           setBrands(brandsRes.value);
+        }
+        if (movRes.status === 'fulfilled') {
+          // Sort movements descending by createdAt
+          const sorted = [...movRes.value].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          );
+          setMovements(sorted);
         }
       } catch (err: unknown) {
         if (ignore) return;
@@ -283,6 +297,14 @@ export function ProductDetailPage() {
         >
           Receive stock
         </Link>
+        <button
+          type="button"
+          onClick={() => setIsAdjustmentOpen(true)}
+          className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-[8px] font-semibold text-sm border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"
+        >
+          <SlidersIcon size={16} />
+          <span>Adjust stock</span>
+        </button>
         <Link
           to={`/movements?productId=${product.id}`}
           className="inline-flex items-center justify-center h-11 px-6 rounded-[8px] font-semibold text-sm border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"
@@ -291,15 +313,109 @@ export function ProductDetailPage() {
         </Link>
       </div>
 
-      {/* Stock movements notice */}
-      <div className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-6">
-        <h2 className="text-lg font-bold text-[color:var(--color-ink)] mb-2">
-          Recent stock movements
-        </h2>
-        <p className="text-sm text-[color:var(--color-muted)]">
-          Stock receipt, sale deductions, and count adjustments for this item will be detailed in the Movements view (FE-012).
-        </p>
+      {/* Recent stock movements matching product.svg */}
+      <div className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] overflow-hidden">
+        <div className="p-6 border-b border-[color:var(--color-border)] flex items-center justify-between">
+          <h2 className="text-lg font-bold text-[color:var(--color-ink)]">
+            Recent stock movements
+          </h2>
+          <Link
+            to={`/movements?productId=${product.id}`}
+            className="text-xs font-semibold text-[color:var(--color-accent)] hover:underline"
+          >
+            All movements →
+          </Link>
+        </div>
+
+        {movements.filter((m) => m.productId === product.id).length === 0 ? (
+          <div className="p-8 text-center text-sm text-[color:var(--color-muted)]">
+            No stock movements recorded for this product yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[color:var(--color-subtle)] border-b border-[color:var(--color-border)] text-[12px] font-medium text-[color:var(--color-muted)]">
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Movement</th>
+                  <th className="py-3 px-4 text-right">Packs</th>
+                  <th className="py-3 px-4">Reference</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[color:var(--color-border)] text-sm">
+                {movements
+                  .filter((m) => m.productId === product.id)
+                  .slice(0, 5)
+                  .map((m) => {
+                    const isPositive = m.changePacks > 0;
+                    const label = formatMovementLabel(m.type, m.note);
+                    const ref = m.note && (m.note.startsWith('Ref:') || m.note.startsWith('ST-') || m.note.startsWith('RC-') || m.note.startsWith('SL-'))
+                      ? m.note.replace('Ref: ', '')
+                      : m.type === 'Sale' && m.saleItemId
+                      ? `SL-${m.saleItemId.substring(0, 6).toUpperCase()}`
+                      : m.requestId
+                      ? `RC-${m.requestId.substring(0, 6).toUpperCase()}`
+                      : m.note || `ID-${m.id.substring(0, 6).toUpperCase()}`;
+
+                    return (
+                      <tr
+                        key={m.id}
+                        className="hover:bg-[color:var(--color-subtle)]/50 transition-colors"
+                      >
+                        <td className="py-3.5 px-4 font-semibold text-xs text-[color:var(--color-ink)] whitespace-nowrap">
+                          {formatMovementDate(m.createdAt)}
+                        </td>
+                        <td className="py-3.5 px-4 text-xs text-[color:var(--color-ink)]">
+                          <span className="inline-block px-2 py-0.5 rounded-[4px] bg-[color:var(--color-subtle)] font-medium">
+                            {label}
+                          </span>
+                        </td>
+                        <td
+                          className={`py-3.5 px-4 text-right font-semibold text-sm whitespace-nowrap ${
+                            isPositive
+                              ? 'text-[color:var(--color-accent)]'
+                              : 'text-[color:var(--color-ink)]'
+                          }`}
+                        >
+                          {isPositive ? `+${m.changePacks}` : `${m.changePacks}`}
+                        </td>
+                        <td className="py-3.5 px-4 text-xs text-[color:var(--color-muted)] font-mono whitespace-nowrap">
+                          {ref}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {/* Stock Adjustment Modal */}
+      {product && isAdjustmentOpen && (
+        <StockAdjustmentModal
+          product={product}
+          onClose={() => setIsAdjustmentOpen(false)}
+          onSuccess={({ updatedProducts }) => {
+            // The backend returns only { id, stockPacks }; merge into current product.
+            const mine = updatedProducts.find((u) => u.id === product.id);
+            if (mine) {
+              setProduct({ ...product, stockPacks: mine.stockPacks });
+            }
+            fetchAllStockMovements()
+              .then((movs) => {
+                const sorted = [...movs].sort(
+                  (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+                );
+                setMovements(sorted);
+              })
+              .catch(() => {
+                // The adjustment already succeeded; a failed history refresh is
+                // non-fatal and the next reload will pick it up.
+              });
+          }}
+        />
+      )}
     </div>
   );
 }

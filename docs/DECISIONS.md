@@ -97,3 +97,14 @@ API base URL is configurable via `VITE_API_BASE_URL`. All requests use `credenti
 
 Reason:
 Matches verified backend (Better Auth with cookies, CORS allowing credentials).
+
+## DEC-011: Stock Mutation Idempotency Keys
+
+Decision:
+For `POST /api/v1/stock/additions` and `POST /api/v1/stock/adjustments`, generate the required `requestId` (UUID) on the client with `crypto.randomUUID()` and keep it in a ref across retry attempts. Clear it only after the backend confirms success.
+
+Reason:
+The backend treats `requestId` as an idempotency key and replays the original result (`replayed: true`) for retries, preventing duplicate stock changes when a user resubmits after a network error. Regenerating the key on retry would defeat this.
+
+Related:
+Stock mutation responses return only `{ id, stockPacks }` per product (`UpdatedProductStock`), not full product objects. Merge the balance into local state; do not replace the product record.
