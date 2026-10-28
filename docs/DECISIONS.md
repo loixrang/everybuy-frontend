@@ -108,3 +108,22 @@ The backend treats `requestId` as an idempotency key and replays the original re
 
 Related:
 Stock mutation responses return only `{ id, stockPacks }` per product (`UpdatedProductStock`), not full product objects. Merge the balance into local state; do not replace the product record.
+
+## DEC-012: Money Arithmetic in Integer Kobo
+
+Decision:
+Compute money totals on the frontend with integer kobo (`BigInt`) using `toKobo`/`fromKobo` in `src/lib/utils/money.ts`, ported from the backend's `src/common/utils/money.ts`. Never use floating-point math for Naira amounts.
+
+Reason:
+The backend stores money as `numeric(14,2)` strings and converts to integer kobo for all arithmetic. Mirroring it keeps client-side previews (line totals, sale totals, balances) identical to server results.
+
+Related:
+Sale prices are never sent by the frontend. `POST /api/v1/sales` prices every line from the product row server-side; the client only sends `requestId`, `customerId`, `amountPaid`, and `items`.
+
+## DEC-013: Omit Unpersistable Design Fields
+
+Decision:
+When a supplied design includes a field the backend cannot store, omit the field and document the limitation instead of faking it. Applied to the sale screen: no "Payment method" input (the `payments` table has no method column) and no "Sale type" input (cash/credit is derived from `itemsTotal` vs payments).
+
+Reason:
+Sending data the backend discards, or persisting it in frontend-only storage, would misrepresent the system's records.

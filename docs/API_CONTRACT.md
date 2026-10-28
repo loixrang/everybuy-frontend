@@ -59,8 +59,8 @@ Verified from schema (dist/database/schema/auth.schema.js):
 | Update products | Guarded by OwnerGuard (PATCH /api/v1/products/:id) | Forbidden by OwnerGuard | Verified from controller |
 | View categories | Allowed | Allowed (StaffGuard on CategoriesController) | Verified from CategoriesController |
 | View brands | Allowed | Allowed (StaffGuard on BrandController) | Verified from BrandController |
-| Record sales | Unverified | Unverified | Pending |
-| Record payments/repayments | Unverified | Unverified | Pending |
+| Record sales | Allowed (StaffGuard on SalesController) | Allowed (StaffGuard) | Verified from SalesController |
+| Record payments/repayments | Unverified | Unverified | Pending (customers module verified to exist; see customers endpoints) |
 | Receive stock (additions) | Allowed (StaffGuard on StockController) | Allowed (StaffGuard) | Verified from StockController |
 | Adjust stock | Allowed (OwnerGuard on POST /api/v1/stock/adjustments) | Forbidden by OwnerGuard | Verified from StockController |
 | View stock movements | Allowed | Allowed (StaffGuard) | Verified from StockController |
@@ -90,6 +90,14 @@ Do not treat as full policy - verify per endpoint.
 | Supplier | GET /api/v1/suppliers/:id | None (id via `ParseIntPipe`) | Single supplier object | StaffGuard | Verified (controller) |
 | Supplier create | POST /api/v1/suppliers/add | `createSupplierSchema` (drizzle-zod insert schema of suppliers table) | Created supplier | OwnerGuard | Verified (controller) |
 | Supplier update | PATCH /api/v1/suppliers/update/:id | `updateSupplierSchema` (drizzle-zod update schema of suppliers table) | Updated supplier | OwnerGuard | Verified (controller) |
+| Sales | POST /api/v1/sales | `createSaleSchema`: `{ requestId: uuid (required, client-generated idempotency key), customerId?: uuid, amountPaid: string matching ^\d{1,12}(\.\d{1,2})?$, items: [{ productId: uuid, unit: 'Bag' \| 'Pack', quantity: int 1..1,000,000 }] (1..100 items; a product cannot repeat with the same unit) }` | `{ sale: Sale, items: SaleItem[], payment: Payment[] (0 or 1), updatedProduct: { id }[], stockMovement: StockMovement[], replayed: boolean }` | StaffGuard | Verified (controller, service & DTO) |
+| Sales list | GET /api/v1/sales | `findSalesSchema` query: `page` (default 1), `limit` (default 20, max 100) | `{ data: Sale[], page, limit, total }`, ordered soldAt desc | StaffGuard | Verified (controller & service) |
+| Sale detail | GET /api/v1/sales/:id | None (id via `ParseUUIDPipe`) | `{ ...Sale, items: SaleItem[] }`; 404 `Sale not found` if missing | StaffGuard | Verified (controller & service) |
+| Customers | GET /api/v1/customers | None | Array of `{ id, name, phone, active, createdAt, updatedAt }` (full list, no pagination) | StaffGuard | Verified (controller & service) |
+| Customer create | POST /api/v1/customers | `createCustomerSchema` (drizzle-zod insert schema; only `name` required, `phone` optional) | Drizzle `.returning()` array with the created customer | StaffGuard | Verified (controller & service) |
+| Customer update | PATCH /api/v1/customers/update/:id | `updateCustomerSchema` (drizzle-zod update schema) | Updated customer | StaffGuard | Verified (controller) |
+| Customer statement | GET /api/v1/customers/:id/statement | None (id via `ParseUUIDPipe`) | `{ customer, totals: { salesTotal, moneyReceived, outstandingDebt }, sales: [{ id, soldAt, totalAmount, paidAmount, balanceDue, paymentStatus: 'UNPAID' \| 'PAID' \| 'PART_PAID', items, payments }] }` | StaffGuard | Verified (controller & service) |
+| Repayment | POST /api/v1/customers/:id/repayments | `recordRepaymentSchema` (`requestId: uuid`, `saleId: uuid`, `amount`) | `{ payment, saleId, totalAmount, paidAmount, balanceDue }` | StaffGuard | Verified (controller & service) |
 | Staff (invites/create) | See StaffController/Service | InviteStaffDto, CreateStaffDto, AcceptInviteDto | Various | StaffGuard + OwnerGuard | Partially verified |
 
 ### Product Schema Limitations & Notes:
@@ -105,6 +113,23 @@ Do not treat as full policy - verify per endpoint.
 - **Adjustments Rules**: Adjustments are always recorded as `type: 'Adjustment'` movements with a required `note` (1..500 chars). `changePack: 'Sub'` rejects if stock is insufficient (409).
 - **Response Shape**: Mutations return `{ addStock: StockMovement[], updateProduct: { id, stockPacks }[], replayed: boolean }`. `updateProduct` contains only the product id and new balance — not a full product object.
 - **Movements Pagination**: `GET /api/v1/stock/movements` is paginated (`page` default 1, `limit` default 20 max 100) and returns `{ data, page, limit, total }`. There is no `productId` filter — per-product history must be filtered client-side.
+
+### Sales Contract Notes:
+- **Prices Are Server-Side**: `POST /api/v1/sales` never accepts prices. Each line is priced from the product row at save time (`bagPrice` for `unit: 'Bag'`, `retailPrice` for `unit: 'Pack'`). A product with a zero price for the requested unit is rejected (400 `Price is not configured for ...`).
+- **Idempotency**: `requestId` (UUID, client-generated) is unique per sale. Retrying the same id with the same payload (items, customerId, amountPaid) replays the original result (`replayed: true`); reusing the id with a different payload returns 409 `Request ID has already been used for a different sale`. The initial payment row's requestId is derived deterministically from the sale's requestId (sha256-based UUID).
+- **Payment Rules**: `amountPaid` is a string matching `^\d{1,12}(\.\d{1,2})?$` (up to 2 decimals). It cannot exceed the sale total (400). If it is less than the total, `customerId` is required (400 `A customer is required for an unpaid balance`). `amountPaid: "0"` is valid and records no payment row.
+- **Stock Rules**: Stock is deducted transactionally per product (combined across lines). Insufficient stock returns 409 `Insufficient stock for <name>`; inactive products return 409; unknown products/customers return 404. Products are locked in sorted id order to avoid deadlocks.
+- **Line Constraints**: 1..100 items per sale; the same product cannot appear twice with the same unit (different units are allowed and combine against one stock balance).
+- **Response Shape**: `{ sale, items, payment, updatedProduct, stockMovement, replayed }`. Note `updatedProduct` is `[{ id }]` — ids only, no stock balances (unlike stock mutations which return `{ id, stockPacks }`).
+- **Money Storage**: All money columns are PostgreSQL `numeric(14,2)` returned as strings; the backend converts to integer kobo (`* 100`) for arithmetic. The frontend mirrors this in `src/lib/utils/money.ts` to avoid floating-point drift.
+- **No Payment Method / Sale Type Columns**: The `payments` table has only `{ id, saleId, amount, recordedBy, requestId, paidAt }`; the `sales` table has no sale-type column. Cash/credit is derived from `itemsTotal` vs payments. The design's "Payment method" and "Sale type" fields cannot be persisted and are not sent.
+- **Sales List/Detail**: `GET /api/v1/sales` is paginated (`{ data, page, limit, total }`, soldAt desc). `GET /api/v1/sales/:id` returns the sale with `items` embedded. Neither returns payments; use the customer statement for payment data.
+
+### Customers Contract Notes:
+- **No Pagination**: `GET /api/v1/customers` returns the full list.
+- **Create**: `POST /api/v1/customers` requires only `name`; `phone` optional; returns a `.returning()` array (frontend takes `[0]`).
+- **Statement**: `GET /api/v1/customers/:id/statement` computes `paymentStatus` per sale (`UNPAID` / `PART_PAID` / `PAID`) and totals (`salesTotal`, `moneyReceived`, `outstandingDebt`). Read-only transaction (repeatable read).
+- **Repayments**: `POST /api/v1/customers/:id/repayments` requires `requestId` (UUID idempotency), `saleId`, `amount`; rejects amounts over the outstanding balance (400) and repayments on fully paid sales (409).
 
 ## Money and Quantities
 

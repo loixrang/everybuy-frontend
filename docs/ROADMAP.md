@@ -24,6 +24,19 @@ Status: COMPLETED
 - Backend contract inspection (Better Auth, routes, roles, CORS verified)
 - Documentation updated
 
+### FE-002: Authentication and Session Management
+
+Status: READY
+- Implement the sign-in page using the existing Better Auth backend.
+- Verify the sign-in request and response against the actual backend configuration.
+- Handle session loading, authenticated sessions, and unauthenticated users.
+- Protect application routes that require authentication.
+- Implement sign-out.
+- Handle two-factor authentication if required by the backend configuration.
+- Handle authentication errors and expired sessions.
+- Verify that cookies and credentials work in local development and production.
+- Test the complete flow from sign-in through sign-out.
+
 
 ## Phase 1: Products and Stock
 
@@ -56,7 +69,7 @@ Status: COMPLETED
 ## Phase 2: Sales and Payments
 
 ### FE-020: Record a Sale
-Status: BLOCKED
+Status: COMPLETED
 
 - Inspect sale creation rules.
 - Support the actual product units and quantities.
@@ -67,59 +80,82 @@ Status: BLOCKED
 ### FE-021: Sales History and Details
 Status: BLOCKED
 
-- Display sales using verified API responses.
-- Show sale items, payment information, and balances.
-- Support available search and filtering.
+- Verify the current sales list and detail endpoints.
+- Display recorded sales and their saved item details.
+- Show sale date, items, quantities, prices, total, initial payment, and outstanding balance where supported.
+- Add only search and filters supported by the API.
+- Handle loading, empty, and error states.
+- Confirm historical sale details remain correct after product changes.
 
-### FE-022: Payments and Repayments
+### FE-022: Customer Debts and Repayments
 Status: BLOCKED
 
-- Inspect payment and repayment endpoints.
-- Display payment history.
-- Implement supported payment recording.
-- Show outstanding balances accurately.
+- Verify the current customer, debt, and payment endpoints.
+- Allow staff to find customers and view their outstanding sales.
+- Display each sale's original total, payments received, and remaining balance.
+- Record repayments against the correct sale.
+- Show payment history and updated balances after successful requests.
+- Handle overpayment, duplicate submissions, and failed requests.
+- Do not calculate authoritative balances from incomplete frontend data.
 
-## Phase 3: Purchases and Stock Receiving
-
-### FE-030: Purchase Management
-Status: BLOCKED
-
-- Inspect purchase and supplier capabilities.
-- Implement only supported purchase workflows.
+## Phase 3: Stock Receiving
 
 ### FE-031: Receive Stock
 Status: BLOCKED
 
-- Inspect stock receiving endpoints and validation rules.
-- Support the backend's stock unit and conversion rules.
-- Display the saved receipt and resulting stock changes.
+- Verify the current stock receiving endpoint and request format.
+- Support receiving stock in bags or retail packs, as allowed by the API.
+- Display the correct pack conversion for each product.
+- Allow supplier details only where supported and required by the agreed workflow.
+- Show the saved receipt and updated stock after success.
+- Handle invalid quantities, failed requests, and duplicate submissions.
+- Confirm the stock balance matches the backend response.
 
-## Phase 4: Follow-up Work
+Note: Keep FE-030 Purchase Management deferred. Do not build a separate purchase workflow unless it is part of the agreed scope and supported by the backend.
 
-### FE-040: Customers and Suppliers
+## Phase 4: Customers and Reports
+
+### FE-040: Customer Management
 Status: BLOCKED
 
-Implement after verifying the relevant backend endpoints and permissions.
+- Verify customer creation, lookup, update, and deactivation capabilities.
+- Implement only operations supported by the current API.
+- Allow staff to find customers when recording sales and repayments.
+- Preserve access to existing debt and payment history for deactivated customers.
+- Respect backend permissions and validation rules.
+
+### FE-042: Monthly Reports and Overview
+Status: BLOCKED
+
+- Verify the current reporting endpoints and response formats.
+- Display monthly sales totals and money received.
+- Show outstanding debt at month-end where supported.
+- Display product sales and stock figures returned by the backend.
+- Use the correct Africa/Lagos calendar month.
+- Ensure later payments do not incorrectly change historical report figures.
+- Handle empty months and failed requests.
+- Do not derive official totals from incomplete frontend data.
+
+## Deferred Work
 
 ### FE-041: Stocktaking
-Status: BLOCKED
+Status: DEFERRED
 
-Implement after verifying stock count, review, and approval workflows.
-
-### FE-042: Reports and Overview
-Status: BLOCKED
-
-Use verified reporting endpoints and calculations. Do not calculate important business figures from incomplete frontend data.
+- Do not implement until stocktaking is included in the agreed scope.
+- Before implementation, verify the backend supports stock counts and the required adjustment workflow.
 
 ### FE-043: Online Store
-Status: BLOCKED
+Status: DEFERRED
 
-The design reference contains a separate online store. Do not implement it until the user approves its scope and the backend contract is confirmed.
+- Do not implement until explicitly approved.
+- Confirm the online ordering scope and API contract before starting.
 
 ## Rules
 
-- Do not start a blocked task without resolving its dependencies.
-- Do not implement several roadmap phases in one session without approval.
-- Update statuses when work starts or finishes.
-- Keep each task small enough to review and test.
-- Record missing backend capabilities rather than inventing them.
+- Use the current API contract and verify it against the actual backend.
+- Do not invent routes, request fields, response fields, or permissions.
+- Mark a task COMPLETED only after its acceptance criteria pass.
+- Update frontend types and API calls when the contract changes.
+- Test success, validation errors, authentication failures, and network failures.
+- Keep each task focused and reviewable.
+- Deferred tasks must not block the physical shop release.

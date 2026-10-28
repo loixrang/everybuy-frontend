@@ -1,10 +1,11 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { InventoryLayout } from '../components/layout/InventoryLayout';
 import { InventoryPage } from '../pages/inventory/InventoryPage';
 import { ProductDetailPage } from '../pages/inventory/ProductDetailPage';
 import { ProductSetupPage } from '../pages/inventory/ProductSetupPage';
 import { StockMovementsPage } from '../pages/stock/StockMovementsPage';
 import { ReceiveStockPage } from '../pages/stock/ReceiveStockPage';
+import { RecordSalePage } from '../pages/sales/RecordSalePage';
 
 export function AppRouter() {
   return (
@@ -17,10 +18,32 @@ export function AppRouter() {
         <Route path="/inventory/:id" element={<ProductDetailPage />} />
         <Route path="/inventory/:id/edit" element={<ProductSetupPage />} />
         <Route path="/movements" element={<StockMovementsPage />} />
+        <Route path="/sales" element={<SalesIndexPage />} />
+        <Route path="/sales/new" element={<RecordSalePage />} />
         <Route path="/overview" element={<OverviewPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
+  );
+}
+
+function SalesIndexPage() {
+  return (
+    <div className="space-y-4 max-w-2xl">
+      <h1 className="text-2xl font-bold tracking-tight text-[color:var(--color-ink)]">
+        Sales
+      </h1>
+      <p className="text-sm text-[color:var(--color-muted)]">
+        Sales history and sale details will appear here once sales reporting is
+        implemented. New sales can be recorded now.
+      </p>
+      <Link
+        to="/sales/new"
+        className="inline-flex items-center h-10 px-4 rounded-[8px] font-semibold text-xs bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors"
+      >
+        Record a sale
+      </Link>
+    </div>
   );
 }
 

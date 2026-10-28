@@ -40,15 +40,20 @@ src/
   lib/
     api/
       client.ts
+      customers.ts
       products.ts
+      sales.ts
       stock.ts
     utils/
       format.ts
+      money.ts
   pages/
     inventory/
       InventoryPage.tsx
       ProductDetailPage.tsx
       ProductSetupPage.tsx
+    sales/
+      RecordSalePage.tsx
     stock/
       ReceiveStockPage.tsx
       StockMovementsPage.tsx
@@ -59,7 +64,9 @@ src/
       Inter.ttf
       Manrope.ttf
   types/
+    customer.ts
     product.ts
+    sale.ts
     stock.ts
   main.tsx
   App.tsx

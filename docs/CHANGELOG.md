@@ -4,6 +4,40 @@ Record meaningful frontend changes here.
 
 ## Unreleased
 
+### 2026-10-28: FE-020 Record a Sale
+
+Added:
+- Sale domain types in `src/types/sale.ts`: `Sale`, `SaleItem`, `Payment`, `SaleUnit`, `CreateSaleInput`, `CreateSaleResult` (with `replayed` flag) verified against `sales.service.ts` and the schema.
+- Customer types in `src/types/customer.ts` (`Customer`, `CreateCustomerInput`).
+- Money helpers in `src/lib/utils/money.ts` (`toKobo`/`fromKobo`), ported from the backend so client-side totals use integer kobo arithmetic and never drift through floats.
+- Sales API client in `src/lib/api/sales.ts` (`createSale` → `POST /api/v1/sales`).
+- Customers API client in `src/lib/api/customers.ts` (`fetchCustomers`, `createCustomer`; both StaffGuard).
+- `RecordSalePage` (`/sales/new`):
+  - Client-side product search (backend has no search parameter) with Pack/Carton add buttons; re-adding the same product+unit increases the line quantity (the backend rejects duplicate product+unit lines).
+  - Cart lines with quantity steppers (1..1,000,000), line totals computed from DB prices like the backend, and per-product "Available: N packs" stock warnings covering combined lines.
+  - Customer select with an inline "Add a customer" form (name + optional phone) so credit sales can be recorded without leaving the page.
+  - Amount paid field validated with the backend regex (`^\d{1,12}(\.\d{1,2})?$`), over-payment guard, and customer-required-when-balance-remains rule.
+  - Sale summary card with items, total, amount paid, balance owed, cash/credit indicator, and Save sale action (matches `sale_new.svg` two-column layout).
+  - Idempotent submission: `requestId` kept across retries of an identical payload, regenerated when the sale is edited, cleared only on success.
+  - 409 conflict handling with the "Save blocked" + "Refresh stock" panel (matches `sale_conflict.svg`); 404/403/400 and network errors mapped to actionable messages.
+  - Success state showing total/paid/balance/customer with a `replayed` notice and "Record another sale".
+- `/sales` placeholder index page with a "Record a sale" CTA (the shell nav already linked to `/sales`, which previously hit the 404 route).
+
+Changed:
+- Router registers `/sales` and `/sales/new` under `InventoryLayout`.
+
+Checks:
+- `bun run build`: passed
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed (oxlint, 0 warnings, 0 errors)
+
+Notes:
+- Backend limitation: the `payments` table has no payment-method column, so the design's "Payment method" field is not implemented.
+- Backend limitation: there is no sale-type column; cash/credit is derived from `itemsTotal` vs payments.
+- Backend limitation: `POST /api/v1/sales` returns `updatedProduct` as `[{ id }]` (ids only, no balances); the page refreshes products after a successful sale instead.
+- Prices are never sent to the backend; `POST /api/v1/sales` prices every line from the product row server-side.
+- Verified early for FE-022 (not yet used by any page): customer statement (`GET /api/v1/customers/:id/statement`) and repayments (`POST /api/v1/customers/:id/repayments`, idempotent via `requestId`) shapes recorded in API_CONTRACT.md.
+
 ### 2026-10-28: FE-012 Inventory and Stock Movements
 
 Added:

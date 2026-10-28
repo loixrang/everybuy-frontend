@@ -1,6 +1,62 @@
 # Current Task
 
-## FE-012: Inventory and Stock Movements
+## FE-020: Record a Sale
+
+Status: COMPLETED
+
+## Goal
+
+Implement the sale recording flow according to the verified backend contract: multi-item cart with pack/carton units, customer selection, amount paid with balance rules, idempotent submission, and conflict handling.
+
+## Scope
+
+- Inspect sale creation rules (`POST /api/v1/sales`, guarded by `StaffGuard`).
+- Support the actual product units (`Pack` / `Carton`) and quantities.
+- Validate stock availability client-side and handle backend 409 conflicts.
+- Handle failed and conflicting submissions.
+- Prevent accidental duplicate submissions (client-generated UUID `requestId`).
+
+## Out of Scope
+
+- Sales history and details (FE-021)
+- Payments and repayments (FE-022)
+- Full customers management page (FE-040; only inline customer creation needed for credit sales)
+
+### Implemented:
+
+- `src/types/sale.ts`: verified sale domain types (`Sale`, `SaleItem`, `Payment`, `CreateSaleInput`, `CreateSaleResult` with `replayed` flag).
+- `src/types/customer.ts`: `Customer` and `CreateCustomerInput`.
+- `src/lib/utils/money.ts`: `toKobo`/`fromKobo` integer-kobo helpers ported from the backend so client totals never drift through floating point.
+- `src/lib/api/sales.ts`: `createSale` (`POST /api/v1/sales`).
+- `src/lib/api/customers.ts`: `fetchCustomers` (`GET /api/v1/customers`), `createCustomer` (`POST /api/v1/customers`), both StaffGuard.
+- `src/pages/sales/RecordSalePage.tsx` (`/sales/new`):
+  - Client-side product search with Pack/Carton add buttons; adding the same product+unit increases quantity (backend rejects duplicate product+unit lines).
+  - Cart lines with quantity steppers, per-line totals priced from DB snapshots (`retailPrice`/`bagPrice`), and per-product "Available: N packs" warnings with client-side stock validation across combined lines.
+  - Customer select with inline "Add a customer" form (name + optional phone) for credit sales.
+  - Amount paid input with backend regex validation (`^\d{1,12}(\.\d{1,2})?$`), over-payment guard, and customer-required-when-balance-remains rule (mirrors backend 400s).
+  - Sale summary card (items, total, amount paid, balance owed, cash/credit line) with "Save sale".
+  - Idempotent `requestId`: kept across retries of an identical payload, regenerated when the sale is edited (backend 409s a reused id with different content), cleared only on success.
+  - 409 → "Save blocked" panel with "Refresh stock" (matches `sale_conflict.svg`); 404/403/400/network errors mapped to user-facing messages.
+  - Success state with total/paid/balance/customer, `replayed` notice, "Record another sale" (resets form and refreshes stock).
+- Registered `/sales/new` and a minimal `/sales` placeholder (nav already linked to it) in `AppRouter`.
+
+### Checks:
+
+- `bun run build`: passed
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed (oxlint, 0 warnings, 0 errors)
+
+### Notes / Limitations:
+
+- The design's "Payment method" field is not implemented: the backend `payments` table has no payment-method column. Do not fake it.
+- "Sale type" (cash/credit) is derived from the balance, not stored; the backend has no sale-type column.
+- Sale prices are always computed by the backend from the product row; the frontend displays the same computation for preview only.
+- `POST /api/v1/sales` returns `updatedProduct` as `[{ id }]` (ids only, no balances).
+- Products and customers are fetched with `limit: 100` / full list (no search parameter on either endpoint).
+
+---
+
+## Completed: FE-012 Inventory and Stock Movements
 
 Status: COMPLETED
 
