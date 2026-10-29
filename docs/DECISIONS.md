@@ -174,3 +174,18 @@ A statement per list row would exceed the backend's 3 requests/second throttle, 
 
 Consequence:
 The sales list omits the design's search, "All payment states" filter, Owed/Status columns, and Sales today/Paid today/Balance owed cards. Adding them requires backend query and aggregate support. Payment method and recorded-by names remain unavailable, and sale references use a short UUID prefix because there is no `SL-####` column.
+
+## DEC-018: Monthly Report Screen Instead of Daily Overview
+
+Decision:
+FE-042 is implemented as a **monthly** report at `/overview` backed by `GET /api/v1/reports/monthly?month=YYYY-MM`, using the overview layout for its summary cards and tables. The design's daily metrics are not reproduced with other endpoints.
+
+The screen shows `salesTotal`, `moneyReceived`, `outstandingDebtAtMonthEnd`, product quantities sold (`bagsSold`, `retailPacksSold`, `totalPacksSold`), and month-end `closingStock`. Month navigation is validated against the backend pattern, defaults to the current `Africa/Lagos` month, and each change refetches the whole report.
+
+Reason:
+The only verified reporting endpoint is month-based. `overview.svg` describes a daily shop summary — "Sales today", "Payments received", "Customer balances", "Low stock", "Recent sales" — and none of those figures has an endpoint: the sales list has no aggregates and the customer list has no balances. Deriving them in the frontend would require fan-out far beyond the 3 requests/second throttle and would present unofficial totals as if the backend computed them.
+
+Consequence:
+`/overview` is a monthly report, not the daily dashboard depicted in the design. The daily summary cards, low-stock alert, and recent-sales table are omitted, and the page states clearly that figures are monthly and `Africa/Lagos`-based. Labour/expenses are not reported because the backend stores no such data. A true daily overview needs a new backend endpoint and an agreed contract.
+
+Closing stock is displayed as a plain month-end pack balance rather than with the live low-stock badge: the 10-pack threshold is a current-inventory heuristic and would mislabel a historical balance. `moneyReceived` intentionally includes payments for earlier sales, and `outstandingDebtAtMonthEnd` is cumulative debt as of month end, so the page explains both instead of implying they are monthly-only figures.

@@ -129,7 +129,7 @@ Verified limitation:
 The directory's design columns "Balance owed" and "Last sale" cannot be populated from `GET /api/v1/customers` without per-customer statement requests; they are shown on the customer statement instead. There is no delete endpoint, so customers are deactivated rather than removed.
 
 ### FE-042: Monthly Reports and Overview
-Status: BLOCKED
+Status: COMPLETED
 
 - Verify the current reporting endpoints and response formats.
 - Display monthly sales totals and money received.
@@ -140,8 +140,11 @@ Status: BLOCKED
 - Handle empty months and failed requests.
 - Do not derive official totals from incomplete frontend data.
 
-Blocker / verified limitation:
-`GET /api/v1/reports/monthly?month=YYYY-MM` is verified and returns `salesTotal`, `moneyReceived`, `outstandingDebtAtMonthEnd`, `productsSold`, and `closingStock` in Africa/Lagos. The supplied `overview.svg` is a *daily* shop summary ("Sales today", "Payments received"), which no verified endpoint provides. Scope must be agreed (monthly report screen vs. daily overview) before implementing.
+Implemented scope:
+`/overview` is a monthly report using `GET /api/v1/reports/monthly?month=YYYY-MM`. It shows `salesTotal`, `moneyReceived`, `outstandingDebtAtMonthEnd`, product quantities sold (cartons, packs, total packs), and month-end `closingStock`, with month navigation, "This month", loading/empty/error/retry states, and staff-access handling. The month defaults to the current `Africa/Lagos` month and is validated against the backend pattern.
+
+Verified limitation:
+The supplied `overview.svg` is a *daily* shop summary ("Sales today", "Payments received", "Customer balances", "Low stock", "Recent sales"). No daily aggregate exists: the sales list returns no totals or balances and the customer list returns no balances. The daily cards, low-stock alert, and recent-sales table are therefore omitted rather than computed in the frontend. `moneyReceived` includes payments for earlier sales, and `outstandingDebtAtMonthEnd` is cumulative debt at month end; the screen explains both. See DEC-018.
 
 ## Deferred Work
 

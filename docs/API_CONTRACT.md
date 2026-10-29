@@ -122,6 +122,7 @@ Do not treat as full policy - verify per endpoint.
 | Customer update | PATCH /api/v1/customers/update/:id | `updateCustomerSchema` (partial insert schema: `name?`, `phone?`, `active?`) | Drizzle `.returning()` array with the updated customer | StaffGuard | Verified (controller) |
 | Customer statement | GET /api/v1/customers/:id/statement | None (id via `ParseUUIDPipe`) | `{ customer, totals: { salesTotal, moneyReceived, outstandingDebt }, sales: [{ id, soldAt, totalAmount, paidAmount, balanceDue, paymentStatus: 'UNPAID' \| 'PAID' \| 'PART_PAID', items, payments }] }`; sales ordered `soldAt` desc, payments ordered `paidAt` asc; 404 `Customer not found` | StaffGuard | Verified (controller & service) |
 | Repayment | POST /api/v1/customers/:id/repayments | `recordRepaymentSchema`: `{ requestId: uuid, saleId: uuid, amount: string matching ^(?=.*[1-9])\d{1,12}(\.\d{1,2})?$ }` | `{ payment, saleId, totalAmount, paidAmount, balanceDue }`; 400 over outstanding, 404 unknown sale for this customer, 409 already paid or requestId reused with a different payload | StaffGuard | Verified (controller & service) |
+| Monthly report | GET /api/v1/reports/monthly | `monthSchema` query `month` matching `^\d{4}-(0[1-9]\|1[0-2])$`; the service also rejects `0000` | `{ month, timezone: 'Africa/Lagos', salesTotal, moneyReceived, outstandingDebtAtMonthEnd, productsSold: [{ productId, productName, bagsSold, retailPacksSold, totalPacksSold }], closingStock: [{ productId, productName, closingPacks }] }`; money fields are numeric strings | StaffGuard | Verified (controller, service, query & DTO) |
 | Staff (invites/create) | See StaffController/Service | InviteStaffDto, CreateStaffDto, AcceptInviteDto | Various | StaffGuard + OwnerGuard | Partially verified |
 
 ### Product Schema Limitations & Notes:
@@ -163,6 +164,16 @@ Do not treat as full policy - verify per endpoint.
 - **Repayments**: `POST /api/v1/customers/:id/repayments` requires `requestId` (UUID idempotency), `saleId`, and a positive amount with at most 2 decimals. It locks the sale, rejects amounts over the outstanding balance (400), rejects fully paid sales (409), and replays a matching `requestId` instead of double-charging. Reusing a `requestId` with a different sale or amount returns 409. Repayments do not change stock.
 - **No Payment Method/Type**: The `payments` table has only `{ id, saleId, amount, recordedBy, requestId, paidAt }`. Method, entered payment date, reference, and an "at sale"/"repayment" type are not stored; the frontend shows `paidAt` and `amount` only.
 - **Sale References**: Sales use UUID primary keys; there is no human-readable `SL-####` column, so the UI shows the first 8 characters of the UUID and keeps the full id in a tooltip.
+
+### Reports Contract Notes:
+- **Monthly Only**: `GET /api/v1/reports/monthly` is the only verified reporting endpoint. It takes `month=YYYY-MM` and has no daily, weekly, or range variant.
+- **Month Boundaries**: The backend converts `YYYY-MM-01 00:00:00` and the following month to `Africa/Lagos` and filters with `>= start` and `< end`, so a report covers exactly one local calendar month. The frontend sends the month and never computes totals itself.
+- **salesTotal vs moneyReceived**: `salesTotal` sums `sales.itemsTotal` for sales `soldAt` in the month. `moneyReceived` independently sums `payments.amount` with `paidAt` in the month, so it includes repayments of earlier sales and excludes payments made after the month.
+- **outstandingDebtAtMonthEnd**: Sum of `greatest(itemsTotal - payments made before month end, 0)` across **all** customer sales before month end — a cumulative balance, not just that month's sales. Later repayments do not retroactively change the figure.
+- **productsSold**: Grouped by product for sales in the month. `bagsSold` counts `unit: 'Bag'` quantities (cartons), `retailPacksSold` counts `unit: 'Pack'` quantities, and `totalPacksSold` sums `quantity × packsPerUnit`. Names come from the joined product row.
+- **closingStock**: Sum of `stockMovements.changePacks` per product created before month end, including movements dated before month end. It is a historical month-end balance, not current stock.
+- **Read Consistency**: The whole report is produced in one read-only `repeatable read` transaction.
+- **No Daily Overview**: The supplied `overview.svg` shows "Sales today / Payments received / Customer balances / Low stock / Recent sales", which no endpoint provides. The screen therefore uses the monthly figures and omits the daily cards, low-stock alert, and recent-sales table.
 
 ## Money and Quantities
 

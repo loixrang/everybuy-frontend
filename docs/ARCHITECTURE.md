@@ -51,6 +51,7 @@ src/
       client.ts
       customers.ts
       products.ts
+      reports.ts
       sales.ts
       stock.ts
     hooks/
@@ -69,6 +70,8 @@ src/
       InventoryPage.tsx
       ProductDetailPage.tsx
       ProductSetupPage.tsx
+    reports/
+      OverviewPage.tsx
     sales/
       RecordSalePage.tsx
       SaleDetailPage.tsx
@@ -86,6 +89,7 @@ src/
     auth.ts
     customer.ts
     product.ts
+    report.ts
     sale.ts
     stock.ts
   main.tsx
@@ -172,6 +176,18 @@ Implemented (FE-021):
 - A sale with no customer is treated as paid at sale. This follows the verified backend rule that a customer is required whenever `amountPaid < itemsTotal`; no payment method is inferred or stored.
 - Repayments from the detail page reuse `RecordRepaymentModal` and reload both the sale and its statement after success.
 - The sales list omits search, payment-state filters, Owed/Status columns, and daily summary cards because the backend provides no matching query or aggregate. The detail page is the supported place for payment data. See `DECISIONS.md`.
+
+## Monthly Reports
+
+Implemented (FE-042):
+
+- `OverviewPage` (`/overview`) requests `GET /api/v1/reports/monthly?month=YYYY-MM` for one Africa/Lagos calendar month and renders the backend's numbers; it never recomputes totals from other endpoints.
+- The initial month comes from `currentLagosMonth()` (an `Intl` lookup forced to `Africa/Lagos`), so the browser's local timezone cannot select the wrong month. Previous/Next controls use `shiftMonth`, the `type="month"` input is validated against the backend pattern (including the `0000` rejection), and a "This month" shortcut appears when browsing history.
+- Summary cards show `salesTotal`, `moneyReceived`, `outstandingDebtAtMonthEnd`, and the number of product lines in `productsSold`.
+- `productsSold` renders as a table (desktop) and cards (mobile) with cartons, packs, and total packs. `closingStock` renders as a pack balance list with a link to inventory.
+- Closing stock is labelled as a month-end balance and does not reuse the live stock badge: the 10-pack low-stock threshold is a current-inventory heuristic and would mislabel a historical balance.
+- Loading skeleton, empty month, 401/403, validation/network error, and retry states are handled. Month changes refetch; stale responses are discarded with an `ignore` flag.
+- The daily `overview.svg` cards (Sales today, Payments received, Customer balances, Low stock, Recent sales) are omitted because there is no daily aggregate endpoint. See `DECISIONS.md`.
 
 ## State
 

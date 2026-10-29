@@ -13,6 +13,7 @@ import { SaleDetailPage } from '../pages/sales/SaleDetailPage';
 import { CustomersPage } from '../pages/customers/CustomersPage';
 import { CustomerDetailPage } from '../pages/customers/CustomerDetailPage';
 import { CustomerEditPage } from '../pages/customers/CustomerEditPage';
+import { OverviewPage } from '../pages/reports/OverviewPage';
 
 export function AppRouter() {
   return (
@@ -40,19 +41,6 @@ export function AppRouter() {
         </Route>
       </Route>
     </Routes>
-  );
-}
-
-function OverviewPage() {
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold tracking-tight text-[color:var(--color-ink)]">
-        Overview
-      </h1>
-      <p className="text-sm text-[color:var(--color-muted)]">
-        The physical shop overview and performance summary will appear here.
-      </p>
-    </div>
   );
 }
 

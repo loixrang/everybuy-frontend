@@ -1,5 +1,62 @@
 # Current Task
 
+## FE-042: Monthly Reports and Overview
+
+Status: COMPLETED
+
+## Goal
+
+Give staff an authoritative monthly view of shop performance — sales, money received, outstanding customer debt, product quantities sold, and closing stock — using the backend's monthly report instead of totals computed in the browser.
+
+## Scope
+
+- Verify the reporting endpoint, query validation, and response shape.
+- Display monthly sales totals and money received.
+- Show outstanding debt at month end.
+- Display product sales and closing stock returned by the backend.
+- Use the correct Africa/Lagos calendar month and allow browsing earlier months.
+- Handle loading, empty month, permission, validation, and network states.
+- Avoid deriving official totals from incomplete frontend data.
+
+## Out of Scope
+
+- The design's daily "Sales today / Payments received / Customer balances / Low stock" cards.
+- The daily "Recent sales" table on the overview.
+- Revenue, profit, and expense reporting (no stored cost/expense data).
+- Any client-side aggregation across other endpoints.
+
+### Implemented:
+
+- `src/types/report.ts`: `MonthlyReport`, `MonthlyReportProductSales`, and `MonthlyReportClosingStock` matching the verified response.
+- `src/lib/api/reports.ts`: `fetchMonthlyReport(month)` (`GET /api/v1/reports/monthly?month=YYYY-MM`).
+- `OverviewPage` (`/overview`), replacing the placeholder:
+  - Month selector defaulting to the current `Africa/Lagos` month, with previous/next month and a "This month" shortcut.
+  - Month values validated against the backend pattern (`YYYY-MM`, month 01-12, `0000` rejected) before requesting.
+  - Summary cards for sales this month, money received, outstanding debt at month end, and the number of product lines sold.
+  - Product sales table (desktop) and cards (mobile) with cartons, retail packs, and total packs.
+  - Closing stock list with month-end pack balances and a link to inventory.
+  - Loading skeleton, empty month, 401/403, error with retry, and network states; stale responses discarded when the month changes.
+- `currentLagosMonth`, `shiftMonth`, and `formatMonthLabel` helpers in `src/lib/utils/format.ts`.
+- Router now uses the real `OverviewPage`; the placeholder function was removed.
+
+### Checks:
+
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed (oxlint, 0 warnings, 0 errors)
+- `bun run build`: passed
+
+### Notes / Limitations:
+
+- No live end-to-end test was possible: the backend API (port 3000) and PostgreSQL (port 5432) were not running. Shapes, boundaries, and validation were verified from the backend controller, DTO, service, and `get-monthly-report.ts`.
+- The endpoint is monthly only. The design's daily overview cards, low-stock alert, and recent-sales table are omitted rather than approximated from other endpoints. A daily overview needs a new backend endpoint.
+- `moneyReceived` sums payments made during the month, including repayments of earlier sales; `outstandingDebtAtMonthEnd` is the cumulative unpaid balance on all customer sales up to month end. The screen states both rather than implying monthly-only figures.
+- `closingStock` is a historical month-end balance, so it is shown as a plain pack count and not with the live low-stock badge (the 10-pack threshold is a current-inventory heuristic).
+- Product names come from the joined product row, so a renamed product appears under its current name in historical reports; products have no delete endpoint.
+- No cost, expense, or profit data exists in the backend, so only sales, receipts, debt, quantities, and stock are reported.
+- No backend changes; work remains uncommitted.
+
+---
+
 ## FE-021: Sales History and Details
 
 Status: COMPLETED

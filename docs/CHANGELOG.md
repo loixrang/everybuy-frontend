@@ -4,6 +4,35 @@ Record meaningful frontend changes here.
 
 ## Unreleased
 
+### 2026-10-29: FE-042 Monthly Reports and Overview
+
+Added:
+- `MonthlyReport`, `MonthlyReportProductSales`, and `MonthlyReportClosingStock` types in `src/types/report.ts`.
+- `fetchMonthlyReport(month)` in `src/lib/api/reports.ts` for `GET /api/v1/reports/monthly?month=YYYY-MM`.
+- `OverviewPage` (`/overview`), replacing the placeholder:
+  - Month selector defaulting to the current `Africa/Lagos` month, previous/next navigation, and a "This month" shortcut.
+  - Month values validated against the backend pattern before requesting.
+  - Summary cards for sales this month, money received, outstanding debt at month end, and product lines sold.
+  - Product sales table/cards with cartons, retail packs, and total packs.
+  - Closing stock list with month-end pack balances and an inventory link.
+  - Loading skeleton, empty month, 401/403, error/retry, and network states.
+- `currentLagosMonth`, `shiftMonth`, and `formatMonthLabel` helpers in `src/lib/utils/format.ts`.
+
+Changed:
+- `/overview` is now the real monthly report instead of an informational placeholder.
+
+Checks:
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed (oxlint, 0 warnings, 0 errors)
+- `bun run build`: passed
+
+Notes:
+- No live end-to-end test was possible: the backend API (port 3000) and PostgreSQL (port 5432) were not running. Shapes and validation were verified from backend source.
+- Backend limitation: the only reporting endpoint is month-based. The design's daily "Sales today / Payments received / Customer balances / Low stock" cards and "Recent sales" table have no endpoint and are omitted rather than derived client-side.
+- `moneyReceived` includes payments for earlier sales; `outstandingDebtAtMonthEnd` is cumulative debt at month end. The page explains both.
+- Closing stock is a historical month-end balance and is shown without the live low-stock badge.
+- No cost, expense, or profit data exists, so the report covers sales, receipts, debt, product quantities, and stock only.
+
 ### 2026-10-29: FE-021 Sales History and Details
 
 Added:

@@ -96,6 +96,39 @@ export function formatLongDate(dateString: string | null | undefined): string {
 }
 
 /**
+ * Returns the current Africa/Lagos calendar month as YYYY-MM.
+ * The backend reports use this timezone regardless of the browser's zone.
+ */
+export function currentLagosMonth(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Lagos',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(now);
+  const year = parts.find((part) => part.type === 'year')?.value ?? '1970';
+  const month = parts.find((part) => part.type === 'month')?.value ?? '01';
+  return `${year}-${month}`;
+}
+
+/** Shifts a YYYY-MM month string by a number of months. */
+export function shiftMonth(month: string, delta: number): string {
+  const [year, monthIndex] = month.split('-').map(Number);
+  const date = new Date(Date.UTC(year, monthIndex - 1 + delta, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Formats YYYY-MM as a readable month, e.g. "2026-10" -> "October 2026". */
+export function formatMonthLabel(month: string): string {
+  const [year, monthIndex] = month.split('-').map(Number);
+  if (!year || !monthIndex) return month;
+  return new Date(Date.UTC(year, monthIndex - 1, 1)).toLocaleDateString('en-GB', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+/**
  * Removes trailing zero decimals from a backend numeric string so it can be
  * used as an input value. Example: "9800.00" -> "9800", "9800.50" -> "9800.50".
  */
