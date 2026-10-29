@@ -4,6 +4,42 @@ Record meaningful frontend changes here.
 
 ## Unreleased
 
+### 2026-10-29: FE-053 Mobile Navigation and Responsive Polish
+
+Changed:
+- Mobile navigation now has five tabs (Stock, Sale, Customers, Reports, More). Overview and Movements were previously unreachable below `lg`.
+- New "More" bottom sheet for Stock movements, Settings and Sign out: modal dialog, Escape/backdrop/link dismissal, focus cycle and focus return, body scroll lock, and automatic close at `lg`.
+- Safe-area support: `viewport-fit=cover`, safe-area padding on the header, tab bar, sheets and modals, safe-area-aware spacers, and a `100dvh` shell height instead of `100vh`.
+- Touch targets are at least 44 px on phones: header buttons, theme/sign-out controls, quantity steppers, and the sale Remove action.
+- Desktop sidebar is sticky below the header and scrolls independently, so navigation stays visible on long pages.
+- Recent movements on the product page and the movements ledger render as cards on phones; the movements table only appears from `md` and scrolls horizontally.
+- Record-sale product search results are capped in height and scroll inside the dropdown instead of covering the form.
+- Dialogs (customer, repayment, stock adjustment, staff account) open as bottom sheets below `sm`.
+- Page headings and card padding normalised across record sale, receive stock and stock movements.
+- Sign-in and invite screens respect safe areas and use `100dvh`.
+
+Fixed:
+- `.no-scrollbar` was referenced by the filter chip rows but never defined.
+- iOS now gets a 16 px minimum font size for text inputs below `sm`, which stops the page zooming on focus.
+- Route changes scroll back to the top of the page; the hash-less SPA previously kept the previous scroll offset.
+
+Checks: `bunx tsc -b --noEmit`, `bun run lint`, `bun test` (24 passed), `bun run build`.
+
+Notes:
+- Responsive behaviour was verified through code review and the compiled CSS; there is no device/emulator automation, so iOS safe areas need a manual phone pass.
+- No API, backend or data changes.
+
+### 2026-10-29: FE-052 Pack and Bag Units
+
+Changed:
+- The interface now says **bag/bags** instead of "carton/cartons" for the bulk unit, matching the backend enum (`Bag` | `Pack`) and the `packsPerBag` / `bagPrice` field names.
+- Updated copy across product setup, product detail, inventory, receive stock, record sale, sale detail, and the monthly report ("Bags" column and mobile summary).
+- Receive-stock form state and ids were renamed (`cartons` → `bags`, `receive-cartons` → `receive-bags`).
+- Documentation updated to use bags consistently.
+
+Notes:
+- No API or schema change; this is display copy only. The product's `packsPerBag` still defines how many packs a bag holds.
+
 ### 2026-10-29: FE-050 Settings, Team Access and Invitations
 
 Added:
@@ -49,7 +85,7 @@ Added:
   - Month selector defaulting to the current `Africa/Lagos` month, previous/next navigation, and a "This month" shortcut.
   - Month values validated against the backend pattern before requesting.
   - Summary cards for sales this month, money received, outstanding debt at month end, and product lines sold.
-  - Product sales table/cards with cartons, retail packs, and total packs.
+  - Product sales table/cards with bags, retail packs, and total packs.
   - Closing stock list with month-end pack balances and an inventory link.
   - Loading skeleton, empty month, 401/403, error/retry, and network states.
 - `currentLagosMonth`, `shiftMonth`, and `formatMonthLabel` helpers in `src/lib/utils/format.ts`.
@@ -80,7 +116,7 @@ Added:
   - Desktop table, mobile cards, Previous/Next pagination, showing range, loading skeleton, empty state, retry, and staff-access error.
   - Record-sale CTA.
 - `SaleDetailPage` (`/sales/:id`):
-  - Saved item snapshots with product name, quantity/unit (Bag shown as Carton), packs per carton, unit price, and line total.
+  - Saved item snapshots with product name, quantity/unit (Bag or Pack), packs per bag, unit price, and line total.
   - Sale summary with items, total, paid, balance, payment type, and customer.
   - One customer statement request for customer sales, providing payment status, balance, and payment history.
   - Repayment action when a balance remains, reusing `RecordRepaymentModal`; success reloads the sale and statement.
@@ -179,7 +215,7 @@ Added:
 - Sales API client in `src/lib/api/sales.ts` (`createSale` → `POST /api/v1/sales`).
 - Customers API client in `src/lib/api/customers.ts` (`fetchCustomers`, `createCustomer`; both StaffGuard).
 - `RecordSalePage` (`/sales/new`):
-  - Client-side product search (backend has no search parameter) with Pack/Carton add buttons; re-adding the same product+unit increases the line quantity (the backend rejects duplicate product+unit lines).
+  - Client-side product search (backend has no search parameter) with Pack/Bag add buttons; re-adding the same product+unit increases the line quantity (the backend rejects duplicate product+unit lines).
   - Cart lines with quantity steppers (1..1,000,000), line totals computed from DB prices like the backend, and per-product "Available: N packs" stock warnings covering combined lines.
   - Customer select with an inline "Add a customer" form (name + optional phone) so credit sales can be recorded without leaving the page.
   - Amount paid field validated with the backend regex (`^\d{1,12}(\.\d{1,2})?$`), over-payment guard, and customer-required-when-balance-remains rule.
@@ -219,7 +255,7 @@ Added:
   - Loading skeleton, empty, filtered-empty, and error states with retry.
   - Adjust-stock action with product selector (defaults to the URL `productId` filter).
 - `ReceiveStockPage` (`/inventory/receive`):
-  - Cartons + loose packs entry combined into a single pack-denominated receipt.
+  - Bags + loose packs entry combined into a single pack-denominated receipt.
   - Idempotent submission: `requestId` retained across retries, cleared only on success.
   - Optional supplier selection; 403/404/409 error mapping; quantity cap 1,000,000.
 - `StockAdjustmentModal` (`src/components/stock/StockAdjustmentModal.tsx`):
@@ -252,9 +288,9 @@ Added:
 - API functions `fetchProductById`, `createProduct`, and `updateProduct` in `src/lib/api/products.ts`.
 - Mutation DTO types `CreateProductInput` and `UpdateProductInput` in `src/types/product.ts`.
 - `ProductDetailPage` (`/inventory/:id`):
-  - Available stock metric card with carton/loose pack conversion.
-  - Pack and carton price cards formatted in Nigerian Naira.
-  - Product setup summary: brand, category, base unit, carton conversion, pieces per pack, active status.
+  - Available stock metric card with bag/loose pack conversion.
+  - Pack and bag price cards formatted in Nigerian Naira.
+  - Product setup summary: brand, category, base unit, bag conversion, pieces per pack, active status.
   - Actions for stock receiving and stock movements.
   - Loading skeleton, 404 not found, and error handling with retry.
 - `ProductSetupPage` (`/inventory/new` and `/inventory/:id/edit`):

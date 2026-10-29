@@ -120,7 +120,7 @@ Components, hooks, types, and API functions related to a particular feature.
 
 ### Layouts
 
-Shared page structures, including the authenticated inventory layout.
+Shared page structures, including the authenticated inventory layout. The desktop sidebar, the mobile tab bar and the More sheet all live in `InventoryLayout` (FE-053).
 
 ### API Client
 
@@ -191,7 +191,7 @@ Implemented (FE-042):
 - `OverviewPage` (`/overview`) requests `GET /api/v1/reports/monthly?month=YYYY-MM` for one Africa/Lagos calendar month and renders the backend's numbers; it never recomputes totals from other endpoints.
 - The initial month comes from `currentLagosMonth()` (an `Intl` lookup forced to `Africa/Lagos`), so the browser's local timezone cannot select the wrong month. Previous/Next controls use `shiftMonth`, the `type="month"` input is validated against the backend pattern (including the `0000` rejection), and a "This month" shortcut appears when browsing history.
 - Summary cards show `salesTotal`, `moneyReceived`, `outstandingDebtAtMonthEnd`, and the number of product lines in `productsSold`.
-- `productsSold` renders as a table (desktop) and cards (mobile) with cartons, packs, and total packs. `closingStock` renders as a pack balance list with a link to inventory.
+- `productsSold` renders as a table (desktop) and cards (mobile) with bags, packs, and total packs. `closingStock` renders as a pack balance list with a link to inventory.
 - Closing stock is labelled as a month-end balance and does not reuse the live stock badge: the 10-pack low-stock threshold is a current-inventory heuristic and would mislabel a historical balance.
 - Loading skeleton, empty month, 401/403, validation/network error, and retry states are handled. Month changes refetch; stale responses are discarded with an `ignore` flag.
 - The daily `overview.svg` cards (Sales today, Payments received, Customer balances, Low stock, Recent sales) are omitted because there is no daily aggregate endpoint. See `DECISIONS.md`.
@@ -207,6 +207,21 @@ Implemented (FE-050):
 - `StaffAccountModal` supports the two verified owner paths: email invitation and direct account creation with an initial password. Client validation mirrors the backend (email shape, 12–128 character password, confirmation), and 409/500/503 responses produce actionable hints instead of raw errors.
 - `AcceptInvitePage` (`/accept-invite?token=…`) is public and rendered outside the auth guards. It previews the token, shows the invited name/email/expiry, and submits the password to `POST /api/v1/staff/invite/accept`.
 - The page never derives the user's role from the session: staff have no role claim, so owner-only data is requested and permission failures are handled explicitly. See `DECISIONS.md`.
+
+## Navigation and Mobile Layout
+
+Implemented (FE-053):
+
+- `InventoryLayout` is the only authenticated shell. It owns the sticky header, the desktop sidebar and, below `lg`, the fixed five-tab bar: **Stock** (`/inventory`), **Sale** (`/sales`), **Customers**, **Reports** (`/overview`) and **More**.
+- Destinations that do not fit in the bar (Stock movements, Settings, Sign out) live in `MoreSheet`, a bottom sheet rendered inside the layout. It is a modal dialog: `role="dialog"`, `aria-modal`, labelled title, initial focus, a Tab cycle, Escape/backdrop/link dismissal, focus return to the More tab, body scroll lock, dismissal on `popstate`, and automatic close when the viewport reaches `lg`.
+- Active state is derived from `location.pathname` and exposed with `aria-current="page"`; the More tab also exposes `aria-expanded` and `aria-haspopup="dialog"`.
+- Every route change scrolls the document to the top, because the app renders full-page sections rather than an inner scroll container.
+- Safe areas are handled with `env(safe-area-inset-*)`: top padding on the header and the auth screens' floating toggle, bottom padding on the tab bar, sheets and dialogs, and a matching spacer so content is never hidden behind the bar. `index.html` sets `viewport-fit=cover` and a dark `theme-color` variant.
+- The shell is `min-h-dvh`, and the desktop sidebar is `sticky` underneath the header with its own height and scroll, so navigation stays available while long lists scroll.
+- Touch targets are 44 px on phones (header controls, tab bar, steppers, remove actions). Dialogs switch to bottom sheets below `sm`.
+- Dense lists provide a mobile equivalent rather than a squeezed table: inventory, sales, customers, reports, settings and product movements use cards on phones; the movements ledger table starts at `md` and scrolls horizontally.
+- `src/styles/index.css` owns the small-screen rules: pinned `text-size-adjust`, `.no-scrollbar` for horizontally scrolling filter chips, `.pb-safe`, and a 16 px minimum font size for text controls below `sm` (prevents iOS focus zoom).
+- The navigation model is a frontend decision because the backend exposes no per-role navigation data. See `DECISIONS.md` DEC-023.
 
 ## Theme and Interactions
 

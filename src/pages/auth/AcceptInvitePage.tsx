@@ -113,8 +113,8 @@ export function AcceptInvitePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-ink)]">
-      <div className="fixed top-5 right-5 z-10">
+    <div className="min-h-dvh flex flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-ink)]">
+      <div className="fixed top-[calc(1.25rem+env(safe-area-inset-top))] right-[calc(1.25rem+env(safe-area-inset-right))] z-10">
         <button
           type="button"
           onClick={toggleTheme}

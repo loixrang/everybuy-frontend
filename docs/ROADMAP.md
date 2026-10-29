@@ -82,7 +82,7 @@ Status: COMPLETED
 
 - Server-paginated sales list (`/sales`) with sale reference, customer name, date, and total.
 - Customer names mapped from one customer-list request; no per-sale statement fan-out.
-- Sale detail (`/sales/:id`) with saved item snapshots, carton/pack quantities, unit prices, and line totals.
+- Sale detail (`/sales/:id`) with saved item snapshots, bag/pack quantities, unit prices, and line totals.
 - Customer sales load one statement request for paid amount, balance, status, and payment history.
 - Repayment action from the detail page, reusing the shared repayment dialog.
 - Loading, empty, pagination, 404, 401/403, statement-failure, and network states.
@@ -108,7 +108,7 @@ Verified limitations:
 Status: COMPLETED
 
 - Implemented in FE-012 as the stock-additions flow at `/inventory/receive`.
-- Supports cartons plus loose packs combined into a pack-denominated receipt.
+- Supports bags plus loose packs combined into a pack-denominated receipt.
 - Shows the saved receipt and the backend-returned stock balance.
 - Handles invalid quantities, failed requests, duplicate submissions (`requestId`), and `OwnerGuard`/`StaffGuard` failures.
 - Optional supplier selection uses the verified suppliers endpoint.
@@ -141,7 +141,7 @@ Status: COMPLETED
 - Do not derive official totals from incomplete frontend data.
 
 Implemented scope:
-`/overview` is a monthly report using `GET /api/v1/reports/monthly?month=YYYY-MM`. It shows `salesTotal`, `moneyReceived`, `outstandingDebtAtMonthEnd`, product quantities sold (cartons, packs, total packs), and month-end `closingStock`, with month navigation, "This month", loading/empty/error/retry states, and staff-access handling. The month defaults to the current `Africa/Lagos` month and is validated against the backend pattern.
+`/overview` is a monthly report using `GET /api/v1/reports/monthly?month=YYYY-MM`. It shows `salesTotal`, `moneyReceived`, `outstandingDebtAtMonthEnd`, product quantities sold (bags, packs, total packs), and month-end `closingStock`, with month navigation, "This month", loading/empty/error/retry states, and staff-access handling. The month defaults to the current `Africa/Lagos` month and is validated against the backend pattern.
 
 Verified limitation:
 The supplied `overview.svg` is a *daily* shop summary ("Sales today", "Payments received", "Customer balances", "Low stock", "Recent sales"). No daily aggregate exists: the sales list returns no totals or balances and the customer list returns no balances. The daily cards, low-stock alert, and recent-sales table are therefore omitted rather than computed in the frontend. `moneyReceived` includes payments for earlier sales, and `outstandingDebtAtMonthEnd` is cumulative debt at month end; the screen explains both. See DEC-018.
@@ -169,6 +169,28 @@ Status: COMPLETED
 
 Verified limitations:
 Theme and cursor changes are CSS-level and were validated through the production bundle; there is no visual regression setup. Component tests would require adding a DOM test library, which is not part of the current stack. See DEC-020 and DEC-021.
+
+### FE-052: Pack and Bag Unit Terminology
+Status: COMPLETED
+
+- Use the backend's units (packs and bags) throughout the interface instead of the design's "carton" wording.
+- Rename the receive-stock form state and inputs to match.
+
+Verified limitation:
+None — the backend enum is `Bag` | `Pack` and the fields were already `packsPerBag` / `bagPrice`, so this was a copy correction with no API change. See DEC-022.
+
+### FE-053: Mobile Navigation and Responsive Polish
+Status: COMPLETED
+
+- Five-tab mobile navigation (Stock, Sale, Customers, Reports, More) so every section is reachable below `lg`.
+- "More" bottom sheet for Movements and Settings, with dialog semantics, focus handling, scroll lock, and breakpoint/popstate dismissal.
+- Safe-area support (notch and home indicator), 44 px touch targets, and a `100dvh` layout height.
+- Sticky desktop sidebar, so desktop navigation stays visible on long pages.
+- Mobile card alternatives for product movements and the movements ledger; capped, scrollable sale search results.
+- Dialogs become bottom sheets on phones; filter chips scroll without a scrollbar; inputs avoid iOS focus zoom.
+
+Verified limitation:
+Responsive changes were validated through code review and the compiled CSS; no device/emulator automation exists, so iOS safe areas and the More sheet still need a manual phone pass. See DEC-023.
 
 ## Deferred Work
 

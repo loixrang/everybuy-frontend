@@ -158,7 +158,7 @@ export function InventoryPage() {
             Inventory
           </h1>
           <p className="text-sm text-[color:var(--color-muted)] mt-1">
-            Pack balances with product-specific carton rules.
+            Pack balances with product-specific bag rules.
           </p>
         </div>
         <div className="shrink-0">
@@ -434,7 +434,7 @@ function EmptyInventoryState() {
         Add your first product
       </h2>
       <p className="text-sm md:text-base text-[color:var(--color-muted)] max-w-md mx-auto mt-2 mb-6">
-        Set its pack price, carton size and carton rule, then receive the opening stock.
+        Set its pack price, bag size and bag rule, then receive the opening stock.
       </p>
       <Link
         to="/inventory/new"

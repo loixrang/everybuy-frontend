@@ -1,5 +1,97 @@
 # Current Task
 
+## FE-053: Mobile Navigation and Responsive Polish
+
+Status: COMPLETED
+
+## Goal
+
+Make the shop usable one-handed on a phone: every section reachable, no horizontal scroll, no clipped tables, controls big enough to tap, and no content hidden under notches or the home indicator.
+
+## Scope
+
+- Give the mobile shell a complete navigation model (previously Overview and Movements were unreachable below `lg`).
+- Respect device safe areas (notch, home indicator) without breaking the desktop layout.
+- Keep desktop navigation visible while long pages scroll.
+- Convert dense tables and dialogs to mobile-friendly equivalents.
+- Fix the small-screen rendering problems found in an audit of every route.
+
+## Out of Scope
+
+- Offline/PWA behaviour, service workers, and install prompts.
+- Native app shells or gestures beyond standard browser scrolling.
+- New backend endpoints or data (nothing on these screens depends on them).
+
+### Implemented
+
+- `InventoryLayout` rebuilt around a five-tab mobile bar: **Stock** (`/inventory`), **Sale** (`/sales`), **Customers**, **Reports** (`/overview`), and **More**. Overview and Movements are no longer unreachable on phones.
+- `MoreSheet` (below `lg`) lists Stock movements, Settings and Sign out:
+  - Opens from the More tab; closes on backdrop, Escape, link tap, browser back/forward, and automatically at the `lg` breakpoint.
+  - Modal dialog semantics (`role="dialog"`, `aria-modal`, labelled title), initial focus, a Tab focus cycle, focus returned to the More tab on close, and body scroll lock while open.
+  - 44 px targets, safe-area bottom padding, and a `max-h-[85vh]` scrollable panel.
+- Bottom navigation sits under a translucent blurred bar with `pb-[env(safe-area-inset-bottom)]`; a matching `h-[calc(4rem+env(safe-area-inset-bottom))]` spacer keeps the last row of content tappable.
+- Header compacted to `h-16` on phones (`h-[77px]` from `lg`), brand text scales from `text-xl`, and the theme/sign-out buttons are 44 px on touch sizes. Safe-area top padding is applied to the sticky header.
+- Desktop sidebar is now `sticky` below the header with its own height and scroll, so navigation stays visible on long inventory and report pages.
+- The shell uses `min-h-dvh` (and the auth pages match), so iOS URL-bar chrome no longer adds phantom scroll.
+- Navigation state is exposed with `aria-current="page"`, `aria-expanded` + `aria-haspopup="dialog"` on the More tab, and `aria-label`s on icon-only controls. Route changes scroll back to the top.
+- Safe-area offsets on the sign-in and invite screens' floating theme toggle; `index.html` now uses `viewport-fit=cover` and a dark `theme-color` variant.
+- `src/styles/index.css`: defined the `.no-scrollbar` utility the filter chip rows already referenced, pinned `text-size-adjust`, added `.pb-safe`, and set a 16 px minimum font size for text inputs below `sm` so iOS does not zoom on focus.
+- Dialogs (`AddCustomerModal`, `RecordRepaymentModal`, `StockAdjustmentModal`, `StaffAccountModal`) render as bottom sheets below `sm` (rounded top corners, `max-h-[92vh]`, safe-area padding) and stay centred cards from `sm`.
+- `ProductDetailPage`: recent movements now have mobile cards (the table only appears from `md`), the reference derivation moved into one `movementReference` helper, and the list is memoised.
+- `StockMovementsPage`: table from `md` with `overflow-x-auto`; cards below `md`.
+- `RecordSalePage`: product search results are capped and scroll inside the dropdown, stepper buttons and the Remove action grew to 44 px targets, and page headings were normalised to `text-2xl lg:text-[32px]`.
+- `ReceiveStockPage` and `StockMovementsPage` headings and card padding normalised for small screens.
+
+### Checks
+
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed (oxlint, 0 warnings, 0 errors)
+- `bun test`: 24 passed
+- `bun run build`: passed
+- Production bundle inspected: safe-area `calc()` values are emitted with valid operator spacing, `.no-scrollbar`, `min-h-dvh` and the mobile input rule are present.
+
+### Notes / Limitations
+
+- No device or browser automation was available, so the responsive work was verified by code review, the compiled CSS, and the route audit rather than screenshots on real hardware. iOS safe-area values and the More sheet need a manual pass on an actual phone.
+- Authenticated screens still cannot be exercised end to end: there are no account credentials and `allowSignUp` is `false` on the backend.
+- Sales and inventory lists switch to cards below `lg`; the Stock movements table switches at `md`. Tables that remain on desktop are inside `overflow-x-auto` containers.
+- Nothing in this task required an API change; all data on these screens already came from the verified endpoints.
+
+---
+
+## FE-052: Pack and Bag Unit Terminology
+
+Status: COMPLETED
+
+## Goal
+
+Use the backend's actual selling units in the interface: **packs** and **bags**. Earlier copy (carried over from the design package) called the bulk unit a "carton", which matches neither the backend (`unit: 'Bag'`, `packsPerBag`, `bagPrice`) nor the shop's own language.
+
+### Implemented
+
+- Product setup: "Bags & selling prices", "Packs per bag *", "Bag price (₦) *", "Bag rules and permissions", and the page subtitle.
+- Product detail: "Bag price", "Bag conversion", and the stock breakdown ("2 bags + 3 packs").
+- Inventory list: subtitle and empty-state copy.
+- Receive stock: "Sealed bags", "Each bag contains N packs", the option text ("N packs/bag"), the summary line ("2 bags × 6 packs"), and the validation message. Form state was renamed (`cartons` → `bags`, `cartonCount` → `bagCount`, `totalPacksFromBags`); the input id is now `receive-bags`.
+- Record sale: "Sell packs or bags", the price hint ("₦X/pack · ₦Y/bag"), and the "Bag" add button.
+- Sale detail: unit labels render `Bag` / `Pack` directly.
+- Monthly report: "Bags and packs sold…", the "Bags" column, and the mobile card ("N bags").
+- Documentation uses bags consistently (API_CONTRACT, ARCHITECTURE, ROADMAP, CHANGELOG, CURRENT_TASK).
+
+### Checks
+
+- `bun test`: 24 passed
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed
+- `bun run build`: passed
+
+### Notes
+
+- No API change: the backend enum is `Bag` / `Pack` (`src/common/types/enums/unit.ts`), and `packsPerBag` / `bagPrice` were already named for bags. This was a display-copy correction.
+- There is no third unit. A bag's pack count is always the product's `packsPerBag`, applied server-side.
+
+---
+
 ## FE-050: Settings and Team Access
 
 Status: COMPLETED
@@ -131,7 +223,7 @@ Give staff an authoritative monthly view of shop performance — sales, money re
   - Month selector defaulting to the current `Africa/Lagos` month, with previous/next month and a "This month" shortcut.
   - Month values validated against the backend pattern (`YYYY-MM`, month 01-12, `0000` rejected) before requesting.
   - Summary cards for sales this month, money received, outstanding debt at month end, and the number of product lines sold.
-  - Product sales table (desktop) and cards (mobile) with cartons, retail packs, and total packs.
+  - Product sales table (desktop) and cards (mobile) with bags, retail packs, and total packs.
   - Closing stock list with month-end pack balances and a link to inventory.
   - Loading skeleton, empty month, 401/403, error with retry, and network states; stale responses discarded when the month changes.
 - `currentLagosMonth`, `shiftMonth`, and `formatMonthLabel` helpers in `src/lib/utils/format.ts`.
@@ -194,7 +286,7 @@ Show staff the recorded sales with their saved items and prices, and show each s
   - Loads the sale with its item snapshots from `GET /api/v1/sales/:id`.
   - For a sale with a customer, loads that customer's statement once and extracts the matching sale for paid amount, balance, status, and payment history.
   - Header with sale reference, full date/time, customer, and Paid / Partly paid / Unpaid badge.
-  - Items table/cards with product name, quantity and unit (Bag shown as Carton), packs per carton, unit price, and line total.
+  - Items table/cards with product name, quantity and unit (Bag or Pack), packs per bag, unit price, and line total.
   - Sale summary (items, total, amount paid, balance owed, payment type, customer) and customer card linking to `/customers/:id`.
   - Payment history (date and amount) and a repayment action when a balance remains, reusing `RecordRepaymentModal`.
   - Success banner after a repayment, with the sale and statement reloaded from the backend.
@@ -365,12 +457,12 @@ Status: COMPLETED
 
 ## Goal
 
-Implement the sale recording flow according to the verified backend contract: multi-item cart with pack/carton units, customer selection, amount paid with balance rules, idempotent submission, and conflict handling.
+Implement the sale recording flow according to the verified backend contract: multi-item cart with pack/bag units, customer selection, amount paid with balance rules, idempotent submission, and conflict handling.
 
 ## Scope
 
 - Inspect sale creation rules (`POST /api/v1/sales`, guarded by `StaffGuard`).
-- Support the actual product units (`Pack` / `Carton`) and quantities.
+- Support the actual product units (`Pack` / `Bag`) and quantities.
 - Validate stock availability client-side and handle backend 409 conflicts.
 - Handle failed and conflicting submissions.
 - Prevent accidental duplicate submissions (client-generated UUID `requestId`).
@@ -389,7 +481,7 @@ Implement the sale recording flow according to the verified backend contract: mu
 - `src/lib/api/sales.ts`: `createSale` (`POST /api/v1/sales`).
 - `src/lib/api/customers.ts`: `fetchCustomers` (`GET /api/v1/customers`), `createCustomer` (`POST /api/v1/customers`), both StaffGuard.
 - `src/pages/sales/RecordSalePage.tsx` (`/sales/new`):
-  - Client-side product search with Pack/Carton add buttons; adding the same product+unit increases quantity (backend rejects duplicate product+unit lines).
+  - Client-side product search with Pack/Bag add buttons; adding the same product+unit increases quantity (backend rejects duplicate product+unit lines).
   - Cart lines with quantity steppers, per-line totals priced from DB snapshots (`retailPrice`/`bagPrice`), and per-product "Available: N packs" warnings with client-side stock validation across combined lines.
   - Customer select with inline "Add a customer" form (name + optional phone) for credit sales.
   - Amount paid input with backend regex validation (`^\d{1,12}(\.\d{1,2})?$`), over-payment guard, and customer-required-when-balance-remains rule (mirrors backend 400s).
@@ -446,7 +538,7 @@ Display product stock movement history, available balances, and implement stock 
   - `createStockAddition` and `createStockAdjustment` sending client-generated UUID `requestId` and `unit: 'Pack'` per the verified schema.
   - `fetchSuppliers` (full error propagation).
 - `src/pages/stock/ReceiveStockPage.tsx` (`/inventory/receive`):
-  - Cartons + loose packs entry combined into a single pack-denominated receipt.
+  - Bags + loose packs entry combined into a single pack-denominated receipt.
   - Idempotent submission: `requestId` kept in a ref across retries, cleared only on success.
   - Supplier selection (optional), non-blocking supplier-load warning via `Promise.allSettled`.
   - 403/404/409 error mapping; quantity cap 1,000,000.
@@ -482,12 +574,12 @@ Status: COMPLETED
 - `fetchProductById`, `createProduct`, and `updateProduct` API methods in `src/lib/api/products.ts`.
 - Input validation types (`CreateProductInput`, `UpdateProductInput`) in `src/types/product.ts`.
 - `ProductDetailPage` (`/inventory/:id`):
-  - Summary metrics: available stock (with cartons/packs breakdown), pack price, carton price.
-  - Product setup card: brand, category, base unit, carton conversion, pieces per pack, active status.
+  - Summary metrics: available stock (with bags/packs breakdown), pack price, bag price.
+  - Product setup card: brand, category, base unit, bag conversion, pieces per pack, active status.
   - Action buttons: "Edit product", "Receive stock", "View movements".
   - Loading, 404 not found, and error states with retry.
 - `ProductSetupPage` (`/inventory/new` and `/inventory/:id/edit`):
-  - Form fields matching backend schema: name, brand, category, pack type, size, pieces per pack, packs per carton, retail pack price, carton bag price, active status.
+  - Form fields matching backend schema: name, brand, category, pack type, size, pieces per pack, packs per bag, retail pack price, bag price, active status.
   - Form validation: positive integers for quantities, positive prices, required brand/category.
   - Authorization feedback: clear messaging when mutations are rejected by `OwnerGuard` (403 Forbidden).
   - Clean cancel and save actions with submit loading indicators.

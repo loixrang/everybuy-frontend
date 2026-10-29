@@ -104,7 +104,7 @@ export function StockAdjustmentModal({ product, onClose, onSuccess }: StockAdjus
   const invalidProjected = showProjected && projected < 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Scrim */}
       <button
         type="button"
@@ -117,7 +117,7 @@ export function StockAdjustmentModal({ product, onClose, onSuccess }: StockAdjus
         role="dialog"
         aria-modal="true"
         aria-labelledby="stock-adjustment-title"
-        className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] shadow-xl"
+        className="relative z-10 w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-t-[16px] sm:rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] shadow-xl pb-[env(safe-area-inset-bottom)] sm:pb-0"
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-[color:var(--color-border)]">

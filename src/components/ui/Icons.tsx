@@ -238,6 +238,27 @@ export function MenuIcon({ size = 20, className = '', ...props }: IconProps) {
   );
 }
 
+export function MoreHorizontalIcon({ size = 20, className = '', ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      <circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function HistoryIcon({ size = 20, className = '', ...props }: IconProps) {
   return (
     <svg

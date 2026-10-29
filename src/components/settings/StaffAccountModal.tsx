@@ -141,7 +141,7 @@ export function StaffAccountModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="staff-modal-title"
-        className="relative w-full sm:max-w-[520px] max-h-[92vh] overflow-y-auto rounded-t-[16px] sm:rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5 sm:p-6"
+        className="relative w-full sm:max-w-[520px] max-h-[92vh] overflow-y-auto rounded-t-[16px] sm:rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5 sm:p-6 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-6"
       >
         <div className="flex items-start justify-between gap-4">
           <div>

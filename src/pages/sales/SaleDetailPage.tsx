@@ -35,7 +35,7 @@ interface RepaymentSuccess {
 }
 
 function unitLabel(unit: SaleItem['unit']): string {
-  return unit === 'Bag' ? 'Carton' : 'Pack';
+  return unit === 'Bag' ? 'Bag' : 'Pack';
 }
 
 export function SaleDetailPage() {

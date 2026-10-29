@@ -1,8 +1,8 @@
 import type { StockMovement } from './stock';
 
 /**
- * Selling unit for a sale line. 'Bag' is presented as "Carton" in the UI;
- * the backend multiplies its quantity by the product's packsPerBag.
+ * Selling unit for a sale line. A 'Bag' holds the product's packsPerBag packs;
+ * the backend multiplies its quantity by that value to reach packs.
  */
 export type SaleUnit = 'Bag' | 'Pack';
 

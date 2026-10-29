@@ -5,11 +5,11 @@
 export interface MonthlyReportProductSales {
   productId: string;
   productName: string;
-  /** Cartons (backend `Bag` unit) sold in the month. */
+  /** Bags (backend `Bag` unit) sold in the month. */
   bagsSold: number;
   /** Individual packs sold in the month. */
   retailPacksSold: number;
-  /** Cartons converted to packs plus retail packs. */
+  /** Bags converted to packs plus retail packs. */
   totalPacksSold: number;
 }
 

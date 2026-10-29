@@ -154,7 +154,7 @@ export function StockMovementsPage() {
       {/* Page Heading & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight text-[color:var(--color-ink)]">
+          <h1 className="text-2xl lg:text-[32px] font-bold tracking-tight text-[color:var(--color-ink)]">
             Stock movements
           </h1>
           <p className="text-sm text-[color:var(--color-muted)]">
@@ -301,8 +301,8 @@ export function StockMovementsPage() {
       {/* Main Content: Desktop Table & Mobile Cards */}
       {!loading && !error && filteredMovements.length > 0 && (
         <div className="space-y-4">
-          {/* Desktop Table (hidden on mobile, visible on sm/md/lg) */}
-          <div className="hidden sm:block rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] overflow-hidden">
+          {/* Table (hidden on phones; cards take over below `md`) */}
+          <div className="hidden md:block rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[color:var(--color-subtle)] border-b border-[color:var(--color-border)] text-[12px] font-medium text-[color:var(--color-muted)]">
@@ -365,8 +365,8 @@ export function StockMovementsPage() {
             </table>
           </div>
 
-          {/* Mobile Record Cards (< 640px) */}
-          <div className="sm:hidden space-y-3">
+          {/* Mobile record cards (< 768px) */}
+          <div className="md:hidden space-y-3">
             {filteredMovements.map((m) => {
               const product = productMap.get(m.productId);
               const isPositive = m.changePacks > 0;

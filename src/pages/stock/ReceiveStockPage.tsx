@@ -29,7 +29,7 @@ export function ReceiveStockPage() {
   // Form states
   const [selectedProductId, setSelectedProductId] = useState<string>(initialProductId);
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
-  const [cartons, setCartons] = useState<string>('0');
+  const [bags, setBags] = useState<string>('0');
   const [loosePacks, setLoosePacks] = useState<string>('0');
 
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -94,10 +94,10 @@ export function ReceiveStockPage() {
   const selectedProduct = products.find((p) => p.id === selectedProductId);
   const packsPerBag = selectedProduct?.packsPerBag ?? 1;
 
-  const cartonCount = Math.max(0, parseInt(cartons, 10) || 0);
+  const bagCount = Math.max(0, parseInt(bags, 10) || 0);
   const looseCount = Math.max(0, parseInt(loosePacks, 10) || 0);
-  const totalPacksFromCartons = cartonCount * packsPerBag;
-  const totalPacksToAdd = totalPacksFromCartons + looseCount;
+  const totalPacksFromBags = bagCount * packsPerBag;
+  const totalPacksToAdd = totalPacksFromBags + looseCount;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +110,7 @@ export function ReceiveStockPage() {
     }
 
     if (totalPacksToAdd <= 0) {
-      setSubmitError('Please specify at least 1 carton or loose pack to receive.');
+      setSubmitError('Please specify at least 1 bag or loose pack to receive.');
       return;
     }
 
@@ -135,7 +135,7 @@ export function ReceiveStockPage() {
         requestId: requestIdRef.current,
         productId: selectedProductId,
         type: 'Receipt',
-        // The form combines cartons and loose packs, so the receipt is sent
+        // The form combines bags and loose packs, so the receipt is sent
         // as a single pack-denominated quantity.
         unit: 'Pack',
         quantity: totalPacksToAdd,
@@ -225,11 +225,11 @@ export function ReceiveStockPage() {
 
       {/* Heading */}
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight text-[color:var(--color-ink)]">
+        <h1 className="text-2xl lg:text-[32px] font-bold tracking-tight text-[color:var(--color-ink)]">
           Receive stock
         </h1>
         <p className="text-sm text-[color:var(--color-muted)]">
-          Record cartons and loose packs from a purchase.
+          Record bags and loose packs from a purchase.
         </p>
       </div>
 
@@ -250,7 +250,7 @@ export function ReceiveStockPage() {
       )}
 
       {/* Main Form Container */}
-      <form onSubmit={handleSubmit} className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-6 sm:p-8 space-y-6">
+      <form onSubmit={handleSubmit} className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 sm:p-8 space-y-6">
         {/* Section 1: Receipt details */}
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-[color:var(--color-ink)]">
@@ -314,33 +314,33 @@ export function ReceiveStockPage() {
             >
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} {p.size ? `· ${p.size}` : ''} ({p.packsPerBag} packs/carton, current stock: {p.stockPacks} packs)
+                  {p.name} {p.size ? `· ${p.size}` : ''} ({p.packsPerBag} packs/bag, current stock: {p.stockPacks} packs)
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Quantities: Sealed cartons & Loose packs */}
+          {/* Quantities: Sealed bags & Loose packs */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label
-                htmlFor="receive-cartons"
+                htmlFor="receive-bags"
                 className="block text-xs font-semibold text-[color:var(--color-ink)]"
               >
-                Sealed cartons
+                Sealed bags
               </label>
               <input
-                id="receive-cartons"
+                id="receive-bags"
                 type="number"
                 min="0"
                 max={MAX_QUANTITY}
                 step="1"
-                value={cartons}
-                onChange={(e) => setCartons(e.target.value)}
+                value={bags}
+                onChange={(e) => setBags(e.target.value)}
                 className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)]"
               />
               <span className="text-[11px] text-[color:var(--color-muted)]">
-                Each carton contains {packsPerBag} packs
+                Each bag contains {packsPerBag} packs
               </span>
             </div>
 
@@ -372,7 +372,7 @@ export function ReceiveStockPage() {
             <CheckCircleIcon size={20} className="shrink-0 text-[color:var(--color-accent-ink)] mt-0.5" />
             <div className="text-xs space-y-0.5 text-[color:var(--color-accent-ink)]">
               <div className="font-semibold text-sm">
-                {cartonCount > 0 ? `${cartonCount} cartons × ${packsPerBag} packs` : '0 cartons'}
+                {bagCount > 0 ? `${bagCount} bags × ${packsPerBag} packs` : '0 bags'}
                 {looseCount > 0 ? ` + ${looseCount} loose packs` : ''} = {totalPacksToAdd} packs
               </div>
               <p className="opacity-90">

@@ -26,6 +26,40 @@ body {
   outline-offset: 2px;
 }
 
+/* iOS Safari inflates text in landscape unless the adjustment is pinned. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Used by the horizontally scrollable filter chips. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Keep the fixed bottom navigation clear of the iOS home indicator. */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/*
+ * iOS Safari zooms the page when a form control smaller than 16px receives
+ * focus. Bumping text-entry controls on phones avoids that jumpy resize
+ * without changing the desktop typography.
+ */
+@media (max-width: 639px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /*
  * Pointer affordances. Tailwind's preflight leaves buttons with the browser's
  * default cursor, which makes clickable controls look inert. Anything that

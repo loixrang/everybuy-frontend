@@ -132,7 +132,7 @@ export function ProductSetupPage() {
     }
     const bagNum = parseInt(packsPerBag, 10);
     if (isNaN(bagNum) || bagNum <= 0) {
-      errors.packsPerBag = 'Packs per carton must be a positive integer';
+      errors.packsPerBag = 'Packs per bag must be a positive integer';
     }
     if (piecesPerPack) {
       const pNum = parseInt(piecesPerPack, 10);
@@ -146,7 +146,7 @@ export function ProductSetupPage() {
     }
     const bagPriceNum = parseFloat(bagPrice);
     if (isNaN(bagPriceNum) || bagPriceNum <= 0) {
-      errors.bagPrice = 'Carton price must be greater than zero';
+      errors.bagPrice = 'Bag price must be greater than zero';
     }
 
     setValidationErrors(errors);
@@ -226,7 +226,7 @@ export function ProductSetupPage() {
           {isEdit ? 'Edit product' : 'Product setup'}
         </h1>
         <p className="text-sm text-[color:var(--color-muted)] mt-1">
-          Define pack and carton units before receiving stock.
+          Define pack and bag units before receiving stock.
         </p>
       </div>
 
@@ -395,13 +395,13 @@ export function ProductSetupPage() {
 
         <div className="border-t border-[color:var(--color-border)] pt-4">
           <h2 className="text-lg font-bold text-[color:var(--color-ink)] mb-4">
-            Cartons & selling prices
+            Bags & selling prices
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor={packsPerBagId} className="block text-xs font-semibold text-[color:var(--color-ink)] mb-1.5">
-                Packs per carton *
+                Packs per bag *
               </label>
               <input
                 id={packsPerBagId}
@@ -442,7 +442,7 @@ export function ProductSetupPage() {
 
             <div>
               <label htmlFor={bagPriceId} className="block text-xs font-semibold text-[color:var(--color-ink)] mb-1.5">
-                Carton price (₦) *
+                Bag price (₦) *
               </label>
               <input
                 id={bagPriceId}
@@ -482,9 +482,9 @@ export function ProductSetupPage() {
         <div className="p-4 rounded-[8px] bg-[color:var(--color-warning-bg)] text-[color:var(--color-warning-ink)] flex items-start gap-3">
           <AlertCircleIcon size={20} className="shrink-0 mt-0.5" />
           <div className="text-xs">
-            <p className="font-semibold">Carton rules and permissions</p>
+            <p className="font-semibold">Bag rules and permissions</p>
             <p className="mt-0.5">
-              Pack price is the retail selling price. Carton price applies to wholesale carton orders.
+              Pack price is the retail selling price. Bag price applies to wholesale bag orders.
               Product creation and modifications are guarded by Owner authorization on the server.
             </p>
           </div>

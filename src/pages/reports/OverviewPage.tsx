@@ -206,7 +206,7 @@ export function OverviewPage() {
               <div className="px-5 py-4 border-b border-[color:var(--color-border)]">
                 <h2 className="text-sm font-bold text-[color:var(--color-ink)]">Product sales</h2>
                 <p className="text-xs text-[color:var(--color-muted)] mt-1">
-                  Cartons and packs sold during {formatMonthLabel(report.month)}.
+                  Bags and packs sold during {formatMonthLabel(report.month)}.
                 </p>
               </div>
 
@@ -233,7 +233,7 @@ export function OverviewPage() {
                       <thead>
                         <tr className="bg-[color:var(--color-subtle)] border-b border-[color:var(--color-border)]">
                           <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Product</th>
-                          <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)] text-right">Cartons</th>
+                          <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)] text-right">Bags</th>
                           <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)] text-right">Packs</th>
                           <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)] text-right">Total packs</th>
                         </tr>
@@ -267,7 +267,7 @@ export function OverviewPage() {
                         </p>
                         <div className="flex items-center justify-between gap-3 text-xs text-[color:var(--color-muted)] mt-2">
                           <span>
-                            {product.bagsSold.toLocaleString()} cartons ·{' '}
+                            {product.bagsSold.toLocaleString()} bags ·{' '}
                             {product.retailPacksSold.toLocaleString()} packs
                           </span>
                           <span className="font-semibold text-[color:var(--color-ink)]">

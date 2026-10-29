@@ -228,3 +228,30 @@ Bun is already the package manager and runtime for this project, so the runner a
 
 Consequence:
 `bun test` is part of the check suite alongside `tsc`, `oxlint`, and the production build. UI behaviour is still verified manually against the running backend; adding component tests later means introducing a DOM test library deliberately.
+
+## DEC-022: Packs and Bags Are the Only Units
+
+Decision:
+Use **packs** and **bags** everywhere in the interface. The bulk unit is always called a bag, never a carton. That covers product setup ("Packs per bag", "Bag price", "Bags & selling prices"), product detail ("Bag conversion"), receive stock ("Sealed bags"), sale recording ("Sell packs or bags", the "Bag" add button), sale detail unit labels, and the monthly report ("Bags" column).
+
+Reason:
+The backend enum is `Unit.BAG = 'Bag'` / `Unit.PACK = 'Pack'` and the product fields are already `packsPerBag` and `bagPrice`. Only the frontend copy said "carton", inherited from the design package, so the same quantity was described two different ways depending on the screen. Packs and bags are also how shop staff describe stock.
+
+Consequence:
+There is no third unit, and no conversion rule beyond the product's `packsPerBag` (applied server-side when a Bag line is sold or a Bag receipt is recorded). Any future design copy that says "carton" should be translated to "bag" rather than reintroducing the term.
+
+## DEC-023: Five-Tab Mobile Navigation with a "More" Sheet
+
+Decision:
+Below `lg`, the shell exposes five bottom tabs — Stock (`/inventory`), Sale (`/sales`), Customers, Reports (`/overview`) and More — and puts Stock movements, Settings and Sign out in a "More" bottom sheet. The desktop sidebar is unchanged (six links) and becomes sticky under the header. Safe-area insets, 44 px touch targets and `100dvh` are part of the shell contract.
+
+Reason:
+The previous four-tab bar left Overview and Movements with no mobile entry point at all: both were only reachable from the desktop sidebar, so those screens were effectively desktop-only. Six tabs would have produced labels too narrow to read and targets below the 44 px minimum. A five-tab bar plus a sheet keeps every destination reachable, matches the platform pattern staff already know, and leaves room for a signed-in identity and sign-out that the bar cannot hold.
+
+Consequence:
+- The mobile bar is the canonical mobile navigation; pages must not add their own bottom navigation.
+- The More sheet is a modal: it must keep dialog semantics, focus handling, scroll locking and safe-area padding if it grows more rows.
+- New top-level sections either replace a tab or join the sheet; the bar stays at five items.
+- Desktop behaviour is unchanged apart from the sticky sidebar and the sticky header offset, so screenshots in the design handoff still describe the large layout.
+- Responsive verification is manual: there is no device/emulator automation in the project, so safe-area rendering on real iOS hardware remains a manual check.
+

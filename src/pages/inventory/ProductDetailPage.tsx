@@ -13,6 +13,25 @@ import type { Product, Category, Brand } from '../../types/product';
 import type { StockMovement } from '../../types/stock';
 import { StockAdjustmentModal } from '../../components/stock/StockAdjustmentModal';
 
+function movementReference(m: StockMovement): string {
+  if (
+    m.note &&
+    (m.note.startsWith('Ref:') ||
+      m.note.startsWith('ST-') ||
+      m.note.startsWith('RC-') ||
+      m.note.startsWith('SL-'))
+  ) {
+    return m.note.replace('Ref: ', '');
+  }
+  if (m.type === 'Sale' && m.saleItemId) {
+    return `SL-${m.saleItemId.substring(0, 6).toUpperCase()}`;
+  }
+  if (m.requestId) {
+    return `RC-${m.requestId.substring(0, 6).toUpperCase()}`;
+  }
+  return m.note || `ID-${m.id.substring(0, 6).toUpperCase()}`;
+}
+
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
 
@@ -111,16 +130,24 @@ export function ProductDetailPage() {
     return brands.find((b) => b.id === product.brandId)?.name || '';
   }, [brands, product]);
 
-  // Breakdown of cartons and loose packs
+  // Breakdown of bags and loose packs
   const stockBreakdown = useMemo(() => {
     if (!product || product.packsPerBag <= 0) return '';
-    const cartons = Math.floor(product.stockPacks / product.packsPerBag);
+    const bags = Math.floor(product.stockPacks / product.packsPerBag);
     const loose = product.stockPacks % product.packsPerBag;
-    if (cartons === 0) {
+    if (bags === 0) {
       return `${loose} loose ${loose === 1 ? 'pack' : 'packs'}`;
     }
-    return `${cartons} ${cartons === 1 ? 'carton' : 'cartons'} + ${loose} ${loose === 1 ? 'pack' : 'packs'}`;
+    return `${bags} ${bags === 1 ? 'bag' : 'bags'} + ${loose} ${loose === 1 ? 'pack' : 'packs'}`;
   }, [product]);
+
+  const recentMovements = useMemo(
+    () =>
+      product
+        ? movements.filter((m) => m.productId === product.id).slice(0, 5)
+        : [],
+    [movements, product],
+  );
 
   if (loading) {
     return <ProductDetailSkeleton />;
@@ -230,16 +257,16 @@ export function ProductDetailPage() {
           </p>
         </div>
 
-        {/* Carton Price */}
+        {/* Bag Price */}
         <div className="p-6 rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)]">
           <span className="text-xs font-semibold uppercase tracking-wider text-[color:var(--color-muted)]">
-            Carton price
+            Bag price
           </span>
           <div className="text-3xl font-bold text-[color:var(--color-ink)] mt-2">
             {formatNaira(product.bagPrice)}
           </div>
           <p className="text-xs text-[color:var(--color-muted)] mt-2">
-            {product.packsPerBag} {product.packsPerBag === 1 ? 'pack' : 'packs'} per carton
+            {product.packsPerBag} {product.packsPerBag === 1 ? 'pack' : 'packs'} per bag
           </p>
         </div>
       </div>
@@ -261,9 +288,9 @@ export function ProductDetailPage() {
             <span className="font-medium text-[color:var(--color-ink)]">Pack</span>
           </div>
           <div className="py-3 flex items-center justify-between">
-            <span className="text-[color:var(--color-muted)]">Carton conversion</span>
+            <span className="text-[color:var(--color-muted)]">Bag conversion</span>
             <span className="font-medium text-[color:var(--color-ink)]">
-              {product.packsPerBag} packs per carton
+              {product.packsPerBag} packs per bag
             </span>
           </div>
           {product.piecesPerPack && (
@@ -315,47 +342,37 @@ export function ProductDetailPage() {
 
       {/* Recent stock movements matching product.svg */}
       <div className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] overflow-hidden">
-        <div className="p-6 border-b border-[color:var(--color-border)] flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[color:var(--color-ink)]">
+        <div className="p-4 sm:p-6 border-b border-[color:var(--color-border)] flex items-center justify-between gap-3">
+          <h2 className="text-base sm:text-lg font-bold text-[color:var(--color-ink)]">
             Recent stock movements
           </h2>
           <Link
             to={`/movements?productId=${product.id}`}
-            className="text-xs font-semibold text-[color:var(--color-accent)] hover:underline"
+            className="text-xs font-semibold text-[color:var(--color-accent)] hover:underline shrink-0"
           >
             All movements →
           </Link>
         </div>
 
-        {movements.filter((m) => m.productId === product.id).length === 0 ? (
+        {recentMovements.length === 0 ? (
           <div className="p-8 text-center text-sm text-[color:var(--color-muted)]">
             No stock movements recorded for this product yet.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[color:var(--color-subtle)] border-b border-[color:var(--color-border)] text-[12px] font-medium text-[color:var(--color-muted)]">
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4">Movement</th>
-                  <th className="py-3 px-4 text-right">Packs</th>
-                  <th className="py-3 px-4">Reference</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[color:var(--color-border)] text-sm">
-                {movements
-                  .filter((m) => m.productId === product.id)
-                  .slice(0, 5)
-                  .map((m) => {
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[color:var(--color-subtle)] border-b border-[color:var(--color-border)] text-[12px] font-medium text-[color:var(--color-muted)]">
+                    <th className="py-3 px-4">Date</th>
+                    <th className="py-3 px-4">Movement</th>
+                    <th className="py-3 px-4 text-right">Packs</th>
+                    <th className="py-3 px-4">Reference</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[color:var(--color-border)] text-sm">
+                  {recentMovements.map((m) => {
                     const isPositive = m.changePacks > 0;
-                    const label = formatMovementLabel(m.type, m.note);
-                    const ref = m.note && (m.note.startsWith('Ref:') || m.note.startsWith('ST-') || m.note.startsWith('RC-') || m.note.startsWith('SL-'))
-                      ? m.note.replace('Ref: ', '')
-                      : m.type === 'Sale' && m.saleItemId
-                      ? `SL-${m.saleItemId.substring(0, 6).toUpperCase()}`
-                      : m.requestId
-                      ? `RC-${m.requestId.substring(0, 6).toUpperCase()}`
-                      : m.note || `ID-${m.id.substring(0, 6).toUpperCase()}`;
 
                     return (
                       <tr
@@ -367,7 +384,7 @@ export function ProductDetailPage() {
                         </td>
                         <td className="py-3.5 px-4 text-xs text-[color:var(--color-ink)]">
                           <span className="inline-block px-2 py-0.5 rounded-[4px] bg-[color:var(--color-subtle)] font-medium">
-                            {label}
+                            {formatMovementLabel(m.type, m.note)}
                           </span>
                         </td>
                         <td
@@ -380,14 +397,48 @@ export function ProductDetailPage() {
                           {isPositive ? `+${m.changePacks}` : `${m.changePacks}`}
                         </td>
                         <td className="py-3.5 px-4 text-xs text-[color:var(--color-muted)] font-mono whitespace-nowrap">
-                          {ref}
+                          {movementReference(m)}
                         </td>
                       </tr>
                     );
                   })}
-              </tbody>
-            </table>
-          </div>
+                </tbody>
+              </table>
+            </div>
+
+            <ul className="md:hidden divide-y divide-[color:var(--color-border)]">
+              {recentMovements.map((m) => {
+                const isPositive = m.changePacks > 0;
+
+                return (
+                  <li key={m.id} className="p-4 space-y-1.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-semibold text-[color:var(--color-ink)]">
+                        {formatMovementDate(m.createdAt)}
+                      </span>
+                      <span
+                        className={`text-sm font-bold ${
+                          isPositive
+                            ? 'text-[color:var(--color-accent)]'
+                            : 'text-[color:var(--color-ink)]'
+                        }`}
+                      >
+                        {isPositive ? `+${m.changePacks}` : `${m.changePacks}`} packs
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="inline-block px-2 py-0.5 rounded-[4px] bg-[color:var(--color-subtle)] text-xs font-medium text-[color:var(--color-ink)]">
+                        {formatMovementLabel(m.type, m.note)}
+                      </span>
+                      <span className="text-[11px] font-mono text-[color:var(--color-muted)] truncate">
+                        {movementReference(m)}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
         )}
       </div>
 

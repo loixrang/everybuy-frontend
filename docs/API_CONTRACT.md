@@ -132,11 +132,11 @@ Do not treat as full policy - verify per endpoint.
 ### Product Schema Limitations & Notes:
 - **No Free-Text Search**: Backend `findProductSchema` does not have a `search` or `q` parameter. Free-text search is filtered client-side across fetched records.
 - **No SKU Field**: Backend `products` table does not contain an `sku` column. Products are distinguished by name, packName, size, and piecesPerPack.
-- **Prices**: `retailPrice` (pack price) and `bagPrice` (carton price) are stored as PostgreSQL `numeric(14,2)` string values (e.g., `"4500.00"`).
+- **Prices**: `retailPrice` (pack price) and `bagPrice` (bag price) are stored as PostgreSQL `numeric(14,2)` string values (e.g., `"4500.00"`).
 
 ### Stock Contract Notes:
 - **Idempotency**: Both `POST /api/v1/stock/additions` and `POST /api/v1/stock/adjustments` require a client-generated `requestId` (UUID). Retrying the same `requestId` replays the original result (`replayed: true`) instead of applying the change twice. The frontend generates it with `crypto.randomUUID()` and keeps it across retry attempts until the backend confirms success.
-- **Unit Conversion**: `unit: 'Bag'` means `quantity` is in cartons (converted to packs via the product's `packsPerBag` server-side); `unit: 'Pack'` means `quantity` is already in packs.
+- **Unit Conversion**: `unit: 'Bag'` means `quantity` is in bags (converted to packs via the product's `packsPerBag` server-side); `unit: 'Pack'` means `quantity` is already in packs.
 - **Quantity Limits**: `quantity` must be an integer from 1 to 1,000,000. Stock balances cannot go negative (DB check constraint `stock_cannot_be_negative`); violations return 409 Conflict.
 - **Additions Rules**: `type: 'Opening'` is only allowed when the product has zero stock and no prior movements (409 otherwise). Inactive products reject additions (409). A provided `supplierId` must reference an active supplier (404 otherwise).
 - **Adjustments Rules**: Adjustments are always recorded as `type: 'Adjustment'` movements with a required `note` (1..500 chars). `changePack: 'Sub'` rejects if stock is insufficient (409).
@@ -174,7 +174,7 @@ Do not treat as full policy - verify per endpoint.
 - **Month Boundaries**: The backend converts `YYYY-MM-01 00:00:00` and the following month to `Africa/Lagos` and filters with `>= start` and `< end`, so a report covers exactly one local calendar month. The frontend sends the month and never computes totals itself.
 - **salesTotal vs moneyReceived**: `salesTotal` sums `sales.itemsTotal` for sales `soldAt` in the month. `moneyReceived` independently sums `payments.amount` with `paidAt` in the month, so it includes repayments of earlier sales and excludes payments made after the month.
 - **outstandingDebtAtMonthEnd**: Sum of `greatest(itemsTotal - payments made before month end, 0)` across **all** customer sales before month end — a cumulative balance, not just that month's sales. Later repayments do not retroactively change the figure.
-- **productsSold**: Grouped by product for sales in the month. `bagsSold` counts `unit: 'Bag'` quantities (cartons), `retailPacksSold` counts `unit: 'Pack'` quantities, and `totalPacksSold` sums `quantity × packsPerUnit`. Names come from the joined product row.
+- **productsSold**: Grouped by product for sales in the month. `bagsSold` counts `unit: 'Bag'` quantities (bags), `retailPacksSold` counts `unit: 'Pack'` quantities, and `totalPacksSold` sums `quantity × packsPerUnit`. Names come from the joined product row.
 - **closingStock**: Sum of `stockMovements.changePacks` per product created before month end, including movements dated before month end. It is a historical month-end balance, not current stock.
 - **Read Consistency**: The whole report is produced in one read-only `repeatable read` transaction.
 - **No Daily Overview**: The supplied `overview.svg` shows "Sales today / Payments received / Customer balances / Low stock / Recent sales", which no endpoint provides. The screen therefore uses the monthly figures and omits the daily cards, low-stock alert, and recent-sales table.
@@ -193,7 +193,7 @@ Do not treat as full policy - verify per endpoint.
 
 Verified from backend `products-and-stocks.ts` schema:
 - `retailPrice`: numeric(14, 2) string representing pack price in Naira.
-- `bagPrice`: numeric(14, 2) string representing bag/carton price in Naira.
+- `bagPrice`: numeric(14, 2) string representing the bag price in Naira.
 - `stockPacks`: integer representing base stock in packs (cannot be negative: `stock_cannot_be_negative` check constraint).
 - `packsPerBag`: integer (> 0).
 - `piecesPerPack`: integer (nullable, > 0 if present).

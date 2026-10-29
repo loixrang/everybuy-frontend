@@ -40,7 +40,7 @@ function packsPerUnitOf(product: Product, unit: SaleUnit): number {
 }
 
 function unitLabel(unit: SaleUnit): string {
-  return unit === 'Bag' ? 'Carton' : 'Pack';
+  return unit === 'Bag' ? 'Bag' : 'Pack';
 }
 
 export function RecordSalePage() {
@@ -552,11 +552,11 @@ export function RecordSalePage() {
           <ArrowLeftIcon size={16} />
           Sales
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight text-[color:var(--color-ink)]">
+        <h1 className="text-2xl lg:text-[32px] font-bold tracking-tight text-[color:var(--color-ink)]">
           Record a sale
         </h1>
         <p className="text-sm text-[color:var(--color-muted)]">
-          Sell packs or cartons from the same stock balance.
+          Sell packs or bags from the same stock balance.
         </p>
       </div>
 
@@ -592,7 +592,7 @@ export function RecordSalePage() {
 
               {/* Search results */}
               {searchTerm.trim() && (
-                <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] shadow-lg overflow-hidden">
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 overflow-y-auto overscroll-contain rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] shadow-lg">
                   {searchResults.length === 0 ? (
                     <p className="px-4 py-3 text-xs text-[color:var(--color-muted)]">
                       No active products match your search.
@@ -609,7 +609,7 @@ export function RecordSalePage() {
                             {p.size ? ` · ${p.size}` : ''}
                           </p>
                           <p className="text-[11px] text-[color:var(--color-muted)]">
-                            {formatNaira(p.retailPrice)}/pack · {formatNaira(p.bagPrice)}/carton ·{' '}
+                            {formatNaira(p.retailPrice)}/pack · {formatNaira(p.bagPrice)}/bag ·{' '}
                             {p.stockPacks} packs available
                           </p>
                         </div>
@@ -626,7 +626,7 @@ export function RecordSalePage() {
                             onClick={() => handleAddItem(p, 'Bag')}
                             className="h-8 px-3 rounded-[6px] text-xs font-semibold bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors"
                           >
-                            Carton
+                            Bag
                           </button>
                         </div>
                       </div>
@@ -689,7 +689,7 @@ export function RecordSalePage() {
                             aria-label={`Decrease quantity of ${line.product.name}`}
                             onClick={() => handleChangeQuantity(index, line.quantity - 1)}
                             disabled={line.quantity <= 1}
-                            className="w-10 flex items-center justify-center text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors disabled:opacity-40"
+                            className="w-11 flex items-center justify-center text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors disabled:opacity-40"
                           >
                             −
                           </button>
@@ -709,7 +709,7 @@ export function RecordSalePage() {
                             type="button"
                             aria-label={`Increase quantity of ${line.product.name}`}
                             onClick={() => handleChangeQuantity(index, line.quantity + 1)}
-                            className="w-10 flex items-center justify-center text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"
+                            className="w-11 flex items-center justify-center text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"
                           >
                             +
                           </button>
@@ -717,7 +717,7 @@ export function RecordSalePage() {
                         <button
                           type="button"
                           onClick={() => handleRemoveItem(index)}
-                          className="text-sm font-semibold text-[color:var(--color-ink)] hover:underline"
+                          className="h-11 px-1 -my-1 text-sm font-semibold text-[color:var(--color-ink)] hover:underline"
                         >
                           Remove
                         </button>
