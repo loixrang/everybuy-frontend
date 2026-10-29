@@ -14,10 +14,13 @@ import { CustomersPage } from '../pages/customers/CustomersPage';
 import { CustomerDetailPage } from '../pages/customers/CustomerDetailPage';
 import { CustomerEditPage } from '../pages/customers/CustomerEditPage';
 import { OverviewPage } from '../pages/reports/OverviewPage';
+import { SettingsPage } from '../pages/settings/SettingsPage';
+import { AcceptInvitePage } from '../pages/auth/AcceptInvitePage';
 
 export function AppRouter() {
   return (
     <Routes>
+      <Route path="/accept-invite" element={<AcceptInvitePage />} />
       <Route element={<GuestRoute />}>
         <Route path="/signin" element={<SignInPage />} />
       </Route>
@@ -37,6 +40,8 @@ export function AppRouter() {
           <Route path="/customers/:id" element={<CustomerDetailPage />} />
           <Route path="/customers/:id/edit" element={<CustomerEditPage />} />
           <Route path="/overview" element={<OverviewPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/team" element={<Navigate to="/settings" replace />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Route>

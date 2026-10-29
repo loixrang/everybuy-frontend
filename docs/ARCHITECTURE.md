@@ -41,6 +41,8 @@ src/
       RecordRepaymentModal.tsx
     layout/
       InventoryLayout.tsx
+    settings/
+      StaffAccountModal.tsx
     stock/
       StockAdjustmentModal.tsx
     ui/
@@ -53,6 +55,7 @@ src/
       products.ts
       reports.ts
       sales.ts
+      staff.ts
       stock.ts
     hooks/
       useTheme.ts
@@ -61,6 +64,7 @@ src/
       money.ts
   pages/
     auth/
+      AcceptInvitePage.tsx
       SignInPage.tsx
     customers/
       CustomerDetailPage.tsx
@@ -76,6 +80,8 @@ src/
       RecordSalePage.tsx
       SaleDetailPage.tsx
       SalesPage.tsx
+    settings/
+      SettingsPage.tsx
     stock/
       ReceiveStockPage.tsx
       StockMovementsPage.tsx
@@ -91,6 +97,7 @@ src/
     product.ts
     report.ts
     sale.ts
+    staff.ts
     stock.ts
   main.tsx
   App.tsx
@@ -189,6 +196,27 @@ Implemented (FE-042):
 - Loading skeleton, empty month, 401/403, validation/network error, and retry states are handled. Month changes refetch; stale responses are discarded with an `ignore` flag.
 - The daily `overview.svg` cards (Sales today, Payments received, Customer balances, Low stock, Recent sales) are omitted because there is no daily aggregate endpoint. See `DECISIONS.md`.
 
+## Settings and Team Access
+
+Implemented (FE-050):
+
+- `SettingsPage` (`/settings`) is reachable from the sidebar ("Settings") and the mobile "More" tab; `/team` redirects there so older links keep working.
+- The profile card is read-only and comes from the Better Auth session (`name`, `email`, `emailVerified`, `createdAt`, `twoFactorEnabled`); the page states that profile editing is not available.
+- The appearance card drives the shared theme store; the choice is stored in `localStorage` and applied to `<html data-theme>`.
+- The team card requests `GET /api/v1/staff` once. A 403 renders "Owner access required", a 404 renders an empty team, and other failures show the message with a retry. No per-member requests are made.
+- `StaffAccountModal` supports the two verified owner paths: email invitation and direct account creation with an initial password. Client validation mirrors the backend (email shape, 12–128 character password, confirmation), and 409/500/503 responses produce actionable hints instead of raw errors.
+- `AcceptInvitePage` (`/accept-invite?token=…`) is public and rendered outside the auth guards. It previews the token, shows the invited name/email/expiry, and submits the password to `POST /api/v1/staff/invite/accept`.
+- The page never derives the user's role from the session: staff have no role claim, so owner-only data is requested and permission failures are handled explicitly. See `DECISIONS.md`.
+
+## Theme and Interactions
+
+Implemented (FE-051):
+
+- `useTheme` is a module-level external store consumed through `useSyncExternalStore`. Every mounted consumer (header, sign-in, settings, invite page) sees the same value, and the stored theme is applied before the first render.
+- Light and dark palettes live in `src/styles/tokens.css`. The dark palette uses neutral near-black surfaces; the brand green is reserved for the accent, so the workspace does not look green-tinted.
+- `src/styles/index.css` adds global pointer affordances: `cursor: pointer` for links, enabled buttons, `role="button" | "link" | "tab"`, summaries, labels, selects and checkable inputs; `not-allowed` for disabled controls and `aria-disabled`; `progress` for `aria-busy` regions. Tailwind v4's preflight leaves buttons with the default cursor, which is why this is explicit.
+- Branding is **Everybuy** throughout: shell header, sidebar footer, loading/sign-in/invite screens, document title, favicon, package name and README. The fictional "Uyo" store line was removed because the backend stores no store location.
+
 ## State
 
 Start with React state and context where appropriate.
@@ -226,3 +254,12 @@ Test important user interactions, form validation, API handling, and business-cr
 Run type checking, linting, tests, and the production build as configured by the project.
 
 Document any check that is unavailable or failing.
+
+Implemented (FE-051):
+
+- Tests use Bun's built-in runner (`bun test`), so no extra test framework is installed.
+- `src/lib/utils/money.test.ts` covers kobo conversion, negatives, malformed input, and round-trips.
+- `src/lib/utils/format.test.ts` covers Naira formatting, stock thresholds, date helpers, Lagos month boundaries, month shifting/labelling, and movement labels.
+- `src/lib/api/client.test.ts` stubs `fetch` to verify JSON parsing, cookie credentials, JSON content type, `ApiError` messages, and the unauthorized-event behaviour (including the auth-endpoint exception).
+- `@types/bun` is a dev dependency and `tsconfig.app.json` lists `"types": ["vite/client", "bun"]`, so tests are type-checked with the app.
+- Component and browser tests are not set up; adding them requires a DOM test library and a deliberate dependency decision.

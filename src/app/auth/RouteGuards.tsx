@@ -10,7 +10,7 @@ export function AuthLoadingScreen() {
         <div className="w-7 h-[26px] rounded-[6px] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] flex items-center justify-center">
           <ShoppingBagIcon size={16} />
         </div>
-        <span className="font-extrabold text-2xl tracking-tight">everyday</span>
+        <span className="font-extrabold text-2xl tracking-tight">Everybuy</span>
       </div>
       <div className="flex items-center gap-2 text-sm text-[color:var(--color-muted)]" role="status">
         <span

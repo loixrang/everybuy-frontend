@@ -31,29 +31,31 @@
   --color-art-ink: #284C39;
   --color-art-white: #FFFDF5;
 }
+/* Dark theme uses neutral near-black surfaces. The brand green is reserved for
+   the accent so the workspace stays visually calm rather than green-tinted. */
 [data-theme="dark"] {
   color-scheme: dark;
-  --color-canvas: #141916;
-  --color-surface: #1C231F;
-  --color-subtle: #252E28;
-  --color-ink: #F0F3EC;
-  --color-muted: #ADB8AD;
-  --color-quiet: #97A696;
-  --color-border: #354138;
+  --color-canvas: #0A0B0A;
+  --color-surface: #121412;
+  --color-subtle: #1A1D1A;
+  --color-ink: #F3F5F1;
+  --color-muted: #A2AAA1;
+  --color-quiet: #8A928A;
+  --color-border: #262B26;
   --color-accent: #B7D5A8;
   --color-accent-hover: #C9E4BC;
-  --color-on-accent: #18291C;
-  --color-accent-soft: #2A3B2D;
-  --color-accent-ink: #B7D5A8;
-  --color-success-bg: #233A2B;
+  --color-on-accent: #10200F;
+  --color-accent-soft: #1D2A20;
+  --color-accent-ink: #BFDDB1;
+  --color-success-bg: #14251A;
   --color-success-ink: #B4DAAE;
-  --color-warning-bg: #44381F;
+  --color-warning-bg: #2B2314;
   --color-warning-ink: #EFCC8D;
-  --color-danger-bg: #442922;
+  --color-danger-bg: #2B1815;
   --color-danger-ink: #F0B6A1;
-  --color-hero: #26332A;
-  --color-glass: #1C231FE8;
-  --color-scrim: #080D0B99;
+  --color-hero: #141614;
+  --color-glass: #0F110FE8;
+  --color-scrim: #000000A6;
   --color-art-green: #CFDCC6;
   --color-art-rose: #E8C8BF;
   --color-art-gold: #EBDCB9;

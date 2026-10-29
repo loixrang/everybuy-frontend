@@ -1,5 +1,103 @@
 # Current Task
 
+## FE-050: Settings and Team Access
+
+Status: COMPLETED
+
+## Goal
+
+Replace the dead "Team & preferences" navigation item with a real settings page, and make staff onboarding usable end to end without inventing backend capabilities.
+
+## Scope
+
+- Show the signed-in account from the Better Auth session.
+- Provide a working appearance setting (light/dark).
+- List team members and add staff when the backend permits it.
+- Support accepting an emailed staff invitation.
+- Explain unavailable settings honestly instead of showing dead controls.
+
+## Out of Scope
+
+- Editing the profile name, email or password (no verified frontend contract).
+- Changing a member's role or deactivating/removing a member (no endpoint).
+- Store-level preferences such as shop name, currency or receipts (not stored).
+- Pending-invitation management (no list/resend/revoke endpoint).
+
+### Implemented:
+
+- `/settings` route and navigation (desktop "Settings", mobile "More"); `/team` now redirects to `/settings`.
+- `SettingsPage`:
+  - Profile card read from the session: name, email, verification state, member since, two-factor state.
+  - Appearance card with Light/Dark buttons that update `<html data-theme>` immediately.
+  - Team card: `GET /api/v1/staff`, owner-only messaging on 403, empty state on 404, retry on other failures, desktop table and mobile list with Owner/Staff badges and a "You" marker.
+  - Session card with server-side sign-out.
+  - Honest notes for settings the backend cannot support yet.
+- `StaffAccountModal` with two verified modes:
+  - Email invitation (`POST /api/v1/staff/invite`).
+  - Create account with an initial password (`POST /api/v1/staff`).
+  - Client validation mirrors the backend (valid email, password 12–128, confirmation match) and maps 409/500/503 responses to actionable hints.
+- `AcceptInvitePage` (`/accept-invite?token=…`, public):
+  - Previews the invitation from `GET /api/v1/staff/invite/preview`.
+  - Shows the invitee name, email and expiry, then creates the account via `POST /api/v1/staff/invite/accept`.
+  - Handles missing/invalid/expired tokens, network failures, short passwords and mismatches.
+- `src/lib/api/staff.ts` and `src/types/staff.ts` for the verified staff contract.
+- `useTheme` is now a shared store (`useSyncExternalStore`) so the settings page and the header stay in sync.
+
+### Checks:
+
+- `bun test`: passed (24 tests)
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed (0 warnings, 0 errors)
+- `bun run build`: passed
+
+### Notes / Limitations:
+
+- The backend had no `/team` page at all before this change; the navigation item pointed at a 404.
+- `GET /api/v1/staff` returns only `{ staffId, userId, name, role }`: no email, active flag, timestamps, or last sign-in. The page says so.
+- There is no endpoint to change a role, deactivate, or remove a member, and no endpoint for pending invitations.
+- There is no current-user role endpoint. The page infers owner access from the staff-list response (403 means staff) rather than guessing from the session.
+- Email invitations require `STAFF_INVITE_PREVIEW_URL` on the backend. It is not set in the current `.env`, so `POST /api/v1/staff/invite` answers 500; the dialog explains this and offers the password mode, which works.
+- Authenticated end-to-end testing was not possible without account credentials. Verified live: unauthenticated 401s, invitation preview/accept 400 handling, sign-in failure shape, CORS preflight, and the 3 requests/second throttle (400, 400, 429, 429, 429).
+- No backend files were changed.
+
+---
+
+## FE-051: Branding, Dark Theme, Cursor Affordances and Tests
+
+Status: COMPLETED
+
+## Goal
+
+Finish the Everybuy identity in the UI, make the dark theme genuinely dark, give clickable elements correct cursors, and add an automated test suite.
+
+### Implemented:
+
+- Replaced the design placeholder brand: `everyday`/"Everyday"/"Uyo" became **Everybuy** in the shell, sidebar footer, loading screen, sign-in screen and invite page.
+- `index.html` title is `Everybuy`, with a description and theme-color; the default Vite favicon was replaced with an Everybuy bag mark; `package.json` name is `everybuy-frontend`; `README.md` was rewritten from the Vite template.
+- Dark theme uses neutral near-black surfaces (`--color-canvas: #0A0B0A`, `--color-surface: #121412`, `--color-border: #262B26`) instead of green-tinted greys. The brand green remains the accent only.
+- Global cursor rules in `src/styles/index.css`: pointer for links, enabled buttons, role=button/link/tab, summaries, labels, selects and checkboxes/radios/files; `not-allowed` for disabled controls and `aria-disabled`; `progress` for `aria-busy` regions.
+- `useTheme` became a shared external store so the header toggle and the settings control cannot drift apart, and the stored theme is applied before first paint.
+- Added `bun test` with 24 unit tests:
+  - `money.test.ts`: kobo conversion, negatives, malformed input, round-trips.
+  - `format.test.ts`: Naira formatting, stock thresholds, date helpers, Lagos month boundaries, month shifting/labels.
+  - `client.test.ts`: JSON parsing, cookie credentials, JSON content type, `ApiError` messages, unauthorized event behaviour.
+- Added `@types/bun` and `"types": ["bun"]` in `tsconfig.app.json` so tests type-check with the app.
+
+### Checks:
+
+- `bun test`: 24 passed, 0 failed
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed
+- `bun run build`: passed
+- Live dev server: `/`, `/signin`, `/settings`, `/accept-invite?token=…`, `/inventory` all serve the SPA with the Everybuy title; backend CORS returns 204 with the correct origin and credentials.
+
+### Notes / Limitations:
+
+- Cursor and theme behaviour are CSS-only, so they were verified through the production bundle (new tokens and cursor rules present) rather than visually in a browser.
+- No screenshot/visual regression testing is set up; component tests would need a DOM library, which was intentionally not added.
+
+---
+
 ## FE-042: Monthly Reports and Overview
 
 Status: COMPLETED

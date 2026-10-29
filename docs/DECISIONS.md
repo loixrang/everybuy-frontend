@@ -189,3 +189,42 @@ Consequence:
 `/overview` is a monthly report, not the daily dashboard depicted in the design. The daily summary cards, low-stock alert, and recent-sales table are omitted, and the page states clearly that figures are monthly and `Africa/Lagos`-based. Labour/expenses are not reported because the backend stores no such data. A true daily overview needs a new backend endpoint and an agreed contract.
 
 Closing stock is displayed as a plain month-end pack balance rather than with the live low-stock badge: the 10-pack threshold is a current-inventory heuristic and would mislabel a historical balance. `moneyReceived` intentionally includes payments for earlier sales, and `outstandingDebtAtMonthEnd` is cumulative debt as of month end, so the page explains both instead of implying they are monthly-only figures.
+
+## DEC-019: Settings Page and Permission Handling for Team Access
+
+Decision:
+Replace the dead "Team & preferences" link with a real `/settings` page covering profile (read-only), appearance, team management, and session sign-out. `/team` redirects to `/settings`.
+
+Team data comes from one `GET /api/v1/staff` request. Because the session carries no staff role, the page does not guess whether the user is an owner: it performs the request and renders "Owner access required" on 403, an empty state on the backend's 404 "No staff found", and a retry on other failures. The "Add staff" action is only shown once the list load succeeds.
+
+Staff onboarding offers both verified owner paths — email invitation (`POST /api/v1/staff/invite`) and direct creation with an initial password (`POST /api/v1/staff`). The public `/accept-invite?token=…` page completes the invitation using the token as the credential.
+
+Reason:
+The previous navigation item pointed at a route that did not exist, which made the shell look broken and hid staff onboarding entirely. Showing an owner-only failure state is honest and avoids replicating backend authorization in the client. Supporting both creation paths keeps the feature usable even when invitation email is misconfigured; the backend currently lacks `STAFF_INVITE_PREVIEW_URL`, so invitations answer 500 while password mode works.
+
+Consequence:
+The page states that profile editing, password changes, role changes, member deactivation, and pending-invitation management are unavailable. It also discloses that the team list has no emails. Owners still manage authorization on the backend. A richer settings page needs new endpoints (see the changelog/task notes), not client-side role inference.
+
+## DEC-020: Everybuy Branding and Neutral Dark Theme
+
+Decision:
+Use **Everybuy** as the product name everywhere in the interface: shell header, sidebar footer, loading screen, sign-in screen, invitation page, document title, favicon, package name, and README. Do not keep the design placeholder name "everyday" or the fictional "Uyo" store location.
+
+The dark theme uses neutral near-black surfaces (`#0A0B0A` canvas, `#121412` surface, `#1A1D1A` subtle, `#262B26` border) rather than the previous green-tinted darks. The brand green remains the accent (`#B7D5A8` with `#10200F` on-accent) so the identity survives without tinting the whole workspace.
+
+Reason:
+The design package is a visual reference; its placeholder brand and city were not the product's. Green-tinted dark surfaces reduced contrast between the canvas and surfaces and made the workspace feel like a themed demo. Neutral near-black surfaces keep hierarchy while staying comfortable for long shop sessions.
+
+Consequence:
+Light-mode tokens are unchanged. Dark mode now depends on borders and surface layering for separation, which the cursor/focus rules and existing border tokens already provide. Any future store name/location must come from a backend settings endpoint rather than hard-coded copy.
+
+## DEC-021: Bun's Built-in Test Runner
+
+Decision:
+Add automated unit tests with Bun's built-in runner (`bun test`) instead of installing Vitest or Jest. Test pure logic (money, formatting, API client behaviour) under `src/**/*.test.ts`, add `@types/bun`, and list `"bun"` in `tsconfig.app.json` types so tests are type-checked with the app.
+
+Reason:
+Bun is already the package manager and runtime for this project, so the runner adds no new framework or config. The highest-risk frontend logic is money/time formatting and API error handling, which are pure and stable to test. Component tests would require a DOM library and a broader testing setup that is not justified by the current requirements.
+
+Consequence:
+`bun test` is part of the check suite alongside `tsc`, `oxlint`, and the production build. UI behaviour is still verified manually against the running backend; adding component tests later means introducing a DOM test library deliberately.

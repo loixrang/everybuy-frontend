@@ -115,7 +115,7 @@ Status: COMPLETED
 
 Note: Keep FE-030 Purchase Management deferred. Do not build a separate purchase workflow unless it is part of the agreed scope and supported by the backend.
 
-## Phase 4: Customers and Reports
+## Phase 4: Customers, Reports and Settings
 
 ### FE-040: Customer Management
 Status: COMPLETED
@@ -145,6 +145,30 @@ Implemented scope:
 
 Verified limitation:
 The supplied `overview.svg` is a *daily* shop summary ("Sales today", "Payments received", "Customer balances", "Low stock", "Recent sales"). No daily aggregate exists: the sales list returns no totals or balances and the customer list returns no balances. The daily cards, low-stock alert, and recent-sales table are therefore omitted rather than computed in the frontend. `moneyReceived` includes payments for earlier sales, and `outstandingDebtAtMonthEnd` is cumulative debt at month end; the screen explains both. See DEC-018.
+
+### FE-050: Settings and Team Access
+Status: COMPLETED
+
+- Replace the dead "Team & preferences" link with a real `/settings` page.
+- Show the signed-in profile (name, email, verification, member since, two-factor state).
+- Provide a working appearance preference (light/dark).
+- List team members for owners and support adding staff.
+- Support the emailed invitation flow, including the public acceptance page.
+- Explain settings the backend cannot support yet.
+
+Verified limitations:
+`GET /api/v1/staff` returns only `{ staffId, userId, name, role }` (no email, active flag, or timestamps). There are no endpoints to change roles, deactivate members, list/revoke pending invitations, or edit the signed-in profile/password. There is also no current-user role endpoint, so owner-only UI is inferred from the staff-list 403. Staff invitation emails require `STAFF_INVITE_PREVIEW_URL`, currently unset, so the password mode is offered as a fallback. See DEC-019.
+
+### FE-051: Branding, Dark Theme, Cursor Affordances and Tests
+Status: COMPLETED
+
+- Use Everybuy branding everywhere instead of the design placeholder name.
+- Make the dark theme neutral and genuinely dark rather than green-tinted.
+- Give clickable and disabled elements the correct cursor.
+- Add an automated unit test suite and repair the leftover Vite template metadata.
+
+Verified limitations:
+Theme and cursor changes are CSS-level and were validated through the production bundle; there is no visual regression setup. Component tests would require adding a DOM test library, which is not part of the current stack. See DEC-020 and DEC-021.
 
 ## Deferred Work
 

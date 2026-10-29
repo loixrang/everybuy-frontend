@@ -123,7 +123,11 @@ Do not treat as full policy - verify per endpoint.
 | Customer statement | GET /api/v1/customers/:id/statement | None (id via `ParseUUIDPipe`) | `{ customer, totals: { salesTotal, moneyReceived, outstandingDebt }, sales: [{ id, soldAt, totalAmount, paidAmount, balanceDue, paymentStatus: 'UNPAID' \| 'PAID' \| 'PART_PAID', items, payments }] }`; sales ordered `soldAt` desc, payments ordered `paidAt` asc; 404 `Customer not found` | StaffGuard | Verified (controller & service) |
 | Repayment | POST /api/v1/customers/:id/repayments | `recordRepaymentSchema`: `{ requestId: uuid, saleId: uuid, amount: string matching ^(?=.*[1-9])\d{1,12}(\.\d{1,2})?$ }` | `{ payment, saleId, totalAmount, paidAmount, balanceDue }`; 400 over outstanding, 404 unknown sale for this customer, 409 already paid or requestId reused with a different payload | StaffGuard | Verified (controller & service) |
 | Monthly report | GET /api/v1/reports/monthly | `monthSchema` query `month` matching `^\d{4}-(0[1-9]\|1[0-2])$`; the service also rejects `0000` | `{ month, timezone: 'Africa/Lagos', salesTotal, moneyReceived, outstandingDebtAtMonthEnd, productsSold: [{ productId, productName, bagsSold, retailPacksSold, totalPacksSold }], closingStock: [{ productId, productName, closingPacks }] }`; money fields are numeric strings | StaffGuard | Verified (controller, service, query & DTO) |
-| Staff (invites/create) | See StaffController/Service | InviteStaffDto, CreateStaffDto, AcceptInviteDto | Various | StaffGuard + OwnerGuard | Partially verified |
+| Staff list | GET /api/v1/staff | None | Array of `{ staffId, userId, name, role: 'Owner' \| 'Staff' }`; 404 `No staff found` when empty; no email, active flag, or timestamps | StaffGuard + OwnerGuard | Verified (controller, guard & repository) |
+| Staff create | POST /api/v1/staff | `{ name, email, password }` (password length 12–128) | `{ id, userId, name, email, role, active }`; 409 when the email already exists; sends a verification email | StaffGuard + OwnerGuard | Verified (controller, service & DTO) |
+| Staff invite | POST /api/v1/staff/invite | `{ name, email }` | `{ message, email, expiresAt }`; 409 existing user or pending invite; 500 when `STAFF_INVITE_PREVIEW_URL` is missing; 503 when the email fails | StaffGuard + OwnerGuard | Verified (controller, service & DTO) |
+| Invitation preview | GET /api/v1/staff/invite/preview | Query `token` (64 hex chars) | `{ name, email, expiresAt }`; 400 for invalid, expired, or used tokens | Public (`@AllowAnonymous`) | Verified (controller & service) |
+| Invitation accept | POST /api/v1/staff/invite/accept | `{ token, password }` (password length 12–128) | `{ message, staff }`; 400 invalid/expired token; 409 when the account already exists | Public (`@AllowAnonymous`) | Verified (controller & service) |
 
 ### Product Schema Limitations & Notes:
 - **No Free-Text Search**: Backend `findProductSchema` does not have a `search` or `q` parameter. Free-text search is filtered client-side across fetched records.
@@ -174,6 +178,16 @@ Do not treat as full policy - verify per endpoint.
 - **closingStock**: Sum of `stockMovements.changePacks` per product created before month end, including movements dated before month end. It is a historical month-end balance, not current stock.
 - **Read Consistency**: The whole report is produced in one read-only `repeatable read` transaction.
 - **No Daily Overview**: The supplied `overview.svg` shows "Sales today / Payments received / Customer balances / Low stock / Recent sales", which no endpoint provides. The screen therefore uses the monthly figures and omits the daily cards, low-stock alert, and recent-sales table.
+
+### Staff and Invitation Contract Notes:
+- **Owner-Only Staff Reads**: `StaffController` applies `StaffGuard` then `OwnerGuard`, so `GET /staff`, `POST /staff` and `POST /staff/invite` all require an owner. Staff accounts receive 403 `Owner access required`.
+- **List Shape**: `GET /api/v1/staff` joins `staff` to `user` and returns only `{ staffId, userId, name, role }`. It throws 404 `No staff found` when the table is empty (the frontend treats that as an empty team).
+- **No Role Management**: There is no endpoint to change a role, deactivate, or remove a member, and no endpoint to list, resend, or revoke pending invitations.
+- **Invite Delivery**: `POST /api/v1/staff/invite` builds a link from `STAFF_INVITE_PREVIEW_URL`, appends `?token=…`, and sends it with Resend. It throws 500 when the URL is unset and 503 when delivery fails (deleting the pending invite so the owner can retry). Tokens are 64 hex characters, hashed in the database, and expire after 24 hours.
+- **Public Token Endpoints**: `GET /api/v1/staff/invite/preview` and `POST /api/v1/staff/invite/accept` are `@AllowAnonymous()`; the token itself is the credential. Anything other than a 64-hex token is rejected with 400 before a database lookup.
+- **Direct Creation**: `POST /api/v1/staff` creates the Better Auth user through a server-side provisioning instance and immediately adds a `Staff` row. The owner supplies the initial password (12–128 characters) and the user must still verify their email before signing in.
+- **No Role in the Session**: `/get-session` exposes no staff role. The frontend must not infer permissions from the session; it attempts owner-only requests and reacts to 403.
+- **Throttle**: The global limits (3 requests/second, 100/minute) also apply to these endpoints. The settings screen issues one staff-list request and never fans out per member.
 
 ## Money and Quantities
 

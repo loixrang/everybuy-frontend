@@ -4,6 +4,42 @@ Record meaningful frontend changes here.
 
 ## Unreleased
 
+### 2026-10-29: FE-050 Settings, Team Access and Invitations
+
+Added:
+- `SettingsPage` (`/settings`): profile summary from the session, appearance control, owner-only team list, session sign-out, and notices. `/team` now redirects to `/settings`, and the navigation item is "Settings" (desktop) / "More" (mobile).
+- `StaffAccountModal` with two verified onboarding paths: email invitation (`POST /api/v1/staff/invite`) and account creation with an initial password (`POST /api/v1/staff`), including backend-aligned validation and 409/500/503 hints.
+- `AcceptInvitePage` (`/accept-invite?token=…`, public): previews an invitation, shows invitee/expiry, creates the account via `POST /api/v1/staff/invite/accept`, and handles invalid/expired tokens and network errors.
+- `src/lib/api/staff.ts` and `src/types/staff.ts` for the verified staff contract.
+- Shared theme store: `useTheme` now uses `useSyncExternalStore` so the settings control and the header toggle stay in sync and the stored theme applies before first paint.
+
+Changed:
+- The team section never assumes a role from the session: it requests `GET /api/v1/staff` and shows "Owner access required" on 403, an empty state on 404, and a retry on other failures.
+
+Notes:
+- Backend limitation: `GET /api/v1/staff` returns no email, active flag, or timestamps; there is no endpoint to change roles, deactivate members, manage pending invitations, or edit the profile.
+- `STAFF_INVITE_PREVIEW_URL` is unset in the backend `.env`, so invitations return 500 until it points at `/accept-invite`; the dialog explains this and offers password mode.
+- Authenticated E2E testing was not possible without credentials; unauthenticated 401s, invitation 400 handling, sign-in failures, CORS, and the 3 req/s throttle were verified live.
+- No backend files were changed.
+
+### 2026-10-29: FE-051 Everybuy Branding, Dark Theme, Cursors and Tests
+
+Added:
+- `bun test` suite (24 tests) covering money helpers, formatting helpers (including Lagos month boundaries), and the API client's parsing/error/unauthorized behaviour.
+- `@types/bun` and `"types": ["bun"]` so tests type-check with the app.
+- Global cursor rules: pointer for clickable elements, `not-allowed` for disabled controls, `progress` for `aria-busy` regions.
+
+Changed:
+- Replaced the design placeholder branding with **Everybuy** across the shell, sidebar, loading screen, sign-in screen and invite page; removed the fictional "Uyo" store line.
+- Dark theme is now neutral near-black (`#0A0B0A` canvas, `#121412` surface, `#262B26` border) instead of green-tinted dark greys; the brand green remains the accent.
+- `index.html` title/description/theme-color, a new Everybuy favicon, `package.json` name, and a rewritten project README replacing the Vite template.
+
+Checks:
+- `bun test`: 24 passed
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed
+- `bun run build`: passed
+
 ### 2026-10-29: FE-042 Monthly Reports and Overview
 
 Added:

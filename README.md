@@ -1,32 +1,52 @@
-# React + TypeScript + Vite
+# Everybuy Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript + Vite frontend for **Everybuy**, a shop inventory and sales
+management system. The frontend talks to the separately maintained NestJS
+backend (`../everybuy`) using Better Auth cookie sessions.
 
-Currently, two official plugins are available:
+## Requirements
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- [Bun](https://bun.sh) 1.4+
+- The Everybuy backend running on `http://localhost:3000` (default)
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+bun install
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Create `.env.local` if the backend is not on `http://localhost:3000`:
+
+```text
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+`VITE_*` values are public and must never contain secrets. Authentication uses
+httpOnly cookies, so no tokens are stored in the browser.
+
+## Commands
+
+```bash
+bun run dev     # start the Vite dev server on :5173
+bun run build   # type-check and build for production
+bun run lint    # oxlint
+bun test        # Bun test runner (unit tests)
+```
+
+## Screens
+
+- `/signin` — email/password sign-in with two-factor support
+- `/inventory` — product list, detail, setup, stock receiving
+- `/movements` — stock movement history
+- `/sales` — sales history and sale details
+- `/customers` — customer directory, statements and repayments
+- `/overview` — monthly report (sales, receipts, debt, product sales, closing stock)
+- `/settings` — profile, appearance, team management and session
+- `/accept-invite` — staff invitation landing page (public)
+
+## Conventions
+
+- Read `AGENTS.md` and the documents in `docs/` before changing behaviour.
+- Verify API shapes against the backend source; do not invent endpoints or fields.
+- Keep API access in `src/lib/api` and UI state in pages/components.
+- Design tokens live in `src/styles/tokens.css` and drive both light and dark themes.

@@ -6,7 +6,7 @@ import {
   MoonIcon,
   SunIcon,
   UsersIcon,
-  MenuIcon,
+  SlidersIcon,
   PlusIcon,
   HistoryIcon,
   LogOutIcon,
@@ -16,7 +16,7 @@ import { ApiError } from '../../lib/api/client';
 import { useTheme } from '../../lib/hooks/useTheme';
 
 export function InventoryLayout() {
-  const [theme, toggleTheme] = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [signingOut, setSigningOut] = useState(false);
@@ -30,6 +30,7 @@ export function InventoryLayout() {
   const isOverviewActive = location.pathname === '/overview';
   const isSalesActive = location.pathname.startsWith('/sales');
   const isCustomersActive = location.pathname.startsWith('/customers');
+  const isSettingsActive = location.pathname.startsWith('/settings');
 
   async function handleSignOut() {
     if (signingOut) return;
@@ -61,11 +62,11 @@ export function InventoryLayout() {
                 <ShoppingBagIcon size={16} />
               </div>
               <span className="font-extrabold text-2xl tracking-tight text-[color:var(--color-ink)]">
-                everyday
+                Everybuy
               </span>
             </Link>
             <span className="hidden lg:inline text-xs font-semibold text-[color:var(--color-muted)] pl-4 border-l border-[color:var(--color-border)]">
-              Physical store · Uyo
+              Physical store
             </span>
           </div>
 
@@ -153,9 +154,10 @@ export function InventoryLayout() {
                 icon={<HistoryIcon size={18} />}
               />
               <SidebarNavLink
-                to="/team"
-                label="Team & preferences"
-                icon={<MenuIcon size={18} />}
+                to="/settings"
+                label="Settings"
+                active={isSettingsActive}
+                icon={<SlidersIcon size={18} />}
               />
             </nav>
           </div>
@@ -163,7 +165,7 @@ export function InventoryLayout() {
           {/* Sidebar Footer */}
           <div className="pt-6 border-t border-[color:var(--color-border)] px-3 text-xs space-y-1">
             <div className="font-semibold text-[color:var(--color-quiet)] uppercase tracking-wider text-[10px]">
-              Everyday / Uyo
+              Everybuy / Physical store
             </div>
             <div
               className="font-semibold text-[color:var(--color-ink)] truncate"
@@ -210,9 +212,10 @@ export function InventoryLayout() {
             icon={<UsersIcon size={20} />}
           />
           <MobileNavButton
-            to="/team"
+            to="/settings"
             label="More"
-            icon={<MenuIcon size={20} />}
+            active={isSettingsActive}
+            icon={<SlidersIcon size={20} />}
           />
         </div>
       </nav>

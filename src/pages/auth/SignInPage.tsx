@@ -88,7 +88,7 @@ export function SignInPage() {
   const { signIn, verifyTwoFactor } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [theme, toggleTheme] = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
   const emailId = useId();
   const passwordId = useId();
@@ -244,7 +244,7 @@ export function SignInPage() {
           <div className="w-7 h-[26px] rounded-[6px] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] flex items-center justify-center">
             <ShoppingBagIcon size={16} />
           </div>
-          <span className="font-extrabold text-2xl tracking-tight">everyday</span>
+          <span className="font-extrabold text-2xl tracking-tight">Everybuy</span>
         </div>
 
         <div className="w-full max-w-[440px] rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-6">
@@ -422,7 +422,7 @@ export function SignInPage() {
         </div>
 
         <p className="mt-6 text-xs font-medium text-[color:var(--color-muted)]">
-          Everyday &middot; Physical store inventory
+          Everybuy &middot; Physical store inventory
         </p>
       </main>
     </div>
