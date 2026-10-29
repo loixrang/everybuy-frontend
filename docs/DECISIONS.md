@@ -161,3 +161,16 @@ The backend locks the sale, rejects overpayments and fully paid sales, and treat
 
 Consequence:
 The repayment design's "Payment method", "Payment date", "Reference", and at-sale/repayment type are omitted because the `payments` table stores only `amount`, `requestId`, `paidAt`, and `recordedBy`. Customers are deactivated with `active: false` because there is no delete endpoint.
+
+## DEC-017: Reduced Sales List and Detail Statement Reuse
+
+Decision:
+The sales list is server-paginated (`page`, `limit=20`) and never requests a statement per row. Customer names come from one customer-list request and are mapped client-side. Search, payment-state filters, Owed/Status columns, and the daily summary cards are omitted because the sales DTO exposes only `page`/`limit` and list rows contain no payment or balance data.
+
+For a single viewed sale, the detail page requests the sale with its item snapshots and, when a customer is attached, one customer statement to obtain that sale's paid amount, balance, status, and payments. A sale without a customer is shown as paid at sale, following the verified backend rule that rejects an unpaid balance without a customer.
+
+Reason:
+A statement per list row would exceed the backend's 3 requests/second throttle, and no daily aggregate endpoint exists. One statement per viewed sale is cheap, keeps balances server-authoritative, and supports the repayment action already built for customers. Historical item lines must come from saved sale-item snapshots, not current product rows.
+
+Consequence:
+The sales list omits the design's search, "All payment states" filter, Owed/Status columns, and Sales today/Paid today/Balance owed cards. Adding them requires backend query and aggregate support. Payment method and recorded-by names remain unavailable, and sale references use a short UUID prefix because there is no `SL-####` column.

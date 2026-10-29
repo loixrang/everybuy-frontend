@@ -71,6 +71,8 @@ src/
       ProductSetupPage.tsx
     sales/
       RecordSalePage.tsx
+      SaleDetailPage.tsx
+      SalesPage.tsx
     stock/
       ReceiveStockPage.tsx
       StockMovementsPage.tsx
@@ -159,6 +161,17 @@ Implemented (FE-022, also covering FE-040's supported scope):
 - `CustomerEditPage` (`/customers/:id/edit`) updates only `name`, `phone`, and `active`; deactivated customers retain their statements and payment history.
 - Sale and payment identifiers are UUIDs, so list/detail tables render a short `#` prefix plus the first 8 characters and keep the full id in the `title` attribute. There is no frontend-only sale numbering.
 - The repayment method/date/reference fields and the directory's balance/last-sale columns are intentionally absent because the backend does not store or aggregate them. See `DECISIONS.md`.
+
+## Sales History and Detail
+
+Implemented (FE-021):
+
+- `SalesPage` (`/sales`) requests one server-paginated page (`page`, `limit=20`) and one customer list in parallel. Customers are mapped client-side for names; no statement requests are made per row. If the customer request fails, sales still render with short customer ids.
+- `SaleDetailPage` (`/sales/:id`) requests the sale with its saved item snapshots. If the sale has a customer, it then requests that customer's statement once and selects the matching sale for paid amount, balance, payment status, and payment history.
+- Items render from the sale-item snapshots (`productName`, `unit`, `quantity`, `packsPerUnit`, `unitPrice`, `lineTotal`), so later product edits do not rewrite historical lines.
+- A sale with no customer is treated as paid at sale. This follows the verified backend rule that a customer is required whenever `amountPaid < itemsTotal`; no payment method is inferred or stored.
+- Repayments from the detail page reuse `RecordRepaymentModal` and reload both the sale and its statement after success.
+- The sales list omits search, payment-state filters, Owed/Status columns, and daily summary cards because the backend provides no matching query or aggregate. The detail page is the supported place for payment data. See `DECISIONS.md`.
 
 ## State
 

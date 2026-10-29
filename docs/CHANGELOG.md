@@ -4,6 +4,41 @@ Record meaningful frontend changes here.
 
 ## Unreleased
 
+### 2026-10-29: FE-021 Sales History and Details
+
+Added:
+- `SaleDetail` and `SalesPage` types in `src/types/sale.ts`, matching `GET /api/v1/sales/:id` and the paginated list envelope.
+- `fetchSales(page, limit)` and `fetchSale(id)` in `src/lib/api/sales.ts`.
+- `SalesPage` (`/sales`), replacing the placeholder:
+  - Server-paginated list (20 per page) with sale reference, customer, date, and total.
+  - Customer names mapped from one customer-list request; falls back to a short customer id if that request fails.
+  - Desktop table, mobile cards, Previous/Next pagination, showing range, loading skeleton, empty state, retry, and staff-access error.
+  - Record-sale CTA.
+- `SaleDetailPage` (`/sales/:id`):
+  - Saved item snapshots with product name, quantity/unit (Bag shown as Carton), packs per carton, unit price, and line total.
+  - Sale summary with items, total, paid, balance, payment type, and customer.
+  - One customer statement request for customer sales, providing payment status, balance, and payment history.
+  - Repayment action when a balance remains, reusing `RecordRepaymentModal`; success reloads the sale and statement.
+  - Full date/time header, customer link, load/404/401/403/statement-failure/network states.
+- `formatLongDate` helper in `src/lib/utils/format.ts`.
+- Routes for `/sales/:id`; the Sales navigation item is active on `/sales` and `/sales/new`.
+
+Changed:
+- `/sales` is now a real history screen instead of an informational placeholder.
+
+Checks:
+- `bun run build`: passed
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed (oxlint, 0 warnings, 0 errors)
+
+Notes:
+- No live end-to-end test was possible: the backend API (port 3000) and PostgreSQL (port 5432) were not running. Shapes and error behaviour were verified from backend source.
+- Backend limitation: the sales list DTO accepts only `page` and `limit`; there is no search, customer filter, or payment-state filter. Those design controls are omitted rather than filtering only the loaded page.
+- Backend limitation: list rows contain no items, payments, or balance, so the Owed/Status columns and the daily Sales today/Paid today/Balance owed cards are omitted. Per-row statement fan-out would exceed the 3 requests/second throttle.
+- `GET /api/v1/sales/:id` does not include payments; customer sales use one statement request for paid/balance/payment history. Sales without a customer are necessarily paid in full at sale (backend rule), shown as "Paid at sale" without asserting a payment method.
+- Payment method is not stored and recorded-by names cannot be resolved, so those design columns are omitted.
+- Sale references use the first 8 UUID characters because the backend has no `SL-####` numbers.
+
 ### 2026-10-29: FE-022 Customer Debt, Statements, and Repayments (also completes FE-040)
 
 Added:

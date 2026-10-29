@@ -78,17 +78,17 @@ Status: COMPLETED
 - Prevent accidental duplicate submissions.
 
 ### FE-021: Sales History and Details
-Status: BLOCKED
+Status: COMPLETED
 
-- Verify the current sales list and detail endpoints.
-- Display recorded sales and their saved item details.
-- Show sale date, items, quantities, prices, total, initial payment, and outstanding balance where supported.
-- Add only search and filters supported by the API.
-- Handle loading, empty, and error states.
-- Confirm historical sale details remain correct after product changes.
+- Server-paginated sales list (`/sales`) with sale reference, customer name, date, and total.
+- Customer names mapped from one customer-list request; no per-sale statement fan-out.
+- Sale detail (`/sales/:id`) with saved item snapshots, carton/pack quantities, unit prices, and line totals.
+- Customer sales load one statement request for paid amount, balance, status, and payment history.
+- Repayment action from the detail page, reusing the shared repayment dialog.
+- Loading, empty, pagination, 404, 401/403, statement-failure, and network states.
 
-Blocker / verified limitation:
-`GET /api/v1/sales` returns sale rows only: no embedded customer name, payments, or balance. Names can be mapped from one customer-list request, but per-sale paid/owed data exists only in `GET /api/v1/customers/:id/statement`; fetching a statement per sale would exceed the backend's 3 requests/second throttle. The supplied design's Owed/Status columns therefore need either an aggregate endpoint or an agreed reduced list design. A single viewed sale detail could use one statement request for its customer, which is a possible reduced scope.
+Verified limitations:
+`GET /api/v1/sales` accepts only `page` and `limit` and returns no items, payments, or balance, so the design's search, payment-state filter, Owed/Status columns, and daily summary cards are omitted. Paid/balance data for a single viewed sale comes from one customer statement request; doing this per list row would exceed the 3 requests/second throttle. Walk-in sales are shown as paid at sale because the backend rejects a balance without a customer. Payment method and recorded-by names are not stored/resolvable.
 
 ### FE-022: Customer Debts and Repayments
 Status: COMPLETED

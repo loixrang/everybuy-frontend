@@ -75,6 +75,27 @@ export function formatShortDate(dateString: string | null | undefined): string {
 }
 
 /**
+ * Formats an ISO date as a full date and time.
+ * Example: "2026-10-11T10:42:00Z" -> "11 October 2026, 10:42"
+ */
+export function formatLongDate(dateString: string | null | undefined): string {
+  if (!dateString) return '—';
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '—';
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ];
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${hours}:${minutes}`;
+  } catch {
+    return '—';
+  }
+}
+
+/**
  * Removes trailing zero decimals from a backend numeric string so it can be
  * used as an input value. Example: "9800.00" -> "9800", "9800.50" -> "9800.50".
  */

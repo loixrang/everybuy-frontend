@@ -15,6 +15,19 @@ export interface Sale {
   soldAt: string;
 }
 
+/** GET /api/v1/sales/:id returns the sale with its saved item snapshots. */
+export interface SaleDetail extends Sale {
+  items: SaleItem[];
+}
+
+/** GET /api/v1/sales paginated envelope, ordered soldAt desc. */
+export interface SalesPage {
+  data: Sale[];
+  page: number;
+  limit: number;
+  total: number;
+}
+
 export interface SaleItem {
   id: string;
   saleId: string;

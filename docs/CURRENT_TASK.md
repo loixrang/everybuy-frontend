@@ -1,5 +1,71 @@
 # Current Task
 
+## FE-021: Sales History and Details
+
+Status: COMPLETED
+
+## Goal
+
+Show staff the recorded sales with their saved items and prices, and show each sale's customer, payments, and balance using the backend's authoritative statement data.
+
+## Scope
+
+- Verify the sales list and detail endpoints and their pagination.
+- Display recorded sales with customer names and totals.
+- Display each sale's saved item snapshots (name, unit, quantity, unit price, line total).
+- Show amount paid, outstanding balance, payment status, and payment history where the backend supports it.
+- Handle loading, empty, pagination, not-found, permission, and network states.
+- Allow a repayment from the sale detail when the sale has a balance.
+
+## Out of Scope
+
+- The design's "Sales today", "Paid today", and "Balance owed" summary cards (no daily/aggregate endpoint).
+- Server-side search and payment-state filters (the sales DTO accepts only `page` and `limit`).
+- Per-sale statement fan-out to populate Owed/Status columns for the whole list.
+- Payment method and recorded-by names (not stored / not resolvable).
+
+### Implemented:
+
+- `src/types/sale.ts`: `SaleDetail` and `SalesPage` types matching the verified response shapes.
+- `src/lib/api/sales.ts`: `fetchSales(page, limit)` (`GET /api/v1/sales`) and `fetchSale(id)` (`GET /api/v1/sales/:id`).
+- `SalesPage` (`/sales`):
+  - Replaces the previous placeholder.
+  - Server-paginated list (20 per page, total count) ordered `soldAt` desc by the backend.
+  - Desktop table and mobile cards showing sale reference, customer name, date, and total.
+  - Customer names are mapped from one `GET /api/v1/customers` request; a customer-list failure degrades to `Customer #<short id>` without hiding sales.
+  - Previous/Next pagination with a showing range, loading skeleton, empty state, retry, and staff-access error.
+  - Record-sale CTA.
+- `SaleDetailPage` (`/sales/:id`):
+  - Loads the sale with its item snapshots from `GET /api/v1/sales/:id`.
+  - For a sale with a customer, loads that customer's statement once and extracts the matching sale for paid amount, balance, status, and payment history.
+  - Header with sale reference, full date/time, customer, and Paid / Partly paid / Unpaid badge.
+  - Items table/cards with product name, quantity and unit (Bag shown as Carton), packs per carton, unit price, and line total.
+  - Sale summary (items, total, amount paid, balance owed, payment type, customer) and customer card linking to `/customers/:id`.
+  - Payment history (date and amount) and a repayment action when a balance remains, reusing `RecordRepaymentModal`.
+  - Success banner after a repayment, with the sale and statement reloaded from the backend.
+  - Loading, 404, 403/401, statement-failure warning, and network error states.
+- `formatLongDate` helper in `src/lib/utils/format.ts`.
+- Router registers `/sales` and `/sales/:id`; the Sales navigation item is active on both.
+
+### Checks:
+
+- `bun run build`: passed
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed (oxlint, 0 warnings, 0 errors)
+
+### Notes / Limitations:
+
+- No live end-to-end test was possible: the backend API (port 3000) and PostgreSQL (port 5432) were not running. Shapes and error behaviour were verified from the backend controller, service, and DTOs.
+- `GET /api/v1/sales` accepts only `page` and `limit`; there is no search, customer filter, or payment-state filter. The design's search and "All payment states" controls are omitted rather than filtering only the current page.
+- The sales list response has no items, payments, or balance. The list therefore shows sale reference, customer, date, and total; Owed/Status and the daily summary cards are omitted. Fetching a statement per row would exceed the 3 requests/second throttle.
+- `GET /api/v1/sales/:id` returns the sale and items only. Paid amount, balance, status, and payment history come from one `GET /api/v1/customers/:id/statement` request when the sale has a customer.
+- A sale with no customer is necessarily paid at the point of sale: the backend rejects `amountPaid < itemsTotal` without a customer. The detail page shows the total as paid, a zero balance, and "Paid at sale"; it does not invent a payment method.
+- Payment method is not stored and `recordedBy` is a user id with no verified name lookup, so the design's Method and Recorded by columns are omitted.
+- Sale references use the first 8 characters of the UUID because the backend has no `SL-####` numbers.
+- Repayments recorded from the sale detail refresh both the sale and its customer statement instead of patching balances locally.
+
+---
+
 ## FE-022: Customer Debts and Repayments
 
 Status: COMPLETED
