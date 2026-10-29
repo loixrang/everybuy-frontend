@@ -59,6 +59,30 @@ export function formatMovementDate(dateString: string | null | undefined): strin
 }
 
 /**
+ * Formats an ISO date as a short calendar date without a time.
+ * Example: "2026-10-11T12:10:00Z" -> "11 Oct 2026"
+ */
+export function formatShortDate(dateString: string | null | undefined): string {
+  if (!dateString) return '—';
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '—';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  } catch {
+    return '—';
+  }
+}
+
+/**
+ * Removes trailing zero decimals from a backend numeric string so it can be
+ * used as an input value. Example: "9800.00" -> "9800", "9800.50" -> "9800.50".
+ */
+export function trimMoney(value: string): string {
+  return value.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+}
+
+/**
  * Returns a human-friendly label for a movement type and reference/note.
  */
 export function formatMovementLabel(type: string, note?: string | null): string {

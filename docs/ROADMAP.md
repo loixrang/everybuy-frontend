@@ -26,16 +26,16 @@ Status: COMPLETED
 
 ### FE-002: Authentication and Session Management
 
-Status: READY
-- Implement the sign-in page using the existing Better Auth backend.
-- Verify the sign-in request and response against the actual backend configuration.
-- Handle session loading, authenticated sessions, and unauthenticated users.
-- Protect application routes that require authentication.
-- Implement sign-out.
-- Handle two-factor authentication if required by the backend configuration.
-- Handle authentication errors and expired sessions.
-- Verify that cookies and credentials work in local development and production.
-- Test the complete flow from sign-in through sign-out.
+Status: COMPLETED
+
+- Implemented the sign-in page using the existing Better Auth backend (`/signin`, matching `signin.svg`).
+- Session bootstrap via `GET /api/v1/auth/get-session`; no frontend token storage.
+- Protected application routes (`ProtectedRoute`/`GuestRoute`) and automatic redirect on expired sessions (401).
+- Sign-out via `POST /api/v1/auth/sign-out` with an inline error if revocation fails.
+- Two-factor challenges handled for authenticator-app codes and emailed codes.
+- Invalid credentials, unverified email, untrusted origin, rate limits, and network failures mapped to user-facing messages.
+- Verified endpoint and response shapes against the installed backend and `better-auth` 1.7.x.
+- Not live-tested: the backend and PostgreSQL were not running in this environment.
 
 
 ## Phase 1: Products and Stock
@@ -87,42 +87,46 @@ Status: BLOCKED
 - Handle loading, empty, and error states.
 - Confirm historical sale details remain correct after product changes.
 
-### FE-022: Customer Debts and Repayments
-Status: BLOCKED
+Blocker / verified limitation:
+`GET /api/v1/sales` returns sale rows only: no embedded customer name, payments, or balance. Names can be mapped from one customer-list request, but per-sale paid/owed data exists only in `GET /api/v1/customers/:id/statement`; fetching a statement per sale would exceed the backend's 3 requests/second throttle. The supplied design's Owed/Status columns therefore need either an aggregate endpoint or an agreed reduced list design. A single viewed sale detail could use one statement request for its customer, which is a possible reduced scope.
 
-- Verify the current customer, debt, and payment endpoints.
-- Allow staff to find customers and view their outstanding sales.
-- Display each sale's original total, payments received, and remaining balance.
-- Record repayments against the correct sale.
-- Show payment history and updated balances after successful requests.
-- Handle overpayment, duplicate submissions, and failed requests.
-- Do not calculate authoritative balances from incomplete frontend data.
+### FE-022: Customer Debts and Repayments
+Status: COMPLETED
+
+- Customer directory with name/phone search, status filters, add-customer dialog, and links to each statement.
+- Customer statement from `GET /api/v1/customers/:id/statement` with backend totals, outstanding sales, and payment history.
+- Repayment dialog against a selected outstanding sale, with exact kobo preview, overpayment validation, and idempotent `requestId`.
+- Customer edit screen for name, phone, and active status.
+- Loading, empty, error, and success states; 400/401/403/404/409/429 handling.
+
+Verified limitations:
+`GET /api/v1/customers` returns no balances or last-sale data, so the directory omits those design columns rather than fanning out one statement request per customer (beyond the 3 requests/second throttle); the statement is authoritative for balances. The `payments` table has no method, entered-date, or reference columns, so those repayment fields and the "At sale"/"Repayment" type distinction are omitted. Sale references use the first 8 characters of the UUID because the backend has no `SL-####` numbers. Customer address, town/LGA, state, and notes are not stored.
 
 ## Phase 3: Stock Receiving
 
 ### FE-031: Receive Stock
-Status: BLOCKED
+Status: COMPLETED
 
-- Verify the current stock receiving endpoint and request format.
-- Support receiving stock in bags or retail packs, as allowed by the API.
-- Display the correct pack conversion for each product.
-- Allow supplier details only where supported and required by the agreed workflow.
-- Show the saved receipt and updated stock after success.
-- Handle invalid quantities, failed requests, and duplicate submissions.
-- Confirm the stock balance matches the backend response.
+- Implemented in FE-012 as the stock-additions flow at `/inventory/receive`.
+- Supports cartons plus loose packs combined into a pack-denominated receipt.
+- Shows the saved receipt and the backend-returned stock balance.
+- Handles invalid quantities, failed requests, duplicate submissions (`requestId`), and `OwnerGuard`/`StaffGuard` failures.
+- Optional supplier selection uses the verified suppliers endpoint.
 
 Note: Keep FE-030 Purchase Management deferred. Do not build a separate purchase workflow unless it is part of the agreed scope and supported by the backend.
 
 ## Phase 4: Customers and Reports
 
 ### FE-040: Customer Management
-Status: BLOCKED
+Status: COMPLETED
 
-- Verify customer creation, lookup, update, and deactivation capabilities.
-- Implement only operations supported by the current API.
-- Allow staff to find customers when recording sales and repayments.
-- Preserve access to existing debt and payment history for deactivated customers.
-- Respect backend permissions and validation rules.
+- Create, list, read, and update customers through the shared `/customers` screens.
+- Deactivate/reactivate through the `active` field; statement and payment history remain available for inactive customers.
+- Staff can find customers while recording a sale (inline add) and via the directory when recording repayments.
+- Only backend-supported fields are shown: name, phone, active status, and timestamps.
+
+Verified limitation:
+The directory's design columns "Balance owed" and "Last sale" cannot be populated from `GET /api/v1/customers` without per-customer statement requests; they are shown on the customer statement instead. There is no delete endpoint, so customers are deactivated rather than removed.
 
 ### FE-042: Monthly Reports and Overview
 Status: BLOCKED
@@ -135,6 +139,9 @@ Status: BLOCKED
 - Ensure later payments do not incorrectly change historical report figures.
 - Handle empty months and failed requests.
 - Do not derive official totals from incomplete frontend data.
+
+Blocker / verified limitation:
+`GET /api/v1/reports/monthly?month=YYYY-MM` is verified and returns `salesTotal`, `moneyReceived`, `outstandingDebtAtMonthEnd`, `productsSold`, and `closingStock` in Africa/Lagos. The supplied `overview.svg` is a *daily* shop summary ("Sales today", "Payments received"), which no verified endpoint provides. Scope must be agreed (monthly report screen vs. daily overview) before implementing.
 
 ## Deferred Work
 

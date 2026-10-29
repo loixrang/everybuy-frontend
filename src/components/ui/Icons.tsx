@@ -326,3 +326,83 @@ export function SlidersIcon({ size = 20, className = '', ...props }: IconProps) 
   );
 }
 
+export function PencilIcon({ size = 20, className = '', ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+      <path d="m15 5 4 4" />
+    </svg>
+  );
+}
+
+export function ChevronRightIcon({ size = 20, className = '', ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+export function WalletIcon({ size = 20, className = '', ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+      <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+    </svg>
+  );
+}
+
+export function LogOutIcon({ size = 20, className = '', ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+

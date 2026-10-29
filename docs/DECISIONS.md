@@ -127,3 +127,37 @@ When a supplied design includes a field the backend cannot store, omit the field
 
 Reason:
 Sending data the backend discards, or persisting it in frontend-only storage, would misrepresent the system's records.
+
+## DEC-014: Cookie-Only Authentication with Route Guards
+
+Decision:
+Use the backend's Better Auth cookie session directly. `AuthProvider` reads `GET /api/v1/auth/get-session` on startup, all requests keep `credentials: 'include'`, and no token is written to localStorage or application memory. Protected routes wait for the session check; a 401 from any application endpoint emits `everybuy:unauthorized` and returns the user to `/signin`, remembering the attempted path.
+
+Reason:
+The backend (verified in `src/auth.ts` and `@thallesp/nestjs-better-auth`) issues HttpOnly session cookies, requires a trusted `FRONTEND_URL` origin, and already handles sessions, email verification, and two-factor authentication. A separate JWT or token-storage layer would duplicate and weaken that system.
+
+Related:
+- Two-factor challenges are completed with `/two-factor/verify-otp` (email code) or `/two-factor/verify-totp` (authenticator app) before a session exists.
+- The session does not include the Owner/Staff role; the UI does not infer it, and backend guards remain authoritative.
+
+## DEC-015: No Per-Customer Statement Fan-Out
+
+Decision:
+`GET /api/v1/customers` is loaded once for the directory and never followed by one statement request per customer. The directory shows only backend-supported fields (name, phone, active, timestamps) and links each row to the customer statement, where balance owed and last purchase are shown.
+
+Reason:
+The list endpoint has no balance/last-sale aggregates, and the backend's global throttler allows 3 requests/second per route. A statement-per-row fan-out would be throttled and would make the directory slow and unreliable. The detail screen already provides authoritative totals in one statement request.
+
+Consequence:
+The supplied directory's "Balance owed" and "Last sale" columns are intentionally absent. Adding them requires a backend aggregate endpoint or an agreed server-side list response.
+
+## DEC-016: Server-Authoritative Repayment Balances
+
+Decision:
+Repayment amounts are posted with a client-generated `requestId` that is kept across retries of the same sale/amount and regenerated when either changes. The UI displays the statement totals returned by the backend; the only client-computed figure is a clearly labelled post-repayment preview using integer kobo arithmetic. After a confirmed repayment, the detail page refetches the statement instead of patching balances locally.
+
+Reason:
+The backend locks the sale, rejects overpayments and fully paid sales, and treats `requestId` as the idempotency key. Server totals avoid drift and double-counting, and refetching keeps the page consistent with concurrent payments.
+
+Consequence:
+The repayment design's "Payment method", "Payment date", "Reference", and at-sale/repayment type are omitted because the `payments` table stores only `amount`, `requestId`, `paidAt`, and `recordedBy`. Customers are deactivated with `active: false` because there is no delete endpoint.

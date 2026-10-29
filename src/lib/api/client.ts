@@ -1,5 +1,12 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
+/**
+ * Emitted when a non-auth request is rejected with 401, i.e. the session has
+ * expired or was revoked. The auth provider listens for it and sends the user
+ * back to the sign-in screen.
+ */
+export const UNAUTHORIZED_EVENT = 'everybuy:unauthorized';
+
 export class ApiError extends Error {
   status: number;
   data: unknown;
@@ -42,6 +49,17 @@ export async function apiFetch<T = unknown>(
     const message = (typeof data === 'object' && data && 'message' in data && typeof (data as any).message === 'string')
       ? (data as any).message
       : res.statusText || 'Request failed';
+
+    // Auth endpoints legitimately return 401 for bad credentials; only surface
+    // expired/revoked sessions from application requests.
+    if (
+      res.status === 401 &&
+      !path.startsWith('/api/v1/auth/') &&
+      typeof window !== 'undefined'
+    ) {
+      window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT));
+    }
+
     throw new ApiError(message, res.status, data);
   }
 

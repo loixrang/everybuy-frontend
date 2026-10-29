@@ -43,6 +43,22 @@ Notes:
 - Sign-up may be disabled by default in normal auth; staff provisioning uses `createProvisioningAuth` with allowSignUp true.
 - Do not assume JWT storage on frontend; rely on session cookies.
 
+## Authentication Contract Notes (verified)
+
+Verified from `src/auth.ts`, `src/app.module.ts`, and the installed `better-auth` 1.7.x distribution:
+
+- **Cookie sessions only**: the frontend must send `credentials: 'include'`. No JWT is issued or stored; the session cookie is managed by Better Auth.
+- **Session read**: `GET /api/v1/auth/get-session` returns `{ session, user }` for a valid cookie and JSON `null` when signed out (not 401).
+- **Sign-in**: `POST /api/v1/auth/sign-in/email` with `{ email, password }`. Success returns `{ token, user, redirect, url }` plus the session cookie. If the account has two-factor enabled the response is `{ twoFactorRedirect: true, twoFactorMethods }` and **no session cookie** is issued yet.
+- **Email verification required**: `requireEmailVerification: true`; unverified accounts are rejected with 403 `EMAIL_NOT_VERIFIED`.
+- **Origin check**: sign-in validates the browser `Origin` against `trustedOrigins` (`FRONTEND_URL`, default `http://localhost:5173`). A mismatch returns 403 `INVALID_ORIGIN`. The frontend origin must match `FRONTEND_URL` exactly.
+- **Two-factor**: plugin issues a short-lived signed challenge cookie (10 min). A code can be sent by email (`/two-factor/send-otp`; OTP period is 3 minutes, 6 digits) or verified from an authenticator app (`/two-factor/verify-totp`). Both verification endpoints return `{ token, user }` and set the session cookie. Backup-code verification exists in the plugin but is not exposed by the current UI.
+- **Sign-out**: `POST /api/v1/auth/sign-out` revokes the session and clears the cookie; returns `{ success: true }`.
+- **Error shape**: Better Auth errors are JSON `{ message, code }` (for example `INVALID_EMAIL_OR_PASSWORD`, `EMAIL_NOT_VERIFIED`, `INVALID_ORIGIN`, `INVALID_CODE`, `OTP_HAS_EXPIRED`, `TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE`).
+- **Rate limits**: Better Auth's own limiter is 100 requests / 60 s; the two-factor plugin adds 3 requests / 10 s. The Nest app also installs a global `ThrottlerGuard` with **3 requests / second and 100 / minute**, keyed per controller + handler. Do not fan out per-record requests (e.g. one statement call per customer); they will be throttled.
+- **No role in the session**: Better Auth's `user` object has no Owner/Staff role. The role lives in the separate `staff` table, so the frontend cannot derive it from the session. Role-based actions remain backend-enforced.
+- **Sign-up**: the mounted auth instance is created with `allowSignUp: false`; there is no public sign-up flow.
+
 ## Roles and Permissions
 
 Verified from schema (dist/database/schema/auth.schema.js):
@@ -60,7 +76,8 @@ Verified from schema (dist/database/schema/auth.schema.js):
 | View categories | Allowed | Allowed (StaffGuard on CategoriesController) | Verified from CategoriesController |
 | View brands | Allowed | Allowed (StaffGuard on BrandController) | Verified from BrandController |
 | Record sales | Allowed (StaffGuard on SalesController) | Allowed (StaffGuard) | Verified from SalesController |
-| Record payments/repayments | Unverified | Unverified | Pending (customers module verified to exist; see customers endpoints) |
+| Record payments/repayments | Allowed (StaffGuard) | Allowed (StaffGuard) | Verified from CustomersController |
+| Manage customers | Allowed (StaffGuard) | Allowed (StaffGuard) | Verified from CustomersController (create/list/read/update) |
 | Receive stock (additions) | Allowed (StaffGuard on StockController) | Allowed (StaffGuard) | Verified from StockController |
 | Adjust stock | Allowed (OwnerGuard on POST /api/v1/stock/adjustments) | Forbidden by OwnerGuard | Verified from StockController |
 | View stock movements | Allowed | Allowed (StaffGuard) | Verified from StockController |
@@ -75,6 +92,12 @@ Do not treat as full policy - verify per endpoint.
 | Feature | Method and Path | Request | Response | Access | Status |
 |---|---|---|---|---|---|
 | Auth (Better Auth) | Mounted at /api/v1/auth/* (Better Auth handlers) | Better Auth API shapes (see better-auth docs) | Better Auth responses | Varies | Verified (mounted) |
+| Session | GET/POST /api/v1/auth/get-session | None (session cookie) | `{ session, user }` or JSON `null` when signed out | Public | Verified (better-auth 1.7.x + backend source) |
+| Sign in | POST /api/v1/auth/sign-in/email | `{ email, password }` | `{ token, user }` on success; `{ twoFactorRedirect: true, twoFactorMethods: ('totp' \| 'otp')[] }` when 2FA is enabled | Public | Verified (better-auth 1.7.x) |
+| Sign out | POST /api/v1/auth/sign-out | `{}` (body optional) | `{ success: true }` and cookie cleared | Session cookie | Verified (better-auth 1.7.x) |
+| Send 2FA code | POST /api/v1/auth/two-factor/send-otp | `{}` (optional `trustDevice`) | `{ status: true }`; requires the signed 2FA challenge cookie | Pending 2FA | Verified (better-auth 1.7.x) |
+| Verify emailed 2FA code | POST /api/v1/auth/two-factor/verify-otp | `{ code, trustDevice? }` | `{ token, user }` and session cookie | Pending 2FA | Verified (better-auth 1.7.x) |
+| Verify authenticator code | POST /api/v1/auth/two-factor/verify-totp | `{ code, trustDevice? }` | `{ token, user }` and session cookie | Pending 2FA | Verified (better-auth 1.7.x) |
 | Products | GET /api/v1/products | `findProductSchema` query: `page` (default 1), `limit` (default 10, max 100), `packName` (enum), `categoryId` (uuid), `brandId` (uuid), `size` (string) | Array of product objects: `{ id, name, categoryId, brandId, packName, size, packsPerBag, piecesPerPack, bagPrice, retailPrice, stockPacks, active, createdAt, updatedAt }` | StaffGuard (staff/owner) | Verified (controller & repo) |
 | Products | GET /api/v1/products/options | `findProductSchema` query | Distinct `{ packName, sizes, bagPrice, retailPrice }[]` | StaffGuard | Verified (controller & repo) |
 | Products | GET /api/v1/products/:id | `findProductSchema` query | Product detail array | StaffGuard | Verified (controller & repo) |
@@ -93,11 +116,12 @@ Do not treat as full policy - verify per endpoint.
 | Sales | POST /api/v1/sales | `createSaleSchema`: `{ requestId: uuid (required, client-generated idempotency key), customerId?: uuid, amountPaid: string matching ^\d{1,12}(\.\d{1,2})?$, items: [{ productId: uuid, unit: 'Bag' \| 'Pack', quantity: int 1..1,000,000 }] (1..100 items; a product cannot repeat with the same unit) }` | `{ sale: Sale, items: SaleItem[], payment: Payment[] (0 or 1), updatedProduct: { id }[], stockMovement: StockMovement[], replayed: boolean }` | StaffGuard | Verified (controller, service & DTO) |
 | Sales list | GET /api/v1/sales | `findSalesSchema` query: `page` (default 1), `limit` (default 20, max 100) | `{ data: Sale[], page, limit, total }`, ordered soldAt desc | StaffGuard | Verified (controller & service) |
 | Sale detail | GET /api/v1/sales/:id | None (id via `ParseUUIDPipe`) | `{ ...Sale, items: SaleItem[] }`; 404 `Sale not found` if missing | StaffGuard | Verified (controller & service) |
-| Customers | GET /api/v1/customers | None | Array of `{ id, name, phone, active, createdAt, updatedAt }` (full list, no pagination) | StaffGuard | Verified (controller & service) |
+| Customers | GET /api/v1/customers | None | Array of `{ id, name, phone, active, createdAt, updatedAt }` (full list, no pagination, no balances) | StaffGuard | Verified (controller & service) |
+| Customer detail | GET /api/v1/customers/:id | None (id via `ParseUUIDPipe`) | Array containing the customer (the service uses `.where()` without `.limit(1)`); `[]` when the id is unknown | StaffGuard | Verified (controller & service) |
 | Customer create | POST /api/v1/customers | `createCustomerSchema` (drizzle-zod insert schema; only `name` required, `phone` optional) | Drizzle `.returning()` array with the created customer | StaffGuard | Verified (controller & service) |
-| Customer update | PATCH /api/v1/customers/update/:id | `updateCustomerSchema` (drizzle-zod update schema) | Updated customer | StaffGuard | Verified (controller) |
-| Customer statement | GET /api/v1/customers/:id/statement | None (id via `ParseUUIDPipe`) | `{ customer, totals: { salesTotal, moneyReceived, outstandingDebt }, sales: [{ id, soldAt, totalAmount, paidAmount, balanceDue, paymentStatus: 'UNPAID' \| 'PAID' \| 'PART_PAID', items, payments }] }` | StaffGuard | Verified (controller & service) |
-| Repayment | POST /api/v1/customers/:id/repayments | `recordRepaymentSchema` (`requestId: uuid`, `saleId: uuid`, `amount`) | `{ payment, saleId, totalAmount, paidAmount, balanceDue }` | StaffGuard | Verified (controller & service) |
+| Customer update | PATCH /api/v1/customers/update/:id | `updateCustomerSchema` (partial insert schema: `name?`, `phone?`, `active?`) | Drizzle `.returning()` array with the updated customer | StaffGuard | Verified (controller) |
+| Customer statement | GET /api/v1/customers/:id/statement | None (id via `ParseUUIDPipe`) | `{ customer, totals: { salesTotal, moneyReceived, outstandingDebt }, sales: [{ id, soldAt, totalAmount, paidAmount, balanceDue, paymentStatus: 'UNPAID' \| 'PAID' \| 'PART_PAID', items, payments }] }`; sales ordered `soldAt` desc, payments ordered `paidAt` asc; 404 `Customer not found` | StaffGuard | Verified (controller & service) |
+| Repayment | POST /api/v1/customers/:id/repayments | `recordRepaymentSchema`: `{ requestId: uuid, saleId: uuid, amount: string matching ^(?=.*[1-9])\d{1,12}(\.\d{1,2})?$ }` | `{ payment, saleId, totalAmount, paidAmount, balanceDue }`; 400 over outstanding, 404 unknown sale for this customer, 409 already paid or requestId reused with a different payload | StaffGuard | Verified (controller & service) |
 | Staff (invites/create) | See StaffController/Service | InviteStaffDto, CreateStaffDto, AcceptInviteDto | Various | StaffGuard + OwnerGuard | Partially verified |
 
 ### Product Schema Limitations & Notes:
@@ -126,10 +150,15 @@ Do not treat as full policy - verify per endpoint.
 - **Sales List/Detail**: `GET /api/v1/sales` is paginated (`{ data, page, limit, total }`, soldAt desc). `GET /api/v1/sales/:id` returns the sale with `items` embedded. Neither returns payments; use the customer statement for payment data.
 
 ### Customers Contract Notes:
-- **No Pagination**: `GET /api/v1/customers` returns the full list.
-- **Create**: `POST /api/v1/customers` requires only `name`; `phone` optional; returns a `.returning()` array (frontend takes `[0]`).
-- **Statement**: `GET /api/v1/customers/:id/statement` computes `paymentStatus` per sale (`UNPAID` / `PART_PAID` / `PAID`) and totals (`salesTotal`, `moneyReceived`, `outstandingDebt`). Read-only transaction (repeatable read).
-- **Repayments**: `POST /api/v1/customers/:id/repayments` requires `requestId` (UUID idempotency), `saleId`, `amount`; rejects amounts over the outstanding balance (400) and repayments on fully paid sales (409).
+- **No Pagination**: `GET /api/v1/customers` returns the full list, ordered as PostgreSQL returns the rows (no `ORDER BY`).
+- **No List Aggregates**: The customer list contains no balance, payment, or last-sale fields. Fetching one statement per customer would exceed the global 3 requests/second throttle, so the frontend directory omits those design columns and shows them on the statement instead.
+- **Detail Returns an Array**: `GET /api/v1/customers/:id` returns a `.where()` array; the frontend takes `[0]` and treats `[]` as not found.
+- **Create/Update**: `POST /api/v1/customers` requires only `name`; `phone` is optional. `PATCH /api/v1/customers/update/:id` accepts any subset of `{ name, phone, active }`. Both return `.returning()` arrays (the frontend takes `[0]`). There is no delete endpoint; deactivate with `active: false`.
+- **Stored Fields Only**: The `customers` table has `id`, `name`, `phone`, `active`, `createdAt`, `updatedAt`. Address, town/LGA, state, and notes are not stored.
+- **Statement**: `GET /api/v1/customers/:id/statement` computes `paymentStatus` per sale (`UNPAID` / `PART_PAID` / `PAID`) and totals (`salesTotal`, `moneyReceived`, `outstandingDebt`) in one read-only repeatable-read transaction. Sales are newest first; each sale embeds its items and payments. A customer with no sales returns zeroed totals and `sales: []`.
+- **Repayments**: `POST /api/v1/customers/:id/repayments` requires `requestId` (UUID idempotency), `saleId`, and a positive amount with at most 2 decimals. It locks the sale, rejects amounts over the outstanding balance (400), rejects fully paid sales (409), and replays a matching `requestId` instead of double-charging. Reusing a `requestId` with a different sale or amount returns 409. Repayments do not change stock.
+- **No Payment Method/Type**: The `payments` table has only `{ id, saleId, amount, recordedBy, requestId, paidAt }`. Method, entered payment date, reference, and an "at sale"/"repayment" type are not stored; the frontend shows `paidAt` and `amount` only.
+- **Sale References**: Sales use UUID primary keys; there is no human-readable `SL-####` column, so the UI shows the first 8 characters of the UUID and keeps the full id in a tooltip.
 
 ## Money and Quantities
 

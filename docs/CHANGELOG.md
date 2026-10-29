@@ -4,6 +4,72 @@ Record meaningful frontend changes here.
 
 ## Unreleased
 
+### 2026-10-29: FE-022 Customer Debt, Statements, and Repayments (also completes FE-040)
+
+Added:
+- Customer statement types in `src/types/customer.ts`: `UpdateCustomerInput`, `PaymentStatus`, `StatementSale`, `CustomerStatementTotals`, `CustomerStatement`, `RecordRepaymentInput`, and `RecordRepaymentResult`, verified against `customers.service.ts`, the DTOs, and the schema.
+- Customer API functions in `src/lib/api/customers.ts`: `fetchCustomer`, `updateCustomer`, `fetchCustomerStatement`, and `recordRepayment` alongside the existing list/create helpers.
+- `CustomersPage` (`/customers`): directory with name/phone search, All/Active/Inactive filters, desktop table and mobile cards, add-customer dialog, and loading/empty/no-results/retry/staff-access states.
+- `CustomerDetailPage` (`/customers/:id`):
+  - Backend-computed balance owed, total sales, money received, and last purchase from a single statement request.
+  - Outstanding-sales table with total/paid/owed and a per-sale repayment action.
+  - Payment history using the backend's `paidAt` and `amount`, plus a refreshed success banner after a repayment.
+  - Customer details card and edit action.
+- `RecordRepaymentModal`: outstanding-sale selector, backend-matching amount validation, full-balance shortcut, integer-kobo balance preview, idempotent `requestId`, and 400/403/404/409/429 error mapping.
+- `CustomerEditPage` (`/customers/:id/edit`): name, phone, and active-status toggle with cancel/save and error handling.
+- `CustomerStatusBadge`, `AddCustomerModal`, and `RecordRepaymentModal` under `src/components/customers/`.
+- `formatShortDate` and `trimMoney` helpers; `PencilIcon`, `ChevronRightIcon`, and `WalletIcon`.
+- Routes for `/customers`, `/customers/:id`, and `/customers/:id/edit`.
+
+Changed:
+- Desktop sidebar and mobile navigation now mark Sales and Customers as active on their routes.
+
+Checks:
+- `bun run build`: passed
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed (oxlint, 0 warnings, 0 errors)
+
+Notes:
+- No live end-to-end test was possible: the backend API (port 3000) and PostgreSQL (port 5432) were not running. Shapes and error behaviour were verified from backend source.
+- Backend limitation: `GET /api/v1/customers` returns no balance or last-sale data, so those directory columns are omitted; balances are shown on the customer statement. Per-customer statement fan-out was deliberately avoided because of the 3 requests/second throttle.
+- Backend limitation: the `payments` table has no method, entered-date, or reference columns, so the repayment design's "Payment method", "Payment date", and "Reference" fields are not implemented, and the "At sale"/"Repayment" distinction is omitted.
+- Backend limitation: `customers` stores only name, phone, active, and timestamps; address, town/LGA, state, and notes fields are not implemented.
+- Sale references show `#` plus the first 8 UUID characters because the backend has no human-readable `SL-####` numbers; the full id is kept in the row title.
+- All authoritative balances, totals, and payment statuses come from the statement endpoint. The post-repayment preview is clearly labelled and uses integer kobo arithmetic.
+- Repayments affect receivables only; stock is unchanged by design.
+
+### 2026-10-29: FE-002 Authentication and Session Management
+
+Added:
+- Auth domain types in `src/types/auth.ts`: `AuthUser`, `AuthSession`, `SignInResponse`, `TwoFactorChallenge`, `TwoFactorMethod`, `TwoFactorVerifyResponse`, plus an `isTwoFactorChallenge` guard.
+- Auth API client in `src/lib/api/auth.ts`: `fetchSession` (`GET /api/v1/auth/get-session`), `signInWithEmail` (`POST /api/v1/auth/sign-in/email`), `signOut` (`POST /api/v1/auth/sign-out`), `sendTwoFactorOtp`, `verifyTwoFactorOtp`, and `verifyTwoFactorTotp`.
+- `AuthProvider` + auth context (`src/app/auth/`): loads the session on startup, exposes loading/authenticated/unauthenticated state, and clears local state when any non-auth request returns 401. No tokens are stored in JavaScript; the backend cookie is the only credential.
+- `RouteGuards.tsx`: `ProtectedRoute` (redirects to `/signin`, remembers the attempted path) and `GuestRoute` (sends signed-in users to `/inventory`), with a branded session-loading screen.
+- `SignInPage` (`/signin`) built from `signin.svg`: email/password form with show/hide password, two-factor step supporting authenticator-app (`verify-totp`) and emailed (`verify-otp`) codes with resend and method switching, light/dark themes, visible focus styles, and accessible labels.
+- Error mapping for `INVALID_EMAIL_OR_PASSWORD`, `EMAIL_NOT_VERIFIED`, `INVALID_ORIGIN`, `INVALID_CODE`, `OTP_HAS_EXPIRED`, `TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE`, `ACCOUNT_TEMPORARILY_LOCKED`, 429, 5xx, and network failures.
+- `src/lib/hooks/useTheme.ts`: shared light/dark theme hook (previously duplicated in the shell).
+- `LogOutIcon` in `src/components/ui/Icons.tsx`.
+
+Changed:
+- `src/lib/api/client.ts` emits `UNAUTHORIZED_EVENT` on non-auth 401 responses so the session state and route guard react immediately.
+- `InventoryLayout` shows the signed-in user's name/email, adds a sign-out control with inline failure feedback, and uses the shared theme hook.
+- `src/app/router.tsx` registers `/signin` for guests and wraps all inventory routes in `ProtectedRoute`.
+- `src/main.tsx` wraps the app in `AuthProvider`.
+
+Checks:
+- `bun run build`: passed
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed (oxlint, 0 warnings, 0 errors)
+
+Notes:
+- No live end-to-end sign-in was possible: the backend API (port 3000) and PostgreSQL (port 5432) were not running. Endpoint shapes, cookies, and error codes were verified from the installed backend source and the `better-auth` 1.7.x distribution.
+- The backend requires `FRONTEND_URL` to match the frontend origin exactly; otherwise sign-in fails with `INVALID_ORIGIN` (mapped to an actionable message).
+- Sign-up is disabled on the main auth instance, so the UI has no sign-up link; password reset and staff invitations are also out of scope.
+- The Better Auth session does not expose the Owner/Staff role, so role-specific navigation cannot be derived from it. Backend guards remain authoritative and pages surface 403 responses.
+- A signed-in user without an active `staff` row passes the route guard but receives 403 from staff endpoints; no verified endpoint reports staff access to the frontend.
+- Two-factor backup codes are not supported in this UI; authenticator-app and emailed codes are.
+- The backend's global throttler (3 requests/second per route, 100/minute) can rate-limit repeated sign-in attempts; that case is mapped to a user-facing message.
+
 ### 2026-10-28: FE-020 Record a Sale
 
 Added:

@@ -1,5 +1,5 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import {
   PackageIcon,
   ShoppingBagIcon,
@@ -9,32 +9,45 @@ import {
   MenuIcon,
   PlusIcon,
   HistoryIcon,
+  LogOutIcon,
 } from '../ui/Icons';
-
-type Theme = 'light' | 'dark';
-
-function getInitialTheme(): Theme {
-  if (typeof window === 'undefined') return 'light';
-  const stored = localStorage.getItem('everybuy-theme') as Theme | null;
-  if (stored === 'light' || stored === 'dark') return stored;
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  return prefersDark ? 'dark' : 'light';
-}
+import { useAuth } from '../../app/auth/auth-context';
+import { ApiError } from '../../lib/api/client';
+import { useTheme } from '../../lib/hooks/useTheme';
 
 export function InventoryLayout() {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [theme, toggleTheme] = useTheme();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
   const location = useLocation();
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('everybuy-theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'));
+  const displayName = user?.name?.trim() || user?.email || 'Signed in';
 
   const isInventoryActive = location.pathname.startsWith('/inventory');
   const isMovementsActive = location.pathname.startsWith('/movements');
   const isOverviewActive = location.pathname === '/overview';
+  const isSalesActive = location.pathname.startsWith('/sales');
+  const isCustomersActive = location.pathname.startsWith('/customers');
+
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    setSignOutError(null);
+    try {
+      await signOut();
+      navigate('/signin', { replace: true });
+    } catch (err: unknown) {
+      setSignOutError(
+        err instanceof ApiError
+          ? err.message
+          : 'Unable to sign out. Check your connection and try again.',
+      );
+    } finally {
+      setSigningOut(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[color:var(--color-canvas)] text-[color:var(--color-ink)] flex flex-col">
@@ -57,9 +70,12 @@ export function InventoryLayout() {
           </div>
 
           {/* Right: User and theme toggle */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            <span className="hidden sm:inline text-sm font-normal text-[color:var(--color-muted)]">
-              Staff / Owner
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span
+              className="hidden sm:inline max-w-[180px] truncate text-sm font-normal text-[color:var(--color-muted)]"
+              title={user?.email}
+            >
+              {displayName}
             </span>
             <button
               onClick={toggleTheme}
@@ -68,9 +84,34 @@ export function InventoryLayout() {
             >
               {theme === 'light' ? <MoonIcon size={18} /> : <SunIcon size={18} />}
             </button>
+            <button
+              onClick={() => void handleSignOut()}
+              disabled={signingOut}
+              className="w-10 h-10 rounded-[8px] flex items-center justify-center border border-[color:var(--color-border)] bg-[color:var(--color-surface)] hover:bg-[color:var(--color-subtle)] text-[color:var(--color-ink)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOutIcon size={18} />
+            </button>
           </div>
         </div>
       </header>
+
+      {signOutError && (
+        <div
+          role="alert"
+          className="px-5 lg:px-12 py-2 flex items-center justify-between gap-3 border-b border-[color:var(--color-border)] bg-[color:var(--color-danger-bg)] text-xs text-[color:var(--color-danger-ink)]"
+        >
+          <span>{signOutError}</span>
+          <button
+            type="button"
+            onClick={() => setSignOutError(null)}
+            className="font-semibold underline underline-offset-2"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Main Workspace with Desktop Sidebar & Main Content */}
       <div className="flex-1 flex max-w-[1440px] w-full mx-auto">
@@ -96,11 +137,13 @@ export function InventoryLayout() {
               <SidebarNavLink
                 to="/sales"
                 label="Sales"
+                active={isSalesActive}
                 icon={<PlusIcon size={18} />}
               />
               <SidebarNavLink
                 to="/customers"
                 label="Customers"
+                active={isCustomersActive}
                 icon={<UsersIcon size={18} />}
               />
               <SidebarNavLink
@@ -122,7 +165,20 @@ export function InventoryLayout() {
             <div className="font-semibold text-[color:var(--color-quiet)] uppercase tracking-wider text-[10px]">
               Everyday / Uyo
             </div>
-            <div className="font-semibold text-[color:var(--color-ink)]">Staff / Owner</div>
+            <div
+              className="font-semibold text-[color:var(--color-ink)] truncate"
+              title={displayName}
+            >
+              {displayName}
+            </div>
+            {user?.name && user.email && (
+              <div
+                className="text-[color:var(--color-muted)] truncate"
+                title={user.email}
+              >
+                {user.email}
+              </div>
+            )}
           </div>
         </aside>
 
@@ -144,11 +200,13 @@ export function InventoryLayout() {
           <MobileNavButton
             to="/sales"
             label="Sale"
+            active={isSalesActive}
             icon={<PlusIcon size={20} />}
           />
           <MobileNavButton
             to="/customers"
             label="Customers"
+            active={isCustomersActive}
             icon={<UsersIcon size={20} />}
           />
           <MobileNavButton
