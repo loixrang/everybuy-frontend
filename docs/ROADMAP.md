@@ -207,6 +207,20 @@ Verified on 2026-10-29 against backend controllers, services, DTOs, database sch
 
 Completion checks: typecheck, lint, 24 tests, production build, and `git diff --check` passed.
 
+## Phase 6: Release Preparation
+
+### FE-055: Search Visibility, Performance, and CI/CD Preparation
+Status: COMPLETED
+
+- Keep this authenticated application out of search indexes and provide useful route titles.
+- Split page modules into independently loaded chunks.
+- Support deployment base paths for Vite assets and browser routes.
+- Add GitHub Actions checks for typecheck, lint, tests, and production build.
+- Add an opt-in GitHub Pages deployment of the verified artifact, gated on the production API URL and base path variables.
+- Document frontend/backend origin and cookie requirements.
+
+Checks passed locally: typecheck, lint, 24 tests, production build, and `git diff --check`. The GitHub workflow itself needs a first hosted run after push; Pages deployment is skipped until the documented variables and Pages setting are configured.
+
 ## Blocked and Deferred Work
 
 ### FE-041: Stocktaking

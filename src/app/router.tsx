@@ -1,59 +1,187 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { GuestRoute, ProtectedRoute } from '../app/auth/RouteGuards';
-import { InventoryLayout } from '../components/layout/InventoryLayout';
-import { SignInPage } from '../pages/auth/SignInPage';
-import { InventoryPage } from '../pages/inventory/InventoryPage';
-import { ProductDetailPage } from '../pages/inventory/ProductDetailPage';
-import { ProductSetupPage } from '../pages/inventory/ProductSetupPage';
-import { StockMovementsPage } from '../pages/stock/StockMovementsPage';
-import { ReceiveStockPage } from '../pages/stock/ReceiveStockPage';
-import { RecordSalePage } from '../pages/sales/RecordSalePage';
-import { SalesPage } from '../pages/sales/SalesPage';
-import { SaleDetailPage } from '../pages/sales/SaleDetailPage';
-import { CustomersPage } from '../pages/customers/CustomersPage';
-import { CustomerDetailPage } from '../pages/customers/CustomerDetailPage';
-import { CustomerEditPage } from '../pages/customers/CustomerEditPage';
-import { OverviewPage } from '../pages/reports/OverviewPage';
-import { SettingsPage } from '../pages/settings/SettingsPage';
-import { AcceptInvitePage } from '../pages/auth/AcceptInvitePage';
-import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
-import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
-import { ExpensesPage } from '../pages/expenses/ExpensesPage';
-import { AuditPage } from '../pages/audit/AuditPage';
+
+const InventoryLayout = lazy(() =>
+  import('../components/layout/InventoryLayout').then((module) => ({
+    default: module.InventoryLayout,
+  })),
+);
+const SignInPage = lazy(() =>
+  import('../pages/auth/SignInPage').then((module) => ({
+    default: module.SignInPage,
+  })),
+);
+const InventoryPage = lazy(() =>
+  import('../pages/inventory/InventoryPage').then((module) => ({
+    default: module.InventoryPage,
+  })),
+);
+const ProductDetailPage = lazy(() =>
+  import('../pages/inventory/ProductDetailPage').then((module) => ({
+    default: module.ProductDetailPage,
+  })),
+);
+const ProductSetupPage = lazy(() =>
+  import('../pages/inventory/ProductSetupPage').then((module) => ({
+    default: module.ProductSetupPage,
+  })),
+);
+const StockMovementsPage = lazy(() =>
+  import('../pages/stock/StockMovementsPage').then((module) => ({
+    default: module.StockMovementsPage,
+  })),
+);
+const ReceiveStockPage = lazy(() =>
+  import('../pages/stock/ReceiveStockPage').then((module) => ({
+    default: module.ReceiveStockPage,
+  })),
+);
+const RecordSalePage = lazy(() =>
+  import('../pages/sales/RecordSalePage').then((module) => ({
+    default: module.RecordSalePage,
+  })),
+);
+const SalesPage = lazy(() =>
+  import('../pages/sales/SalesPage').then((module) => ({
+    default: module.SalesPage,
+  })),
+);
+const SaleDetailPage = lazy(() =>
+  import('../pages/sales/SaleDetailPage').then((module) => ({
+    default: module.SaleDetailPage,
+  })),
+);
+const CustomersPage = lazy(() =>
+  import('../pages/customers/CustomersPage').then((module) => ({
+    default: module.CustomersPage,
+  })),
+);
+const CustomerDetailPage = lazy(() =>
+  import('../pages/customers/CustomerDetailPage').then((module) => ({
+    default: module.CustomerDetailPage,
+  })),
+);
+const CustomerEditPage = lazy(() =>
+  import('../pages/customers/CustomerEditPage').then((module) => ({
+    default: module.CustomerEditPage,
+  })),
+);
+const OverviewPage = lazy(() =>
+  import('../pages/reports/OverviewPage').then((module) => ({
+    default: module.OverviewPage,
+  })),
+);
+const SettingsPage = lazy(() =>
+  import('../pages/settings/SettingsPage').then((module) => ({
+    default: module.SettingsPage,
+  })),
+);
+const AcceptInvitePage = lazy(() =>
+  import('../pages/auth/AcceptInvitePage').then((module) => ({
+    default: module.AcceptInvitePage,
+  })),
+);
+const ForgotPasswordPage = lazy(() =>
+  import('../pages/auth/ForgotPasswordPage').then((module) => ({
+    default: module.ForgotPasswordPage,
+  })),
+);
+const ResetPasswordPage = lazy(() =>
+  import('../pages/auth/ResetPasswordPage').then((module) => ({
+    default: module.ResetPasswordPage,
+  })),
+);
+const ExpensesPage = lazy(() =>
+  import('../pages/expenses/ExpensesPage').then((module) => ({
+    default: module.ExpensesPage,
+  })),
+);
+const AuditPage = lazy(() =>
+  import('../pages/audit/AuditPage').then((module) => ({
+    default: module.AuditPage,
+  })),
+);
 
 export function AppRouter() {
+  const location = useLocation();
+
+  useEffect(() => {
+    document.title = `${getPageTitle(location.pathname)} | Everybuy`;
+  }, [location.pathname]);
+
   return (
-    <Routes>
-      <Route path="/accept-invite" element={<AcceptInvitePage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route element={<GuestRoute />}>
-        <Route path="/signin" element={<SignInPage />} />
-      </Route>
-      <Route element={<ProtectedRoute />}>
-        <Route element={<InventoryLayout />}>
-          <Route index element={<Navigate to="/inventory" replace />} />
-          <Route path="/inventory" element={<InventoryPage />} />
-          <Route path="/inventory/new" element={<ProductSetupPage />} />
-          <Route path="/inventory/receive" element={<ReceiveStockPage />} />
-          <Route path="/inventory/:id" element={<ProductDetailPage />} />
-          <Route path="/inventory/:id/edit" element={<ProductSetupPage />} />
-          <Route path="/movements" element={<StockMovementsPage />} />
-          <Route path="/sales" element={<SalesPage />} />
-          <Route path="/sales/new" element={<RecordSalePage />} />
-          <Route path="/sales/:id" element={<SaleDetailPage />} />
-          <Route path="/customers" element={<CustomersPage />} />
-          <Route path="/customers/:id" element={<CustomerDetailPage />} />
-          <Route path="/customers/:id/edit" element={<CustomerEditPage />} />
-          <Route path="/expenses" element={<ExpensesPage />} />
-          <Route path="/audit" element={<AuditPage />} />
-          <Route path="/overview" element={<OverviewPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/team" element={<Navigate to="/settings" replace />} />
-          <Route path="*" element={<NotFoundPage />} />
+    <Suspense fallback={<RouteLoading />}>
+      <Routes>
+        <Route path="/accept-invite" element={<AcceptInvitePage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route element={<GuestRoute />}>
+          <Route path="/signin" element={<SignInPage />} />
         </Route>
-      </Route>
-    </Routes>
+        <Route element={<ProtectedRoute />}>
+          <Route element={<InventoryLayout />}>
+            <Route index element={<Navigate to="/inventory" replace />} />
+            <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/inventory/new" element={<ProductSetupPage />} />
+            <Route path="/inventory/receive" element={<ReceiveStockPage />} />
+            <Route path="/inventory/:id" element={<ProductDetailPage />} />
+            <Route path="/inventory/:id/edit" element={<ProductSetupPage />} />
+            <Route path="/movements" element={<StockMovementsPage />} />
+            <Route path="/sales" element={<SalesPage />} />
+            <Route path="/sales/new" element={<RecordSalePage />} />
+            <Route path="/sales/:id" element={<SaleDetailPage />} />
+            <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/customers/:id" element={<CustomerDetailPage />} />
+            <Route path="/customers/:id/edit" element={<CustomerEditPage />} />
+            <Route path="/expenses" element={<ExpensesPage />} />
+            <Route path="/audit" element={<AuditPage />} />
+            <Route path="/overview" element={<OverviewPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/team" element={<Navigate to="/settings" replace />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Route>
+      </Routes>
+    </Suspense>
+  );
+}
+
+function getPageTitle(pathname: string): string {
+  if (pathname === '/signin') return 'Sign in';
+  if (pathname === '/accept-invite') return 'Accept invitation';
+  if (pathname === '/forgot-password') return 'Forgot password';
+  if (pathname === '/reset-password') return 'Reset password';
+  if (pathname.startsWith('/inventory/new')) return 'New product';
+  if (pathname.startsWith('/inventory/receive')) return 'Receive stock';
+  if (/^\/inventory\/[^/]+\/edit/.test(pathname)) return 'Edit product';
+  if (pathname.startsWith('/inventory/')) return 'Product details';
+  if (pathname.startsWith('/inventory')) return 'Inventory';
+  if (pathname.startsWith('/movements')) return 'Stock movements';
+  if (pathname.startsWith('/sales/new')) return 'Record a sale';
+  if (/^\/sales\/[^/]+/.test(pathname)) return 'Sale details';
+  if (pathname.startsWith('/sales')) return 'Sales';
+  if (/^\/customers\/[^/]+\/edit/.test(pathname)) return 'Edit customer';
+  if (/^\/customers\/[^/]+/.test(pathname)) return 'Customer statement';
+  if (pathname.startsWith('/customers')) return 'Customers';
+  if (pathname.startsWith('/expenses')) return 'Expenses';
+  if (pathname.startsWith('/audit')) return 'Audit log';
+  if (pathname.startsWith('/overview')) return 'Reports';
+  if (pathname.startsWith('/settings') || pathname.startsWith('/team')) {
+    return 'Settings';
+  }
+  return 'Page not found';
+}
+
+function RouteLoading() {
+  return (
+    <main
+      aria-live="polite"
+      aria-busy="true"
+      className="grid min-h-dvh place-items-center bg-[color:var(--color-canvas)] px-5 text-sm text-[color:var(--color-muted)]"
+    >
+      Loading Everybuy…
+    </main>
   );
 }
 

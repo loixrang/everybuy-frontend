@@ -266,3 +266,14 @@ The user requested Poppins and stronger mobile responsiveness. Locally bundled f
 Consequence:
 The original handoff's Manrope typography is superseded by this explicit project instruction. Safe-area and small-device visual behavior still needs a manual real-device pass.
 
+## DEC-025: Keep the Internal Application Out of Search Indexes
+
+Decision:
+Treat Everybuy as a private authenticated application. Serve `noindex` metadata on all routes, allow crawlers to read the directive, and do not publish a sitemap. Use descriptive browser titles for navigation, and add public search landing pages separately if needed later.
+
+Reason:
+Inventory, customer, sales, and staff pages are not public content. Search snippets or indexed URLs would not help intended users and could expose private route structure.
+
+Consequence:
+Search visibility is intentionally disabled for the application. The current CI/CD pipeline targets optional GitHub Pages deployment, gated by production API/base-path variables and backend origin configuration; it is not enabled in this checkout.
+

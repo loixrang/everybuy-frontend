@@ -4,6 +4,17 @@ Record meaningful frontend changes here.
 
 ## Unreleased
 
+### 2026-10-29: SEO Hygiene, Route Splitting, and CI/CD
+
+Changed:
+- Added descriptive static metadata, noindex directives, an application robots file, and route-specific browser titles. The authenticated application is intentionally excluded from search indexes; no sitemap is published.
+- Lazy-loaded feature pages and the inventory layout behind a shared accessible loading fallback to reduce the initial JavaScript download.
+- Added `VITE_BASE_PATH` support for both Vite assets and React Router routes; the favicon follows the deployment base path.
+- Added a GitHub Actions pipeline for typecheck, lint, tests, and production build. It uploads a default-branch artifact and optionally deploys that verified artifact to GitHub Pages when API/base-path variables are configured.
+- Added deployment setup documentation covering Pages configuration and backend CORS/cookie requirements.
+
+Checks: typecheck, lint, 24 tests, production build, and `git diff --check` passed. Route splitting reduced the initial JavaScript bundle to 281.32 kB (88.09 kB gzip); no chunk-size advisory was emitted. The GitHub-hosted workflow has not yet run; Pages deployment remains skipped until repository variables and Pages publishing are configured.
+
 ### 2026-10-29: Poppins and Small-Screen Touch Polish
 
 Changed:

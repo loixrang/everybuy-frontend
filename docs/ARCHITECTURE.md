@@ -104,6 +104,9 @@ src/
     stock.ts
   main.tsx
   App.tsx
+.github/
+  workflows/
+    ci-cd.yml
 ```
 
 
@@ -294,3 +297,13 @@ Implemented (FE-051):
 - `src/lib/api/client.test.ts` stubs `fetch` to verify JSON parsing, cookie credentials, JSON content type, `ApiError` messages, and the unauthorized-event behaviour (including the auth-endpoint exception).
 - `@types/bun` is a dev dependency and `tsconfig.app.json` lists `"types": ["vite/client", "bun"]`, so tests are type-checked with the app.
 - Component and browser tests are not set up; adding them requires a DOM test library and a deliberate dependency decision.
+
+## Production Build and Search Visibility
+
+Implemented (FE-055):
+
+- Page modules are loaded with `React.lazy` and a shared accessible `Suspense` fallback, so the initial JavaScript does not include every feature screen.
+- `VITE_BASE_PATH` configures Vite's asset base for deployments; `BrowserRouter` uses Vite's `BASE_URL` so routes work beneath a project subpath.
+- The private application sets `noindex` metadata and a browser title per route. `robots.txt` allows crawlers to read the noindex directive; no sitemap is published.
+- `.github/workflows/ci-cd.yml` checks type, lint, tests and build on PRs and pushes, then optionally deploys the verified artifact to GitHub Pages when the production API URL and base path variables are configured.
+- Deployment setup and backend-origin requirements are in `docs/DEPLOYMENT.md`.
