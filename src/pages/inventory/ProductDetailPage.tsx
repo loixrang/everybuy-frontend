@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { fetchProductById, fetchCategories, fetchBrands } from '../../lib/api/products';
 import { fetchAllStockMovements } from '../../lib/api/stock';
 import { ApiError } from '../../lib/api/client';
+import { useAuth } from '../../app/auth/auth-context';
 import { formatNaira, formatMovementDate, formatMovementLabel } from '../../lib/utils/format';
 import {
   AlertCircleIcon,
@@ -34,6 +35,7 @@ function movementReference(m: StockMovement): string {
 
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { isOwner } = useAuth();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -220,12 +222,14 @@ export function ProductDetailPage() {
           </p>
         </div>
         <div className="shrink-0">
-          <Link
-            to={`/inventory/${product.id}/edit`}
-            className="inline-flex items-center justify-center h-11 px-6 rounded-[8px] font-semibold text-sm bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors"
-          >
-            Edit product
-          </Link>
+          {isOwner && (
+            <Link
+              to={`/inventory/${product.id}/edit`}
+              className="inline-flex items-center justify-center h-11 px-6 rounded-[8px] font-semibold text-sm bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors"
+            >
+              Edit product
+            </Link>
+          )}
         </div>
       </div>
 
@@ -301,6 +305,16 @@ export function ProductDetailPage() {
               </span>
             </div>
           )}
+          {isOwner && (
+            <div className="py-3 flex items-center justify-between">
+              <span className="text-[color:var(--color-muted)]">Cost per pack</span>
+              <span className="font-medium text-[color:var(--color-ink)]">
+                {product.costPerPack
+                  ? formatNaira(product.costPerPack)
+                  : 'Not recorded yet'}
+              </span>
+            </div>
+          )}
           <div className="py-3 flex items-center justify-between">
             <span className="text-[color:var(--color-muted)]">Status</span>
             <span
@@ -324,14 +338,16 @@ export function ProductDetailPage() {
         >
           Receive stock
         </Link>
-        <button
-          type="button"
-          onClick={() => setIsAdjustmentOpen(true)}
-          className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-[8px] font-semibold text-sm border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"
-        >
-          <SlidersIcon size={16} />
-          <span>Adjust stock</span>
-        </button>
+        {isOwner && (
+          <button
+            type="button"
+            onClick={() => setIsAdjustmentOpen(true)}
+            className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-[8px] font-semibold text-sm border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"
+          >
+            <SlidersIcon size={16} />
+            <span>Adjust stock</span>
+          </button>
+        )}
         <Link
           to={`/movements?productId=${product.id}`}
           className="inline-flex items-center justify-center h-11 px-6 rounded-[8px] font-semibold text-sm border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"

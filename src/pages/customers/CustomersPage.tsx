@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchCustomers } from '../../lib/api/customers';
 import { ApiError } from '../../lib/api/client';
-import { formatShortDate } from '../../lib/utils/format';
+import { formatNaira, formatShortDate } from '../../lib/utils/format';
 import { AddCustomerModal } from '../../components/customers/AddCustomerModal';
 import { CustomerStatusBadge } from '../../components/customers/CustomerStatusBadge';
 import {
@@ -14,7 +14,7 @@ import {
   UsersIcon,
   XIcon,
 } from '../../components/ui/Icons';
-import type { Customer } from '../../types/customer';
+import type { Customer, CustomerListItem } from '../../types/customer';
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 
@@ -25,7 +25,7 @@ const STATUS_FILTERS: { label: string; value: StatusFilter }[] = [
 ];
 
 export function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<{ message: string; status?: number } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -33,7 +33,7 @@ export function CustomersPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [showAddCustomer, setShowAddCustomer] = useState(false);
-  const [createdCustomer, setCreatedCustomer] = useState<Customer | null>(null);
+  const [createdCustomer, setCreatedCustomer] = useState<CustomerListItem | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -92,11 +92,21 @@ export function CustomersPage() {
   }, [sortedCustomers, search, statusFilter]);
 
   const activeCount = customers.filter((customer) => customer.active).length;
+  const totalOutstanding = customers.reduce(
+    (sum, customer) => sum + Number(customer.balance || 0),
+    0,
+  );
   const hasFilters = search.trim().length > 0 || statusFilter !== 'ALL';
 
   function handleCustomerCreated(customer: Customer) {
-    setCustomers((current) => [...current, customer]);
-    setCreatedCustomer(customer);
+    const listItem: CustomerListItem = {
+      ...customer,
+      balance: '0.00',
+      lastSaleAt: null,
+      totalPurchases: '0.00',
+    };
+    setCustomers((current) => [...current, listItem]);
+    setCreatedCustomer(listItem);
     setSearch('');
     setStatusFilter('ALL');
   }
@@ -263,8 +273,9 @@ export function CustomersPage() {
                 <tr className="bg-[color:var(--color-subtle)] border-b border-[color:var(--color-border)]">
                   <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Customer</th>
                   <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Phone</th>
+                  <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)] text-right">Balance</th>
+                  <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Last sale</th>
                   <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Status</th>
-                  <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Added</th>
                   <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)] text-right">Statement</th>
                 </tr>
               </thead>
@@ -282,11 +293,20 @@ export function CustomersPage() {
                     <td className="py-4 px-4 text-sm text-[color:var(--color-muted)]">
                       {customer.phone || '—'}
                     </td>
-                    <td className="py-4 px-4">
-                      <CustomerStatusBadge active={customer.active} />
+                    <td
+                      className={`py-4 px-4 text-sm font-semibold text-right ${
+                        Number(customer.balance) > 0
+                          ? 'text-[color:var(--color-danger-ink)]'
+                          : 'text-[color:var(--color-muted)]'
+                      }`}
+                    >
+                      {formatNaira(customer.balance)}
                     </td>
                     <td className="py-4 px-4 text-sm text-[color:var(--color-muted)]">
-                      {formatShortDate(customer.createdAt)}
+                      {customer.lastSaleAt ? formatShortDate(customer.lastSaleAt) : '—'}
+                    </td>
+                    <td className="py-4 px-4">
+                      <CustomerStatusBadge active={customer.active} />
                     </td>
                     <td className="py-4 px-4 text-right">
                       <Link
@@ -322,7 +342,11 @@ export function CustomersPage() {
                   <CustomerStatusBadge active={customer.active} />
                 </div>
                 <div className="text-xs text-[color:var(--color-muted)] border-t border-[color:var(--color-border)] pt-2 mt-3 flex items-center justify-between">
-                  <span>Added {formatShortDate(customer.createdAt)}</span>
+                  <span>
+                    {Number(customer.balance) > 0
+                      ? `Owes ${formatNaira(customer.balance)}`
+                      : 'No balance'}
+                  </span>
                   <span className="inline-flex items-center gap-0.5 font-semibold text-[color:var(--color-accent-ink)]">
                     Statement
                     <ChevronRightIcon size={14} />
@@ -338,7 +362,7 @@ export function CustomersPage() {
               {activeCount !== customers.length ? ` · ${activeCount} active` : ''}
             </p>
             <p>
-              Open a customer to view their balance, sales and payment history.
+              Total outstanding: {formatNaira(String(totalOutstanding))}
             </p>
           </div>
         </>

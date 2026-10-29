@@ -17,6 +17,12 @@ export interface Product {
   piecesPerPack: number | null;
   bagPrice: string; // numeric(14,2)
   retailPrice: string; // numeric(14,2)
+  /**
+   * Weighted-average cost per pack (numeric(14,4)), maintained by stock
+   * additions. Null until cost has been recorded; never sent by the product
+   * create/update API.
+   */
+  costPerPack: string | null;
   stockPacks: number;
   active: boolean;
   createdAt: string;

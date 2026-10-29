@@ -167,6 +167,12 @@ export function CustomerDetailPage() {
         </div>
         <div className="flex flex-col sm:flex-row gap-2 shrink-0">
           <Link
+            to={`/sales?customerId=${customer.id}`}
+            className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-[8px] font-semibold text-sm border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"
+          >
+            Sales history
+          </Link>
+          <Link
             to={`/customers/${customer.id}/edit`}
             className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-[8px] font-semibold text-sm border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"
           >
@@ -267,8 +273,17 @@ export function CustomerDetailPage() {
           <div className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5 space-y-3">
             <p className="text-xs font-semibold text-[color:var(--color-muted)]">Customer details</p>
             <DetailRow label="Phone" value={customer.phone || '—'} />
+            <DetailRow label="Address" value={customer.address || '—'} />
             <DetailRow label="Added" value={formatShortDate(customer.createdAt)} />
             <DetailRow label="Status" value={customer.active ? 'Active' : 'Inactive'} />
+            {customer.notes && (
+              <div className="pt-1 border-t border-[color:var(--color-border)]">
+                <p className="text-[11px] font-semibold text-[color:var(--color-muted)]">Notes</p>
+                <p className="text-xs text-[color:var(--color-ink)] mt-1 whitespace-pre-line">
+                  {customer.notes}
+                </p>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -309,7 +324,12 @@ export function CustomerDetailPage() {
                       {outstandingSales.map((sale) => (
                         <tr key={sale.id}>
                           <td className="py-3 px-4 text-sm font-semibold text-[color:var(--color-ink)]" title={sale.id}>
-                            #{sale.id.slice(0, 8)}
+                            <Link
+                              to={`/sales/${sale.id}`}
+                              className="hover:text-[color:var(--color-accent)] hover:underline underline-offset-2"
+                            >
+                              #{sale.id.slice(0, 8)}
+                            </Link>
                           </td>
                           <td className="py-3 px-4 text-sm text-[color:var(--color-muted)]">
                             {formatShortDate(sale.soldAt)}
@@ -369,6 +389,7 @@ export function CustomerDetailPage() {
                       <tr className="bg-[color:var(--color-subtle)] border-b border-[color:var(--color-border)]">
                         <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Date</th>
                         <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Sale</th>
+                        <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Method</th>
                         <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)] text-right">Amount</th>
                       </tr>
                     </thead>
@@ -379,7 +400,20 @@ export function CustomerDetailPage() {
                             {formatMovementDate(payment.paidAt)}
                           </td>
                           <td className="py-3 px-4 text-sm font-semibold text-[color:var(--color-ink)]" title={payment.saleId}>
-                            #{payment.saleId.slice(0, 8)}
+                            <Link
+                              to={`/sales/${payment.saleId}`}
+                              className="hover:text-[color:var(--color-accent)] hover:underline underline-offset-2"
+                            >
+                              #{payment.saleId.slice(0, 8)}
+                            </Link>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-[color:var(--color-muted)]">
+                            {payment.method === 'cash'
+                              ? 'Cash'
+                              : payment.method === 'transfer'
+                                ? 'Transfer'
+                                : 'POS'}
+                            {payment.reference ? ` · ${payment.reference}` : ''}
                           </td>
                           <td className="py-3 px-4 text-sm font-semibold text-[color:var(--color-ink)] text-right">
                             {formatNaira(payment.amount)}
@@ -402,6 +436,12 @@ export function CustomerDetailPage() {
                         </p>
                         <p className="text-xs text-[color:var(--color-muted)] mt-0.5">
                           {formatMovementDate(payment.paidAt)} · sale #{payment.saleId.slice(0, 8)}
+                          {' · '}
+                          {payment.method === 'cash'
+                            ? 'Cash'
+                            : payment.method === 'transfer'
+                              ? 'Transfer'
+                              : 'POS'}
                         </p>
                       </div>
                     </div>

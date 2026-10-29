@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { fetchSales } from '../../lib/api/sales';
-import { fetchCustomers } from '../../lib/api/customers';
+import { Link, useSearchParams } from 'react-router-dom';
+import { fetchSales, fetchSalesSummary } from '../../lib/api/sales';
 import { ApiError } from '../../lib/api/client';
 import { formatMovementDate, formatNaira } from '../../lib/utils/format';
 import {
@@ -9,51 +8,115 @@ import {
   ChevronRightIcon,
   PlusIcon,
   RefreshCwIcon,
+  SearchIcon,
   ShoppingBagIcon,
+  XIcon,
 } from '../../components/ui/Icons';
-import type { Customer } from '../../types/customer';
-import type { Sale } from '../../types/sale';
+import {
+  normalisePaymentStatus,
+  type PaymentStatus,
+  type SalesFilters,
+  type SalesListPaymentStatus,
+  type SalesListRow,
+  type SalesSummary,
+} from '../../types/sale';
 
 const PAGE_SIZE = 20;
 
+interface AppliedFilters {
+  q: string;
+  from: string;
+  to: string;
+  paymentStatus: SalesListPaymentStatus | '';
+}
+
+const EMPTY_FILTERS: AppliedFilters = {
+  q: '',
+  from: '',
+  to: '',
+  paymentStatus: '',
+};
+
 export function SalesPage() {
-  const [sales, setSales] = useState<Sale[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const customerId = searchParams.get('customerId') ?? '';
+
+  const [rows, setRows] = useState<SalesListRow[]>([]);
+  const [summary, setSummary] = useState<SalesSummary | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<AppliedFilters>(EMPTY_FILTERS);
+  const [draft, setDraft] = useState<AppliedFilters>(EMPTY_FILTERS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<{ message: string; status?: number } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+
+  const buildFilters = useCallback(
+    (targetPage: number): SalesFilters => {
+      const query: SalesFilters = { page: targetPage, limit: PAGE_SIZE };
+      if (filters.q.trim()) query.q = filters.q.trim();
+      if (filters.from) query.from = filters.from;
+      if (filters.to) query.to = filters.to;
+      if (filters.paymentStatus) query.paymentStatus = filters.paymentStatus;
+      if (customerId) query.customerId = customerId;
+      return query;
+    },
+    [customerId, filters],
+  );
 
   useEffect(() => {
     let ignore = false;
 
     async function load() {
-      const [salesResult, customersResult] = await Promise.allSettled([
-        fetchSales(page, PAGE_SIZE),
-        fetchCustomers(),
+      setLoading(true);
+      setError(null);
+
+      const salesRequest = fetchSales(buildFilters(page));
+      // The summary mirrors the date range but not the text/status filters,
+      // because the backend summary endpoint only accepts from/to.
+      const summaryRequest = fetchSalesSummary(
+        filters.from || undefined,
+        filters.to || undefined,
+      );
+
+      const [salesResult, summaryResult] = await Promise.allSettled([
+        salesRequest,
+        summaryRequest,
       ]);
 
       if (ignore) return;
 
       if (salesResult.status === 'fulfilled') {
-        setSales(salesResult.value.data);
+        setRows(salesResult.value.data);
         setTotal(salesResult.value.total);
+        setTotalPages(Math.max(1, salesResult.value.totalPages || 1));
       } else {
+        setRows([]);
+        setTotal(0);
+        setTotalPages(1);
         const err = salesResult.reason;
-        if (err instanceof ApiError) {
-          setError({ message: err.message, status: err.status });
-        } else {
-          setError({
-            message:
-              'Unable to connect to the backend server. Check that it is running and try again.',
-          });
-        }
+        setError(
+          err instanceof ApiError
+            ? { message: err.message, status: err.status }
+            : {
+                message:
+                  'Unable to connect to the backend server. Check that it is running and try again.',
+              },
+        );
       }
 
-      // Customer names are a convenience: a failure here must not hide sales.
-      if (customersResult.status === 'fulfilled') {
-        setCustomers(customersResult.value);
+      if (summaryResult.status === 'fulfilled') {
+        setSummary(summaryResult.value);
+        setSummaryError(null);
+      } else {
+        setSummary(null);
+        setSummaryError(
+          summaryResult.reason instanceof ApiError
+            ? summaryResult.reason.message
+            : 'Sales totals are unavailable.',
+        );
       }
 
       setLoading(false);
@@ -63,36 +126,47 @@ export function SalesPage() {
     return () => {
       ignore = true;
     };
-  }, [page, reloadKey]);
+  }, [buildFilters, page, reloadKey, filters.from, filters.to]);
 
-  const customerMap = useMemo(() => {
-    const map = new Map<string, Customer>();
-    for (const customer of customers) map.set(customer.id, customer);
-    return map;
-  }, [customers]);
+  const hasActiveFilters = useMemo(
+    () =>
+      Boolean(
+        filters.q ||
+          filters.from ||
+          filters.to ||
+          filters.paymentStatus ||
+          customerId,
+      ),
+    [filters, customerId],
+  );
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const rangeStart = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(page * PAGE_SIZE, total);
 
   const retry = useCallback(() => {
-    setLoading(true);
-    setError(null);
     setReloadKey((key) => key + 1);
   }, []);
 
-  function changePage(nextPage: number) {
-    if (nextPage < 1 || nextPage > totalPages || nextPage === page) return;
-    setLoading(true);
-    setError(null);
-    setPage(nextPage);
+  function applyFilters(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFilters(draft);
+    setPage(1);
   }
 
-  function customerLabel(sale: Sale): string {
-    if (!sale.customerId) return 'Walk-in customer';
-    const customer = customerMap.get(sale.customerId);
-    if (customer) return customer.name;
-    return `Customer #${sale.customerId.slice(0, 8)}`;
+  function clearFilters() {
+    setDraft(EMPTY_FILTERS);
+    setFilters(EMPTY_FILTERS);
+    setPage(1);
+    if (customerId) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('customerId');
+      setSearchParams(next, { replace: true });
+    }
+  }
+
+  function changePage(nextPage: number) {
+    if (nextPage < 1 || nextPage > totalPages || nextPage === page) return;
+    setPage(nextPage);
   }
 
   return (
@@ -103,7 +177,7 @@ export function SalesPage() {
             Sales history
           </h1>
           <p className="text-sm text-[color:var(--color-muted)] mt-1">
-            Shop sales, customers and saved item prices.
+            Shop sales, payments and balances.
           </p>
         </div>
         <Link
@@ -114,6 +188,117 @@ export function SalesPage() {
           Record sale
         </Link>
       </div>
+
+      {customerId && (
+        <div className="flex items-center justify-between gap-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-subtle)] px-4 py-2">
+          <span className="text-xs font-medium text-[color:var(--color-muted)]">
+            Showing sales for one customer.
+          </span>
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-xs font-semibold text-[color:var(--color-accent-ink)] hover:underline underline-offset-2"
+          >
+            Show all sales
+          </button>
+        </div>
+      )}
+
+      <SummaryCards summary={summary} error={summaryError} loading={loading && !summary} />
+
+      <form
+        onSubmit={applyFilters}
+        className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4"
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="block">
+            <span className="block text-xs font-semibold text-[color:var(--color-muted)] mb-1">
+              Search
+            </span>
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[color:var(--color-muted)]">
+                <SearchIcon size={16} />
+              </span>
+              <input
+                type="search"
+                value={draft.q}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, q: event.target.value }))
+                }
+                placeholder="Sale number or customer"
+                maxLength={100}
+                className="w-full h-10 pl-9 pr-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent)]"
+              />
+            </div>
+          </label>
+          <label className="block">
+            <span className="block text-xs font-semibold text-[color:var(--color-muted)] mb-1">
+              From
+            </span>
+            <input
+              type="date"
+              value={draft.from}
+              max={draft.to || undefined}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, from: event.target.value }))
+              }
+              className="w-full h-10 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent)]"
+            />
+          </label>
+          <label className="block">
+            <span className="block text-xs font-semibold text-[color:var(--color-muted)] mb-1">
+              To
+            </span>
+            <input
+              type="date"
+              value={draft.to}
+              min={draft.from || undefined}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, to: event.target.value }))
+              }
+              className="w-full h-10 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent)]"
+            />
+          </label>
+          <label className="block">
+            <span className="block text-xs font-semibold text-[color:var(--color-muted)] mb-1">
+              Payment status
+            </span>
+            <select
+              value={draft.paymentStatus}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  paymentStatus: event.target.value as SalesListPaymentStatus | '',
+                }))
+              }
+              className="w-full h-10 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent)]"
+            >
+              <option value="">All</option>
+              <option value="PAID">Paid</option>
+              <option value="PARTIAL">Partly paid</option>
+              <option value="UNPAID">Unpaid</option>
+            </select>
+          </label>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            type="submit"
+            className="h-9 px-4 rounded-[8px] text-xs font-semibold bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors"
+          >
+            Apply filters
+          </button>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1 h-9 px-3 rounded-[8px] text-xs font-semibold border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"
+            >
+              <XIcon size={14} />
+              Clear
+            </button>
+          )}
+        </div>
+      </form>
 
       {error && (
         <div className="p-4 rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)]">
@@ -146,8 +331,12 @@ export function SalesPage() {
       {loading ? (
         <SalesSkeleton />
       ) : total === 0 && !error ? (
-        <EmptySalesState />
-      ) : sales.length === 0 ? (
+        hasActiveFilters ? (
+          <NoMatchingSales onClear={clearFilters} />
+        ) : (
+          <EmptySalesState />
+        )
+      ) : rows.length === 0 ? (
         <div className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-8 text-center">
           <p className="text-sm font-semibold text-[color:var(--color-ink)]">
             No sales on this page
@@ -172,12 +361,15 @@ export function SalesPage() {
                   <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Sale</th>
                   <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Customer</th>
                   <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Date</th>
-                  <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Total</th>
+                  <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)] text-right">Total</th>
+                  <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)] text-right">Paid</th>
+                  <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)] text-right">Balance</th>
+                  <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Status</th>
                   <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)] text-right">Details</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[color:var(--color-border)]">
-                {sales.map((sale) => (
+                {rows.map((sale) => (
                   <tr key={sale.id} className="hover:bg-[color:var(--color-subtle)]/50 transition-colors group">
                     <td className="py-4 px-4">
                       <Link
@@ -185,17 +377,26 @@ export function SalesPage() {
                         title={sale.id}
                         className="font-semibold text-sm text-[color:var(--color-ink)] group-hover:text-[color:var(--color-accent)] transition-colors"
                       >
-                        #{sale.id.slice(0, 8)}
+                        {sale.reference}
                       </Link>
                     </td>
                     <td className="py-4 px-4 text-sm text-[color:var(--color-muted)]">
-                      {customerLabel(sale)}
+                      {sale.customer?.name || 'Walk-in customer'}
                     </td>
                     <td className="py-4 px-4 text-sm text-[color:var(--color-muted)]">
-                      {formatMovementDate(sale.soldAt)}
+                      {formatMovementDate(sale.createdAt)}
                     </td>
-                    <td className="py-4 px-4 text-sm font-semibold text-[color:var(--color-ink)]">
+                    <td className="py-4 px-4 text-sm font-semibold text-[color:var(--color-ink)] text-right">
                       {formatNaira(sale.itemsTotal)}
+                    </td>
+                    <td className="py-4 px-4 text-sm text-[color:var(--color-muted)] text-right">
+                      {formatNaira(sale.amountPaid)}
+                    </td>
+                    <td className="py-4 px-4 text-sm text-[color:var(--color-muted)] text-right">
+                      {formatNaira(sale.balance)}
+                    </td>
+                    <td className="py-4 px-4">
+                      <PaymentStatusBadge status={normalisePaymentStatus(sale.status)} />
                     </td>
                     <td className="py-4 px-4 text-right">
                       <Link
@@ -213,7 +414,7 @@ export function SalesPage() {
           </div>
 
           <div className="lg:hidden space-y-3">
-            {sales.map((sale) => (
+            {rows.map((sale) => (
               <Link
                 key={sale.id}
                 to={`/sales/${sale.id}`}
@@ -222,20 +423,25 @@ export function SalesPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-[color:var(--color-ink)]">
-                      Sale #{sale.id.slice(0, 8)}
+                      {sale.reference}
                     </p>
                     <p className="text-xs text-[color:var(--color-muted)] mt-1 truncate">
-                      {customerLabel(sale)}
+                      {sale.customer?.name || 'Walk-in customer'}
                     </p>
                   </div>
-                  <p className="text-sm font-bold text-[color:var(--color-ink)] shrink-0">
-                    {formatNaira(sale.itemsTotal)}
-                  </p>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-[color:var(--color-ink)]">
+                      {formatNaira(sale.itemsTotal)}
+                    </p>
+                    <div className="mt-1 flex justify-end">
+                      <PaymentStatusBadge status={normalisePaymentStatus(sale.status)} />
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs text-[color:var(--color-muted)] border-t border-[color:var(--color-border)] pt-2 mt-3 flex items-center justify-between">
-                  <span>{formatMovementDate(sale.soldAt)}</span>
+                <div className="text-xs text-[color:var(--color-muted)] border-t border-[color:var(--color-border)] pt-2 mt-3 flex items-center justify-between gap-3">
+                  <span>{formatMovementDate(sale.createdAt)}</span>
                   <span className="inline-flex items-center gap-0.5 font-semibold text-[color:var(--color-accent-ink)]">
-                    Details
+                    Balance {formatNaira(sale.balance)}
                     <ChevronRightIcon size={14} />
                   </span>
                 </div>
@@ -274,6 +480,102 @@ export function SalesPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
+  const classes =
+    status === 'PAID'
+      ? 'bg-[color:var(--color-success-bg)] text-[color:var(--color-success-ink)]'
+      : status === 'PART_PAID'
+        ? 'bg-[color:var(--color-warning-bg)] text-[color:var(--color-warning-ink)]'
+        : 'bg-[color:var(--color-danger-bg)] text-[color:var(--color-danger-ink)]';
+  const label = status === 'PAID' ? 'Paid' : status === 'PART_PAID' ? 'Partly paid' : 'Unpaid';
+
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold ${classes}`}>
+      {label}
+    </span>
+  );
+}
+
+function SummaryCards({
+  summary,
+  error,
+  loading,
+}: {
+  summary: SalesSummary | null;
+  error: string | null;
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[...Array(4)].map((_, index) => (
+          <div
+            key={index}
+            className="h-[84px] rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] animate-pulse"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (error || !summary) {
+    return (
+      <div className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-4 py-3">
+        <p className="text-xs text-[color:var(--color-muted)]">
+          Totals unavailable{error ? `: ${error}` : '.'}
+        </p>
+      </div>
+    );
+  }
+
+  const cards = [
+    { label: 'Sales total', value: formatNaira(summary.salesTotal) },
+    { label: 'Sales count', value: String(summary.salesCount) },
+    { label: 'Amount paid', value: formatNaira(summary.amountPaid) },
+    { label: 'Outstanding', value: formatNaira(summary.outstanding), tone: 'danger' as const },
+  ];
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {cards.map((card) => (
+        <div
+          key={card.label}
+          className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4"
+        >
+          <p className="text-xs font-semibold text-[color:var(--color-muted)]">{card.label}</p>
+          <p
+            className={`mt-1 text-xl font-bold tracking-tight ${
+              card.tone === 'danger'
+                ? 'text-[color:var(--color-danger-ink)]'
+                : 'text-[color:var(--color-ink)]'
+            }`}
+          >
+            {card.value}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function NoMatchingSales({ onClear }: { onClear: () => void }) {
+  return (
+    <div className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-8 text-center">
+      <h2 className="text-lg font-bold text-[color:var(--color-ink)]">No matching sales</h2>
+      <p className="text-sm text-[color:var(--color-muted)] mt-1">
+        Try a different search term, date range or payment status.
+      </p>
+      <button
+        type="button"
+        onClick={onClear}
+        className="mt-4 h-9 px-4 rounded-[8px] font-semibold text-xs border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"
+      >
+        Clear filters
+      </button>
     </div>
   );
 }

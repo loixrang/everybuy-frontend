@@ -4,17 +4,39 @@ import type {
   CreatedStaff,
   InvitationPreview,
   InviteStaffResult,
+  StaffInvitation,
   StaffMember,
+  UpdateStaffInput,
 } from '../../types/staff';
 
 /**
  * List shop members from GET /api/v1/staff (StaffGuard + OwnerGuard).
- * The backend returns `{ staffId, userId, name, role }` only — no email,
- * active flag, or timestamps. It answers 404 when no staff rows exist and
- * 403 for non-owners.
+ * Returns name, email, role, active flag and join date. Answers 404 when no
+ * staff rows exist and 403 for non-owners.
  */
 export async function fetchStaff(): Promise<StaffMember[]> {
-  return apiFetch<StaffMember[]>('/api/v1/staff');
+  const result = await apiFetch<StaffMember[]>('/api/v1/staff');
+  return Array.isArray(result) ? result : [];
+}
+
+/**
+ * Update a member's role or active flag
+ * (`PATCH /api/v1/staff/:staffId`, OwnerGuard).
+ * At least one field is required; the backend rejects an empty body with 409.
+ * The backend returns the updated staff row array.
+ */
+export async function updateStaff(
+  staffId: string,
+  input: UpdateStaffInput,
+): Promise<StaffMember[]> {
+  const result = await apiFetch<StaffMember[]>(
+    `/api/v1/staff/${encodeURIComponent(staffId)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    },
+  );
+  return Array.isArray(result) ? result : [];
 }
 
 /**
@@ -46,6 +68,29 @@ export async function createStaffAccount(input: {
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+/**
+ * List staff invitations (`GET /api/v1/staff/invitations`, OwnerGuard).
+ * Backend quirk: `viewInvite()` returns a single invitation row (or nothing),
+ * not an array, so both shapes are normalised here.
+ */
+export async function fetchStaffInvitations(): Promise<StaffInvitation[]> {
+  const result = await apiFetch<StaffInvitation | StaffInvitation[] | null>(
+    '/api/v1/staff/invitations',
+  );
+  if (Array.isArray(result)) return result;
+  return result ? [result] : [];
+}
+
+/** Revoke a pending invitation (`DELETE /api/v1/staff/invitations/:id`, OwnerGuard). */
+export async function deleteStaffInvitation(
+  invitationId: string,
+): Promise<StaffInvitation> {
+  return apiFetch<StaffInvitation>(
+    `/api/v1/staff/invitations/${encodeURIComponent(invitationId)}`,
+    { method: 'DELETE' },
+  );
 }
 
 /**

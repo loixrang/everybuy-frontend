@@ -11,9 +11,12 @@ import {
   ArrowLeftIcon,
 } from '../../components/ui/Icons';
 import { ApiError } from '../../lib/api/client';
+import { formatNaira } from '../../lib/utils/format';
 
 // Matches the backend createStockSchema: quantity is an integer from 1 to 1,000,000.
 const MAX_QUANTITY = 1_000_000;
+// Backend unitCost regex: greater than zero, at most 2 decimals.
+const UNIT_COST_PATTERN = /^(?=.*[1-9])\d{1,12}(\.\d{1,2})?$/;
 
 export function ReceiveStockPage() {
   const navigate = useNavigate();
@@ -31,6 +34,8 @@ export function ReceiveStockPage() {
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
   const [bags, setBags] = useState<string>('0');
   const [loosePacks, setLoosePacks] = useState<string>('0');
+  /** What was paid per pack. The receipt is sent with unit 'Pack'. */
+  const [unitCost, setUnitCost] = useState<string>('');
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -38,11 +43,11 @@ export function ReceiveStockPage() {
 
   /*
    * The backend requires a client-generated UUID requestId and replays the
-   * original result if the same id is retried. Keeping the id across failed
-   * attempts makes "Save receipt" retries idempotent instead of duplicating
-   * the receipt.
+   * original result if the same id is retried. Keep the id across retries of
+   * the same payload, but regenerate it when the receipt changes so a modified
+   * request is never mistaken for a replay.
    */
-  const requestIdRef = useRef<string | null>(null);
+  const requestIdRef = useRef<{ id: string; payload: string } | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -99,6 +104,13 @@ export function ReceiveStockPage() {
   const totalPacksFromBags = bagCount * packsPerBag;
   const totalPacksToAdd = totalPacksFromBags + looseCount;
 
+  const unitCostTrimmed = unitCost.trim();
+  const unitCostValid = UNIT_COST_PATTERN.test(unitCostTrimmed);
+  const totalCostPreview =
+    unitCostValid && totalPacksToAdd > 0
+      ? Number(unitCostTrimmed) * totalPacksToAdd
+      : null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
@@ -121,18 +133,32 @@ export function ReceiveStockPage() {
       return;
     }
 
-    if (!requestIdRef.current) {
-      requestIdRef.current = crypto.randomUUID();
+    if (!unitCostValid) {
+      setSubmitError('Enter the cost per pack, greater than zero with at most 2 decimal places.');
+      return;
+    }
+
+    const supplierIdNum = selectedSupplierId
+      ? parseInt(selectedSupplierId, 10)
+      : undefined;
+
+    const payload = JSON.stringify({
+      productId: selectedProductId,
+      type: 'Receipt',
+      unit: 'Pack',
+      quantity: totalPacksToAdd,
+      supplierId: supplierIdNum && !isNaN(supplierIdNum) ? supplierIdNum : null,
+      unitCost: unitCostTrimmed,
+    });
+
+    if (!requestIdRef.current || requestIdRef.current.payload !== payload) {
+      requestIdRef.current = { id: crypto.randomUUID(), payload };
     }
 
     setSubmitting(true);
     try {
-      const supplierIdNum = selectedSupplierId
-        ? parseInt(selectedSupplierId, 10)
-        : undefined;
-
       const result = await createStockAddition({
-        requestId: requestIdRef.current,
+        requestId: requestIdRef.current.id,
         productId: selectedProductId,
         type: 'Receipt',
         // The form combines bags and loose packs, so the receipt is sent
@@ -140,6 +166,7 @@ export function ReceiveStockPage() {
         unit: 'Pack',
         quantity: totalPacksToAdd,
         supplierId: supplierIdNum && !isNaN(supplierIdNum) ? supplierIdNum : undefined,
+        unitCost: unitCostTrimmed,
       });
 
       // Only clear the idempotency key once the backend confirms success.
@@ -365,6 +392,38 @@ export function ReceiveStockPage() {
                 Individual loose units
               </span>
             </div>
+          </div>
+
+          {/* Cost paid per pack (required by the backend) */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="receive-unit-cost"
+              className="block text-xs font-semibold text-[color:var(--color-ink)]"
+            >
+              Cost per pack (₦)
+            </label>
+            <input
+              id="receive-unit-cost"
+              type="text"
+              inputMode="decimal"
+              value={unitCost}
+              onChange={(e) => setUnitCost(e.target.value)}
+              placeholder="e.g. 6250"
+              required
+              className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)]"
+            />
+            <span className="block text-[11px] text-[color:var(--color-muted)]">
+              What you paid for one pack. For a bag, divide the bag price by{' '}
+              {packsPerBag} packs.
+              {totalCostPreview !== null
+                ? ` Total cost: ${formatNaira(String(totalCostPreview))}.`
+                : ''}
+            </span>
+            {unitCostTrimmed !== '' && !unitCostValid && (
+              <span className="block text-[11px] text-[color:var(--color-danger-ink)]">
+                Greater than zero with at most 2 decimal places.
+              </span>
+            )}
           </div>
 
           {/* Conversion breakdown message matching receive.svg */}

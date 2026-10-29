@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { fetchSale } from '../../lib/api/sales';
-import { fetchCustomerStatement } from '../../lib/api/customers';
+import { fetchCustomer, fetchCustomerStatement } from '../../lib/api/customers';
 import { ApiError } from '../../lib/api/client';
 import {
   formatLongDate,
@@ -9,11 +9,15 @@ import {
   formatNaira,
 } from '../../lib/utils/format';
 import { toKobo } from '../../lib/utils/money';
-import type {
-  CustomerStatement,
-  StatementSale,
-} from '../../types/customer';
-import type { SaleDetail, SaleItem } from '../../types/sale';
+import type { Customer, CustomerStatement, StatementSale } from '../../types/customer';
+import {
+  normalisePaymentStatus,
+  type Payment,
+  type PaymentMethod,
+  type PaymentStatus,
+  type SaleDetail,
+  type SaleItem,
+} from '../../types/sale';
 import { RecordRepaymentModal } from '../../components/customers/RecordRepaymentModal';
 import {
   AlertCircleIcon,
@@ -38,11 +42,42 @@ function unitLabel(unit: SaleItem['unit']): string {
   return unit === 'Bag' ? 'Bag' : 'Pack';
 }
 
+function methodLabel(method: PaymentMethod): string {
+  if (method === 'cash') return 'Cash';
+  if (method === 'transfer') return 'Transfer';
+  return 'POS';
+}
+
+/**
+ * Payments are the source of truth for this sale: the detail endpoint returns
+ * every payment, so paid, balance and status are derived here without a
+ * customer statement.
+ */
+function summariseSale(sale: SaleDetail) {
+  const totalKobo = toKobo(sale.itemsTotal);
+  const paidKobo = sale.payments.reduce(
+    (sum, payment) => sum + toKobo(payment.amount),
+    0n,
+  );
+  const balanceKobo = totalKobo > paidKobo ? totalKobo - paidKobo : 0n;
+  const rawStatus =
+    paidKobo === 0n ? 'UNPAID' : paidKobo >= totalKobo ? 'PAID' : 'PART_PAID';
+
+  return {
+    totalKobo,
+    paidKobo,
+    balanceKobo,
+    status: normalisePaymentStatus(rawStatus) as PaymentStatus,
+  };
+}
+
 export function SaleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [sale, setSale] = useState<SaleDetail | null>(null);
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [statement, setStatement] = useState<CustomerStatement | null>(null);
-  const [statementError, setStatementError] = useState<string | null>(null);
+  const [openingRepayment, setOpeningRepayment] = useState(false);
+  const [repaymentError, setRepaymentError] = useState<string | null>(null);
   const [loading, setLoading] = useState(!id);
   const [error, setError] = useState<LoadError | null>(
     id ? null : { message: 'No sale was selected.' },
@@ -60,20 +95,18 @@ export function SaleDetailPage() {
         const saleResult = await fetchSale(id as string);
         if (ignore) return;
         setSale(saleResult);
+        setError(null);
 
         if (saleResult.customerId) {
           try {
-            const statementResult = await fetchCustomerStatement(saleResult.customerId);
-            if (ignore) return;
-            setStatement(statementResult);
-          } catch (err: unknown) {
-            if (ignore) return;
-            setStatementError(
-              err instanceof ApiError
-                ? err.message
-                : 'Unable to load payment details for this sale.',
-            );
+            const customerResult = await fetchCustomer(saleResult.customerId);
+            if (!ignore) setCustomer(customerResult);
+          } catch {
+            // The customer name is a convenience; the sale still renders.
+            if (!ignore) setCustomer(null);
           }
+        } else {
+          setCustomer(null);
         }
       } catch (err: unknown) {
         if (ignore) return;
@@ -99,38 +132,48 @@ export function SaleDetailPage() {
   const retry = useCallback(() => {
     setLoading(true);
     setError(null);
-    setStatementError(null);
     setReloadKey((key) => key + 1);
   }, []);
 
-  const statementSale = useMemo(() => {
-    if (!sale || !statement) return null;
-    return statement.sales.find((candidate) => candidate.id === sale.id) ?? null;
-  }, [sale, statement]);
+  const totals = useMemo(() => (sale ? summariseSale(sale) : null), [sale]);
 
-  const outstandingSales = useMemo(
+  const outstandingSales = useMemo<StatementSale[]>(
     () => statement?.sales.filter((candidate) => toKobo(candidate.balanceDue) > 0n) ?? [],
     [statement],
   );
 
-  const walkIn = sale !== null && !sale.customerId;
-  const paidAmount = walkIn
-    ? sale?.itemsTotal
-    : statementSale?.paidAmount;
-  const balanceDue = walkIn ? '0.00' : statementSale?.balanceDue;
-  const status = sale ? deriveStatus(sale, statementSale) : null;
   const canRepay =
-    !walkIn &&
-    statementSale !== null &&
-    toKobo(statementSale.balanceDue) > 0n;
+    sale !== null &&
+    sale.customerId !== null &&
+    totals !== null &&
+    totals.balanceKobo > 0n;
 
-  const customerName = walkIn
-    ? 'Walk-in customer'
-    : statement?.customer.name ??
-      (sale?.customerId ? `Customer #${sale.customerId.slice(0, 8)}` : 'Customer');
+  const customerName = sale?.customerId
+    ? customer?.name ?? `Customer #${sale.customerId.slice(0, 8)}`
+    : 'Walk-in customer';
+
+  async function openRepayment() {
+    if (!sale?.customerId || openingRepayment) return;
+    setOpeningRepayment(true);
+    setRepaymentError(null);
+    try {
+      const statementResult = await fetchCustomerStatement(sale.customerId);
+      setStatement(statementResult);
+      setRepaymentOpen(true);
+    } catch (err: unknown) {
+      setRepaymentError(
+        err instanceof ApiError
+          ? err.message
+          : 'Unable to load this customer’s outstanding sales.',
+      );
+    } finally {
+      setOpeningRepayment(false);
+    }
+  }
 
   function handleRecorded(amount: string, saleId: string) {
     setSuccess({ amount, saleId });
+    setStatement(null);
     setReloadKey((key) => key + 1);
   }
 
@@ -138,7 +181,7 @@ export function SaleDetailPage() {
     return <SaleDetailSkeleton />;
   }
 
-  if (error || !sale) {
+  if (error || !sale || !totals) {
     const isNotFound = error?.status === 404;
     const isForbidden = error?.status === 401 || error?.status === 403;
 
@@ -180,6 +223,8 @@ export function SaleDetailPage() {
     );
   }
 
+  const statusMeta = statusPresentation(totals.status);
+
   return (
     <div className="space-y-6">
       <BackToSales />
@@ -188,22 +233,23 @@ export function SaleDetailPage() {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl lg:text-[32px] font-bold tracking-tight text-[color:var(--color-ink)]">
-              Sale #{sale.id.slice(0, 8)}
+              {sale.saleNumber}
             </h1>
-            {status && <StatusBadge label={status.label} tone={status.tone} />}
+            <StatusBadge label={statusMeta.label} tone={statusMeta.tone} />
           </div>
           <p className="text-sm text-[color:var(--color-muted)] mt-1">
             {formatLongDate(sale.soldAt)} · {customerName}
           </p>
         </div>
-        {canRepay && statementSale && (
+        {canRepay && (
           <button
             type="button"
-            onClick={() => setRepaymentOpen(true)}
-            className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-[8px] font-semibold text-sm bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors shrink-0"
+            onClick={() => void openRepayment()}
+            disabled={openingRepayment}
+            className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-[8px] font-semibold text-sm bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <WalletIcon size={16} />
-            Record repayment
+            {openingRepayment ? 'Loading…' : 'Record repayment'}
           </button>
         )}
       </div>
@@ -221,8 +267,8 @@ export function SaleDetailPage() {
                   Repayment recorded
                 </p>
                 <p className="text-xs text-[color:var(--color-muted)] mt-1">
-                  {formatNaira(success.amount)} applied to sale #{success.saleId.slice(0, 8)}.
-                  The summary below has been reloaded from the backend.
+                  {formatNaira(success.amount)} applied to this sale. The summary below has
+                  been reloaded from the backend.
                 </p>
               </div>
             </div>
@@ -238,25 +284,23 @@ export function SaleDetailPage() {
         </div>
       )}
 
-      {statementError && !walkIn && (
+      {repaymentError && (
         <div className="p-4 rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-warning-bg)]">
           <div className="flex items-start gap-3">
             <AlertCircleIcon size={18} className="text-[color:var(--color-warning-ink)] shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm font-semibold text-[color:var(--color-warning-ink)]">
-                Payment details unavailable
+                Could not open repayment
               </p>
-              <p className="text-xs text-[color:var(--color-muted)] mt-1">
-                The sale items are shown, but the customer statement could not be loaded
-                ({statementError}). Retry to see paid, balance and payment history.
-              </p>
+              <p className="text-xs text-[color:var(--color-muted)] mt-1">{repaymentError}</p>
             </div>
             <button
               type="button"
-              onClick={retry}
-              className="text-xs font-semibold text-[color:var(--color-ink)] underline underline-offset-2 shrink-0"
+              onClick={() => setRepaymentError(null)}
+              aria-label="Dismiss"
+              className="text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)]"
             >
-              Retry
+              <XIcon size={16} />
             </button>
           </div>
         </div>
@@ -269,37 +313,21 @@ export function SaleDetailPage() {
             <div className="mt-3 space-y-2.5">
               <SummaryRow label="Items" value={String(sale.items.length)} />
               <SummaryRow label="Total" value={formatNaira(sale.itemsTotal)} strong />
-              {paidAmount !== undefined ? (
-                <SummaryRow label="Amount paid" value={formatNaira(paidAmount)} />
-              ) : (
-                <div className="flex items-center justify-between gap-3 text-xs">
-                  <span className="text-[color:var(--color-muted)]">Amount paid</span>
-                  <span className="text-[color:var(--color-muted)]">Not available</span>
-                </div>
-              )}
-              {balanceDue !== undefined ? (
-                <SummaryRow
-                  label="Balance owed"
-                  value={formatNaira(balanceDue)}
-                  strong
-                  tone={toKobo(balanceDue) > 0n ? 'danger' : 'success'}
-                />
-              ) : (
-                <div className="flex items-center justify-between gap-3 text-xs">
-                  <span className="text-[color:var(--color-muted)]">Balance owed</span>
-                  <span className="text-[color:var(--color-muted)]">Not available</span>
-                </div>
-              )}
+              <SummaryRow label="Amount paid" value={formatNaira(String(totals.paidKobo / 100n))} />
+              <SummaryRow
+                label="Balance owed"
+                value={formatNaira(String(totals.balanceKobo / 100n))}
+                strong
+                tone={totals.balanceKobo > 0n ? 'danger' : 'success'}
+              />
               <SummaryRow
                 label="Payment type"
                 value={
-                  walkIn
-                    ? 'Paid at sale'
-                    : balanceDue === undefined
-                      ? 'Not available'
-                      : toKobo(balanceDue) > 0n
-                        ? 'Credit sale'
-                        : 'Paid in full'
+                  totals.status === 'PAID'
+                    ? 'Paid in full'
+                    : totals.status === 'PART_PAID'
+                      ? 'Partly paid'
+                      : 'Credit sale'
                 }
               />
             </div>
@@ -313,25 +341,20 @@ export function SaleDetailPage() {
 
           <div className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5 space-y-3">
             <p className="text-xs font-semibold text-[color:var(--color-muted)]">Customer details</p>
-            {walkIn ? (
+            {!sale.customerId ? (
               <p className="text-xs text-[color:var(--color-muted)]">
                 No customer was attached to this sale.
               </p>
             ) : (
               <>
                 <SummaryRow label="Name" value={customerName} />
-                <SummaryRow
-                  label="Phone"
-                  value={statement?.customer.phone || '—'}
-                />
-                {sale.customerId && (
-                  <Link
-                    to={`/customers/${sale.customerId}`}
-                    className="inline-flex text-xs font-semibold text-[color:var(--color-accent-ink)] hover:underline underline-offset-2"
-                  >
-                    View customer
-                  </Link>
-                )}
+                <SummaryRow label="Phone" value={customer?.phone || '—'} />
+                <Link
+                  to={`/customers/${sale.customerId}`}
+                  className="inline-flex text-xs font-semibold text-[color:var(--color-accent-ink)] hover:underline underline-offset-2"
+                >
+                  View customer
+                </Link>
               </>
             )}
           </div>
@@ -409,30 +432,11 @@ export function SaleDetailPage() {
             <div className="px-5 py-4 border-b border-[color:var(--color-border)]">
               <h2 className="text-sm font-bold text-[color:var(--color-ink)]">Payment history</h2>
               <p className="text-xs text-[color:var(--color-muted)] mt-1">
-                Payments recorded against this sale.
+                Payments recorded against this sale, oldest first.
               </p>
             </div>
 
-            {walkIn ? (
-              <div className="p-6 text-center">
-                <p className="text-sm text-[color:var(--color-muted)]">
-                  This is a walk-in sale with no customer attached. Payment history is only
-                  exposed through a customer statement.
-                </p>
-              </div>
-            ) : statementError ? (
-              <div className="p-6 text-center">
-                <p className="text-sm text-[color:var(--color-muted)]">
-                  Payment history could not be loaded.
-                </p>
-              </div>
-            ) : !statementSale ? (
-              <div className="p-6 text-center">
-                <p className="text-sm text-[color:var(--color-muted)]">
-                  Payment details are unavailable for this sale.
-                </p>
-              </div>
-            ) : statementSale.payments.length === 0 ? (
+            {sale.payments.length === 0 ? (
               <div className="p-6 text-center">
                 <p className="text-sm text-[color:var(--color-muted)]">
                   No payment has been recorded for this sale yet.
@@ -445,36 +449,34 @@ export function SaleDetailPage() {
                     <thead>
                       <tr className="bg-[color:var(--color-subtle)] border-b border-[color:var(--color-border)]">
                         <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Date</th>
+                        <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Method</th>
+                        <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Reference</th>
                         <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)] text-right">Amount</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[color:var(--color-border)]">
-                      {statementSale.payments.map((payment) => (
-                        <tr key={payment.id}>
-                          <td className="py-3 px-4 text-sm text-[color:var(--color-muted)]">
-                            {formatMovementDate(payment.paidAt)}
-                          </td>
-                          <td className="py-3 px-4 text-sm font-semibold text-[color:var(--color-ink)] text-right">
-                            {formatNaira(payment.amount)}
-                          </td>
-                        </tr>
+                      {sale.payments.map((payment) => (
+                        <PaymentRow key={payment.id} payment={payment} />
                       ))}
                     </tbody>
                   </table>
                 </div>
 
                 <div className="md:hidden divide-y divide-[color:var(--color-border)]">
-                  {statementSale.payments.map((payment) => (
-                    <div
-                      key={payment.id}
-                      className="px-4 py-3 flex items-center justify-between gap-3"
-                    >
-                      <span className="text-xs text-[color:var(--color-muted)]">
-                        {formatMovementDate(payment.paidAt)}
-                      </span>
-                      <span className="text-sm font-semibold text-[color:var(--color-ink)]">
-                        {formatNaira(payment.amount)}
-                      </span>
+                  {sale.payments.map((payment) => (
+                    <div key={payment.id} className="px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs text-[color:var(--color-muted)]">
+                          {formatMovementDate(payment.paidAt)}
+                        </span>
+                        <span className="text-sm font-semibold text-[color:var(--color-ink)]">
+                          {formatNaira(payment.amount)}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[color:var(--color-muted)] mt-0.5">
+                        {methodLabel(payment.method)}
+                        {payment.reference ? ` · ${payment.reference}` : ''}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -484,7 +486,7 @@ export function SaleDetailPage() {
         </div>
       </div>
 
-      {repaymentOpen && statementSale && sale.customerId && (
+      {repaymentOpen && sale.customerId && (
         <RecordRepaymentModal
           customerId={sale.customerId}
           customerName={customerName}
@@ -495,6 +497,25 @@ export function SaleDetailPage() {
         />
       )}
     </div>
+  );
+}
+
+function PaymentRow({ payment }: { payment: Payment }) {
+  return (
+    <tr>
+      <td className="py-3 px-4 text-sm text-[color:var(--color-muted)]">
+        {formatMovementDate(payment.paidAt)}
+      </td>
+      <td className="py-3 px-4 text-sm text-[color:var(--color-muted)]">
+        {methodLabel(payment.method)}
+      </td>
+      <td className="py-3 px-4 text-sm text-[color:var(--color-muted)]">
+        {payment.reference || '—'}
+      </td>
+      <td className="py-3 px-4 text-sm font-semibold text-[color:var(--color-ink)] text-right">
+        {formatNaira(payment.amount)}
+      </td>
+    </tr>
   );
 }
 
@@ -538,44 +559,34 @@ function SummaryRow({
   );
 }
 
+function statusPresentation(status: PaymentStatus): {
+  label: string;
+  tone: 'paid' | 'part' | 'unpaid';
+} {
+  if (status === 'PAID') return { label: 'Paid', tone: 'paid' };
+  if (status === 'PART_PAID') return { label: 'Partly paid', tone: 'part' };
+  return { label: 'Unpaid', tone: 'unpaid' };
+}
+
 function StatusBadge({
   label,
   tone,
 }: {
   label: string;
-  tone: 'paid' | 'part' | 'unpaid' | 'unknown';
+  tone: 'paid' | 'part' | 'unpaid';
 }) {
   const classes =
     tone === 'paid'
       ? 'bg-[color:var(--color-success-bg)] text-[color:var(--color-success-ink)]'
       : tone === 'part'
         ? 'bg-[color:var(--color-warning-bg)] text-[color:var(--color-warning-ink)]'
-        : tone === 'unpaid'
-          ? 'bg-[color:var(--color-danger-bg)] text-[color:var(--color-danger-ink)]'
-          : 'bg-[color:var(--color-subtle)] text-[color:var(--color-muted)]';
+        : 'bg-[color:var(--color-danger-bg)] text-[color:var(--color-danger-ink)]';
 
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold ${classes}`}>
       {label}
     </span>
   );
-}
-
-function deriveStatus(
-  sale: SaleDetail,
-  statementSale: StatementSale | null,
-): { label: string; tone: 'paid' | 'part' | 'unpaid' | 'unknown' } {
-  if (!sale.customerId) {
-    // The backend requires a customer whenever the amount paid is below the
-    // total, so a sale with no customer is fully paid at the point of sale.
-    return { label: 'Paid', tone: 'paid' };
-  }
-  if (!statementSale) {
-    return { label: 'Payment details unavailable', tone: 'unknown' };
-  }
-  if (statementSale.paymentStatus === 'PAID') return { label: 'Paid', tone: 'paid' };
-  if (statementSale.paymentStatus === 'PART_PAID') return { label: 'Partly paid', tone: 'part' };
-  return { label: 'Unpaid', tone: 'unpaid' };
 }
 
 function SaleDetailSkeleton() {

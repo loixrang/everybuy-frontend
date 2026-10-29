@@ -12,6 +12,8 @@ interface AddCustomerModalProps {
 export function AddCustomerModal({ onClose, onCreated }: AddCustomerModalProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,6 +32,8 @@ export function AddCustomerModal({ onClose, onCreated }: AddCustomerModalProps) 
       const result = await createCustomer({
         name: trimmedName,
         phone: phone.trim() || null,
+        address: address.trim() || null,
+        notes: notes.trim() || null,
       });
       const customer = result[0];
       if (!customer) {
@@ -136,6 +140,48 @@ export function AddCustomerModal({ onClose, onCreated }: AddCustomerModalProps) 
               maxLength={40}
               placeholder="e.g. 0803 000 0000"
               className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-muted)] focus:outline-none focus:border-[color:var(--color-accent)]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="customer-address"
+              className="block text-xs font-semibold text-[color:var(--color-ink)]"
+            >
+              Address <span className="font-normal text-[color:var(--color-muted)]">(optional)</span>
+            </label>
+            <input
+              id="customer-address"
+              type="text"
+              value={address}
+              onChange={(e) => {
+                setAddress(e.target.value);
+                setError(null);
+              }}
+              maxLength={200}
+              placeholder="Shop or delivery address"
+              className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-muted)] focus:outline-none focus:border-[color:var(--color-accent)]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="customer-notes"
+              className="block text-xs font-semibold text-[color:var(--color-ink)]"
+            >
+              Notes <span className="font-normal text-[color:var(--color-muted)]">(optional)</span>
+            </label>
+            <textarea
+              id="customer-notes"
+              value={notes}
+              onChange={(e) => {
+                setNotes(e.target.value);
+                setError(null);
+              }}
+              maxLength={500}
+              rows={2}
+              placeholder="Credit terms, contact preferences…"
+              className="w-full px-3 py-2 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-muted)] focus:outline-none focus:border-[color:var(--color-accent)] resize-y"
             />
           </div>
 

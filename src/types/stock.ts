@@ -10,6 +10,8 @@ export interface StockMovement {
   supplierId: number | null;
   saleItemId: string | null;
   requestId: string | null;
+  /** Cost per pack recorded for additions (numeric(14,4)); null for sales. */
+  costPerPack: string | null;
   note: string | null;
   createdBy: string;
   createdAt: string;
@@ -45,6 +47,12 @@ export interface CreateStockAdditionInput {
   unit: StockUnit;
   quantity: number;
   supplierId?: number;
+  /**
+   * Required by the backend: the amount paid per `unit` (per bag when
+   * `unit` is 'Bag', per pack when 'Pack'), as a decimal string with up to
+   * 2 decimals. The server converts it to a cost per pack.
+   */
+  unitCost: string;
 }
 
 /**

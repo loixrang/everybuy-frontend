@@ -1,5 +1,5 @@
 import { useId, useState, type FormEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../app/auth/auth-context';
 import { sendTwoFactorOtp } from '../../lib/api/auth';
 import { ApiError } from '../../lib/api/client';
@@ -314,6 +314,15 @@ export function SignInPage() {
                 </div>
 
                 {error && <AuthErrorPanel message={error} />}
+
+                <div className="flex justify-end -mt-1">
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs font-semibold text-[color:var(--color-accent)] hover:text-[color:var(--color-accent-hover)]"
+                  >
+                    Forgot your password?
+                  </Link>
+                </div>
 
                 <button
                   type="submit"

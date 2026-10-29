@@ -90,3 +90,35 @@ export async function verifyTwoFactorTotp(
     },
   );
 }
+
+/**
+ * Ask Better Auth to email a password-reset link
+ * (`POST /api/v1/auth/request-password-reset`).
+ *
+ * The backend redirects the email link to `redirectTo` with `?token=…`
+ * (or `?error=INVALID_TOKEN` when the token is invalid or expired).
+ * The token is valid for one hour.
+ */
+export async function requestPasswordReset(
+  email: string,
+  redirectTo: string,
+): Promise<void> {
+  await apiFetch<{ status: boolean }>(`${AUTH_BASE}/request-password-reset`, {
+    method: 'POST',
+    body: JSON.stringify({ email, redirectTo }),
+  });
+}
+
+/**
+ * Complete a password reset (`POST /api/v1/auth/reset-password`).
+ * The backend revokes existing sessions on success.
+ */
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<void> {
+  await apiFetch<{ status: boolean }>(`${AUTH_BASE}/reset-password`, {
+    method: 'POST',
+    body: JSON.stringify({ token, newPassword }),
+  });
+}

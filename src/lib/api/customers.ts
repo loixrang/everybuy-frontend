@@ -1,6 +1,7 @@
 import { apiFetch } from './client';
 import type {
   Customer,
+  CustomerListItem,
   CreateCustomerInput,
   CustomerStatement,
   RecordRepaymentInput,
@@ -10,11 +11,12 @@ import type {
 
 /**
  * Fetch all customers from GET /api/v1/customers
- * Guarded by StaffGuard. The backend returns the full list (no pagination)
- * and does not include balances or last-sale data.
+ * Guarded by StaffGuard. The backend returns the full list (no pagination),
+ * newest first, including each customer's outstanding `balance`,
+ * `lastSaleAt` and `totalPurchases` (numeric strings).
  */
-export async function fetchCustomers(): Promise<Customer[]> {
-  const result = await apiFetch<Customer[]>('/api/v1/customers');
+export async function fetchCustomers(): Promise<CustomerListItem[]> {
+  const result = await apiFetch<CustomerListItem[]>('/api/v1/customers');
   return Array.isArray(result) ? result : [];
 }
 

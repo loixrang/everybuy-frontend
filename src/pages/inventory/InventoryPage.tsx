@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchProducts, fetchCategories, fetchBrands } from '../../lib/api/products';
 import { ApiError } from '../../lib/api/client';
+import { useAuth } from '../../app/auth/auth-context';
 import { formatNaira, getStockStatus } from '../../lib/utils/format';
 import {
   PackageIcon,
@@ -22,6 +23,7 @@ const PACK_NAME_TABS: { label: string; value: PackName | 'ALL' }[] = [
 ];
 
 export function InventoryPage() {
+  const { isOwner } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -162,12 +164,14 @@ export function InventoryPage() {
           </p>
         </div>
         <div className="shrink-0">
-          <Link
-            to="/inventory/new"
-            className="inline-flex items-center justify-center h-11 px-6 rounded-[8px] font-semibold text-sm bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors"
-          >
-            Add product
-          </Link>
+          {isOwner && (
+            <Link
+              to="/inventory/new"
+              className="inline-flex items-center justify-center h-11 px-6 rounded-[8px] font-semibold text-sm bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors"
+            >
+              Add product
+            </Link>
+          )}
         </div>
       </div>
 
@@ -284,7 +288,7 @@ export function InventoryPage() {
       {loading ? (
         <InventorySkeleton />
       ) : products.length === 0 && !error ? (
-        <EmptyInventoryState />
+        <EmptyInventoryState canAdd={isOwner} />
       ) : filteredProducts.length === 0 ? (
         <NoSearchResultsState onClearFilters={handleClearFilters} />
       ) : (
@@ -424,24 +428,28 @@ function StatusBadge({ status }: { status: { label: string; tone: 'in-stock' | '
   );
 }
 
-function EmptyInventoryState() {
+function EmptyInventoryState({ canAdd }: { canAdd: boolean }) {
   return (
     <div className="rounded-[16px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-8 md:p-12 text-center">
       <div className="mx-auto w-16 h-16 rounded-full bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-ink)] flex items-center justify-center mb-4">
         <PackageIcon size={32} />
       </div>
       <h2 className="text-xl md:text-2xl font-bold text-[color:var(--color-ink)]">
-        Add your first product
+        {canAdd ? 'Add your first product' : 'No products yet'}
       </h2>
       <p className="text-sm md:text-base text-[color:var(--color-muted)] max-w-md mx-auto mt-2 mb-6">
-        Set its pack price, bag size and bag rule, then receive the opening stock.
+        {canAdd
+          ? 'Set its pack price, bag size and bag rule, then receive the opening stock.'
+          : 'The owner has not added any products yet.'}
       </p>
-      <Link
-        to="/inventory/new"
-        className="inline-flex items-center justify-center h-11 px-8 rounded-[8px] font-semibold text-sm bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors"
-      >
-        Add product
-      </Link>
+      {canAdd && (
+        <Link
+          to="/inventory/new"
+          className="inline-flex items-center justify-center h-11 px-8 rounded-[8px] font-semibold text-sm bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors"
+        >
+          Add product
+        </Link>
+      )}
     </div>
   );
 }

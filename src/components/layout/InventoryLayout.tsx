@@ -11,6 +11,7 @@ import {
   HistoryIcon,
   LogOutIcon,
   MoreHorizontalIcon,
+  WalletIcon,
   XIcon,
 } from '../ui/Icons';
 import { useAuth } from '../../app/auth/auth-context';
@@ -34,6 +35,8 @@ export function InventoryLayout() {
   const isOverviewActive = location.pathname === '/overview';
   const isSalesActive = location.pathname.startsWith('/sales');
   const isCustomersActive = location.pathname.startsWith('/customers');
+  const isExpensesActive = location.pathname.startsWith('/expenses');
+  const isAuditActive = location.pathname.startsWith('/audit');
   const isSettingsActive = location.pathname.startsWith('/settings');
 
   // Mobile pages are full-screen scrolls, so every navigation starts at the top.
@@ -173,6 +176,18 @@ export function InventoryLayout() {
                 icon={<UsersIcon size={18} />}
               />
               <SidebarNavLink
+                to="/expenses"
+                label="Expenses"
+                active={isExpensesActive}
+                icon={<WalletIcon size={18} />}
+              />
+              <SidebarNavLink
+                to="/audit"
+                label="Audit log"
+                active={isAuditActive}
+                icon={<HistoryIcon size={18} />}
+              />
+              <SidebarNavLink
                 to="/movements"
                 label="Movements"
                 active={isMovementsActive}
@@ -247,7 +262,13 @@ export function InventoryLayout() {
           />
           <MobileTab
             label="More"
-            active={isMovementsActive || isSettingsActive || moreOpen}
+            active={
+              isMovementsActive ||
+              isSettingsActive ||
+              isExpensesActive ||
+              isAuditActive ||
+              moreOpen
+            }
             expanded={moreOpen}
             onClick={() => setMoreOpen(true)}
             buttonRef={moreButtonRef}
@@ -265,6 +286,8 @@ export function InventoryLayout() {
           email={user?.email}
           showSettings={!isSettingsActive}
           showMovements={!isMovementsActive}
+          showExpenses={!isExpensesActive}
+          showAudit={!isAuditActive}
           signingOut={signingOut}
           onSignOut={() => void handleSignOut()}
         />
@@ -364,6 +387,8 @@ function MoreSheet({
   email,
   showSettings,
   showMovements,
+  showExpenses,
+  showAudit,
   signingOut,
   onSignOut,
 }: {
@@ -372,6 +397,8 @@ function MoreSheet({
   email?: string;
   showSettings: boolean;
   showMovements: boolean;
+  showExpenses: boolean;
+  showAudit: boolean;
   signingOut: boolean;
   onSignOut: () => void;
 }) {
@@ -469,6 +496,24 @@ function MoreSheet({
         </div>
 
         <nav aria-label="More sections" className="px-3 pb-3">
+          {showExpenses && (
+            <SheetLink
+              to="/expenses"
+              label="Expenses"
+              description="Record and review shop spending"
+              icon={<WalletIcon size={18} />}
+              onNavigate={onClose}
+            />
+          )}
+          {showAudit && (
+            <SheetLink
+              to="/audit"
+              label="Audit log"
+              description="Actions recorded by the backend"
+              icon={<HistoryIcon size={18} />}
+              onNavigate={onClose}
+            />
+          )}
           {showMovements && (
             <SheetLink
               to="/movements"
@@ -482,7 +527,7 @@ function MoreSheet({
             <SheetLink
               to="/settings"
               label="Settings"
-              description="Profile, appearance and team"
+              description="Profile, shop, appearance and team"
               icon={<SlidersIcon size={18} />}
               onNavigate={onClose}
             />

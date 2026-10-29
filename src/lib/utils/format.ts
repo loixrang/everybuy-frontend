@@ -110,6 +110,17 @@ export function currentLagosMonth(now: Date = new Date()): string {
   return `${year}-${month}`;
 }
 
+/**
+ * Returns the Africa/Lagos calendar month (YYYY-MM) of an ISO timestamp.
+ * Use this to group backend timestamps into the same month the reports use.
+ */
+export function lagosMonthOf(dateString: string | null | undefined): string | null {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return null;
+  return currentLagosMonth(date);
+}
+
 /** Shifts a YYYY-MM month string by a number of months. */
 export function shiftMonth(month: string, delta: number): string {
   const [year, monthIndex] = month.split('-').map(Number);

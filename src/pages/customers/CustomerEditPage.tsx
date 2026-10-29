@@ -28,6 +28,8 @@ export function CustomerEditPage() {
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [notes, setNotes] = useState('');
   const [active, setActive] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -51,6 +53,8 @@ export function CustomerEditPage() {
         setLoad({ status: 'ready', customer });
         setName(customer.name);
         setPhone(customer.phone ?? '');
+        setAddress(customer.address ?? '');
+        setNotes(customer.notes ?? '');
         setActive(customer.active);
       } catch (err: unknown) {
         if (ignore) return;
@@ -88,6 +92,8 @@ export function CustomerEditPage() {
       const result = await updateCustomer(id, {
         name: trimmedName,
         phone: phone.trim() || null,
+        address: address.trim() || null,
+        notes: notes.trim() || null,
         active,
       });
       if (!result) {
@@ -239,6 +245,42 @@ export function CustomerEditPage() {
             maxLength={40}
             placeholder="e.g. 0803 000 0000"
             className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-muted)] focus:outline-none focus:border-[color:var(--color-accent)]"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="edit-customer-address" className="block text-xs font-semibold text-[color:var(--color-ink)]">
+            Address <span className="font-normal text-[color:var(--color-muted)]">(optional)</span>
+          </label>
+          <input
+            id="edit-customer-address"
+            type="text"
+            value={address}
+            onChange={(e) => {
+              setAddress(e.target.value);
+              setFormError(null);
+            }}
+            maxLength={200}
+            placeholder="Shop or delivery address"
+            className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-muted)] focus:outline-none focus:border-[color:var(--color-accent)]"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="edit-customer-notes" className="block text-xs font-semibold text-[color:var(--color-ink)]">
+            Notes <span className="font-normal text-[color:var(--color-muted)]">(optional)</span>
+          </label>
+          <textarea
+            id="edit-customer-notes"
+            value={notes}
+            onChange={(e) => {
+              setNotes(e.target.value);
+              setFormError(null);
+            }}
+            maxLength={500}
+            rows={3}
+            placeholder="Credit terms, contact preferences…"
+            className="w-full px-3 py-2 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-muted)] focus:outline-none focus:border-[color:var(--color-accent)] resize-y"
           />
         </div>
 

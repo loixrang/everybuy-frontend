@@ -16,11 +16,17 @@ import { CustomerEditPage } from '../pages/customers/CustomerEditPage';
 import { OverviewPage } from '../pages/reports/OverviewPage';
 import { SettingsPage } from '../pages/settings/SettingsPage';
 import { AcceptInvitePage } from '../pages/auth/AcceptInvitePage';
+import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
+import { ExpensesPage } from '../pages/expenses/ExpensesPage';
+import { AuditPage } from '../pages/audit/AuditPage';
 
 export function AppRouter() {
   return (
     <Routes>
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route element={<GuestRoute />}>
         <Route path="/signin" element={<SignInPage />} />
       </Route>
@@ -39,6 +45,8 @@ export function AppRouter() {
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/customers/:id" element={<CustomerDetailPage />} />
           <Route path="/customers/:id/edit" element={<CustomerEditPage />} />
+          <Route path="/expenses" element={<ExpensesPage />} />
+          <Route path="/audit" element={<AuditPage />} />
           <Route path="/overview" element={<OverviewPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/team" element={<Navigate to="/settings" replace />} />

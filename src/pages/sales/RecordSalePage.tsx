@@ -1,8 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import type { Product } from '../../types/product';
-import type { Customer } from '../../types/customer';
-import type { SaleUnit, CreateSaleResult } from '../../types/sale';
+import type { CustomerListItem } from '../../types/customer';
+import type {
+  PaymentMethod,
+  SaleUnit,
+  CreateSaleResult,
+} from '../../types/sale';
 import { fetchProducts } from '../../lib/api/products';
 import { fetchCustomers, createCustomer } from '../../lib/api/customers';
 import { createSale } from '../../lib/api/sales';
@@ -45,7 +49,7 @@ function unitLabel(unit: SaleUnit): string {
 
 export function RecordSalePage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [pageError, setPageError] = useState<string | null>(null);
 
@@ -58,6 +62,8 @@ export function RecordSalePage() {
   // Customer & payment
   const [customerId, setCustomerId] = useState<string>('');
   const [amountPaid, setAmountPaid] = useState<string>('');
+  const [method, setMethod] = useState<PaymentMethod>('cash');
+  const [reference, setReference] = useState<string>('');
 
   // Inline customer creation
   const [showAddCustomer, setShowAddCustomer] = useState<boolean>(false);
@@ -204,6 +210,14 @@ export function RecordSalePage() {
   const amountPaidExceedsTotal =
     amountPaidKobo !== null && amountPaidKobo > totalKobo;
 
+  /*
+   * The backend requires `method` to be `cash` and `reference` to be empty
+   * when nothing is paid, so the payment controls are locked in that case.
+   */
+  const isNothingPaid = amountPaidKobo === 0n;
+  const effectiveMethod: PaymentMethod = isNothingPaid ? 'cash' : method;
+  const effectiveReference = isNothingPaid ? '' : reference.trim();
+
   const stockIssues = useMemo(() => {
     const issues: string[] = [];
     for (const [productId, demanded] of packsDemandedByProduct.entries()) {
@@ -222,6 +236,8 @@ export function RecordSalePage() {
     setSearchTerm('');
     setCustomerId('');
     setAmountPaid('');
+    setMethod('cash');
+    setReference('');
     setSubmitError(null);
     setConflictMessage(null);
     setResult(null);
@@ -308,7 +324,15 @@ export function RecordSalePage() {
       });
       const customer = created[0];
       if (customer) {
-        setCustomers((prev) => [...prev, customer]);
+        setCustomers((prev) => [
+          ...prev,
+          {
+            ...customer,
+            balance: '0.00',
+            lastSaleAt: null,
+            totalPurchases: '0.00',
+          },
+        ]);
         setCustomerId(customer.id);
       }
       setNewCustomerName('');
@@ -371,6 +395,8 @@ export function RecordSalePage() {
         ),
       customerId: customerId || null,
       amountPaid: amountPaidTrimmed || '0',
+      method: effectiveMethod,
+      reference: effectiveReference || null,
     });
 
     if (!requestIdRef.current || requestIdRef.current.payload !== payload) {
@@ -383,6 +409,8 @@ export function RecordSalePage() {
         requestId: requestIdRef.current.id,
         customerId: customerId || undefined,
         amountPaid: amountPaidTrimmed || '0',
+        method: effectiveMethod,
+        reference: effectiveReference || undefined,
         items: lines.map((line) => ({
           productId: line.productId,
           unit: line.unit,
@@ -500,6 +528,21 @@ export function RecordSalePage() {
                 {formatNaira(paid)}
               </dd>
             </div>
+            {result.payment[0] && (
+              <div className="flex justify-between py-2.5">
+                <dt className="text-[color:var(--color-muted)]">Method</dt>
+                <dd className="font-semibold text-[color:var(--color-ink)]">
+                  {result.payment[0].method === 'cash'
+                    ? 'Cash'
+                    : result.payment[0].method === 'transfer'
+                      ? 'Bank transfer'
+                      : 'POS'}
+                  {result.payment[0].reference
+                    ? ` · ${result.payment[0].reference}`
+                    : ''}
+                </dd>
+              </div>
+            )}
             <div className="flex justify-between py-2.5">
               <dt className="text-[color:var(--color-muted)]">Balance owed</dt>
               <dd
@@ -871,6 +914,57 @@ export function RecordSalePage() {
                   readOnly
                   value={fromKobo(totalKobo)}
                   className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-subtle)] text-sm text-[color:var(--color-quiet)] focus:outline-none cursor-default"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="sale-method"
+                  className="block text-xs font-semibold text-[color:var(--color-ink)]"
+                >
+                  Payment method
+                </label>
+                <select
+                  id="sale-method"
+                  value={effectiveMethod}
+                  disabled={isNothingPaid}
+                  onChange={(e) => {
+                    setMethod(e.target.value as PaymentMethod);
+                    setSubmitError(null);
+                  }}
+                  className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)] disabled:bg-[color:var(--color-subtle)] disabled:text-[color:var(--color-quiet)] disabled:cursor-not-allowed"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="transfer">Bank transfer</option>
+                  <option value="pos">POS</option>
+                </select>
+                {isNothingPaid && (
+                  <p className="text-[11px] text-[color:var(--color-muted)]">
+                    No payment yet, so the method is recorded as cash.
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="sale-reference"
+                  className="block text-xs font-semibold text-[color:var(--color-ink)]"
+                >
+                  Payment reference (optional)
+                </label>
+                <input
+                  id="sale-reference"
+                  type="text"
+                  value={isNothingPaid ? '' : reference}
+                  disabled={isNothingPaid}
+                  maxLength={200}
+                  onChange={(e) => {
+                    setReference(e.target.value);
+                    setSubmitError(null);
+                  }}
+                  placeholder="Transfer id or POS slip"
+                  className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)] disabled:bg-[color:var(--color-subtle)] disabled:cursor-not-allowed"
                 />
               </div>
             </div>
