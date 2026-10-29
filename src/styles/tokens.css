@@ -1,6 +1,8 @@
 /* Shared design tokens. Font licenses accompany these assets. */
-@font-face{font-family:Manrope;src:url(./Fonts/Manrope.ttf) format("truetype");font-weight:200 800;font-display:swap;}
 @font-face{font-family:Inter;src:url(./Fonts/Inter.ttf) format("truetype");font-weight:100 900;font-display:swap;}
+@font-face{font-family:Poppins;src:url(./Fonts/Poppins-Regular.ttf) format("truetype");font-weight:400;font-display:swap;}
+@font-face{font-family:Poppins;src:url(./Fonts/Poppins-SemiBold.ttf) format("truetype");font-weight:600;font-display:swap;}
+@font-face{font-family:Poppins;src:url(./Fonts/Poppins-Bold.ttf) format("truetype");font-weight:700;font-display:swap;}
 :root, [data-theme="light"] {
   color-scheme: light;
   --color-canvas: #FAFAF7;
@@ -64,7 +66,7 @@
   --color-art-white: #FFFDF5;
 }
 :root {
-  --font-family: Manrope, Inter, system-ui, sans-serif;
+  --font-family: Poppins, Inter, system-ui, sans-serif;
   --header-blur: 16px;
   --space-0: 0px;
   --space-4: 4px;

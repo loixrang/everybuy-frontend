@@ -1,5 +1,25 @@
 # Current Task
 
+## FE-041: Stocktaking
+
+Status: BLOCKED
+
+The user reports that stocktaking is implemented in the backend, but the inspected backend checkout (`master`, matching `origin/master`) does not contain the workflow. It has stocktake tables and an enum only; there is no stocktake controller or API route to create counts, record counted quantities, or approve them. The backend README explicitly says there is no separate stocktake session or approval pipeline. Existing owner-only stock adjustments cannot safely substitute for an unverified count workflow.
+
+Resume FE-041 when the backend route implementation is present in the inspected checkout and its request/response contract and guards can be verified. Backend source is read-only in this task.
+
+The requested Poppins font and mobile interaction polish are implemented independently while FE-041 is blocked. Checks passed: typecheck, lint, 24 tests, production build, and `git diff --check`. The build emitted the existing advisory for a minified chunk larger than 500 kB. Responsive behavior was checked in code and compiled CSS; no device/emulator screenshot pass is available in this environment.
+
+---
+
+## Completed Task Archive
+
+## FE-054: Existing Financial and Shop Administration Integrations
+
+Status: COMPLETED
+
+Verified Expenses, Audit, Daily Overview, Profit Report, and Shop Settings against backend source and updated the API contract, architecture notes, report decision, and roadmap.
+
 ## FE-053: Mobile Navigation and Responsive Polish
 
 Status: COMPLETED

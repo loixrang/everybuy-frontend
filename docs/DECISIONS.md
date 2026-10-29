@@ -175,18 +175,18 @@ A statement per list row would exceed the backend's 3 requests/second throttle, 
 Consequence:
 The sales list omits the design's search, "All payment states" filter, Owed/Status columns, and Sales today/Paid today/Balance owed cards. Adding them requires backend query and aggregate support. Payment method and recorded-by names remain unavailable, and sale references use a short UUID prefix because there is no `SL-####` column.
 
-## DEC-018: Monthly Report Screen Instead of Daily Overview
+## DEC-018: Reports Use Backend Daily, Monthly, and Profit Aggregates
 
 Decision:
-FE-042 is implemented as a **monthly** report at `/overview` backed by `GET /api/v1/reports/monthly?month=YYYY-MM`, using the overview layout for its summary cards and tables. The design's daily metrics are not reproduced with other endpoints.
+FE-042 is implemented at `/overview` with **Today**, **Monthly**, and **Profit** tabs backed by `GET /api/v1/reports/overview`, `/reports/monthly?month=YYYY-MM`, and `/reports/profit?month=YYYY-MM`. The frontend displays backend aggregates and does not reconstruct official figures from list endpoints.
 
-The screen shows `salesTotal`, `moneyReceived`, `outstandingDebtAtMonthEnd`, product quantities sold (`bagsSold`, `retailPacksSold`, `totalPacksSold`), and month-end `closingStock`. Month navigation is validated against the backend pattern, defaults to the current `Africa/Lagos` month, and each change refetches the whole report.
+The daily tab shows today's sales, payments received, current outstanding customer balances, low-stock products, and five recent sales. The monthly tab shows `salesTotal`, `moneyReceived`, `outstandingDebtAtMonthEnd`, product quantities sold (`bagsSold`, `retailPacksSold`, `totalPacksSold`), and month-end `closingStock`. The profit tab shows revenue, COGS, gross profit, expenses, and net profit. Month navigation is validated against the backend pattern, defaults to the current `Africa/Lagos` month, and each change refetches the selected report.
 
 Reason:
-The only verified reporting endpoint is month-based. `overview.svg` describes a daily shop summary — "Sales today", "Payments received", "Customer balances", "Low stock", "Recent sales" — and none of those figures has an endpoint: the sales list has no aggregates and the customer list has no balances. Deriving them in the frontend would require fan-out far beyond the 3 requests/second throttle and would present unofficial totals as if the backend computed them.
+The backend provides dedicated daily, monthly, and profit aggregates. Using those endpoints keeps figures authoritative and avoids deriving totals from incomplete sales and customer lists.
 
 Consequence:
-`/overview` is a monthly report, not the daily dashboard depicted in the design. The daily summary cards, low-stock alert, and recent-sales table are omitted, and the page states clearly that figures are monthly and `Africa/Lagos`-based. Labour/expenses are not reported because the backend stores no such data. A true daily overview needs a new backend endpoint and an agreed contract.
+Daily `customerBalances` is the current total outstanding across customer sales, not a day-only balance. Monthly money received includes repayments for earlier sales, and month-end debt is cumulative. The profit report returns 409 if any sale item has no saved cost; the frontend preserves that unavailable state instead of showing zero profit.
 
 Closing stock is displayed as a plain month-end pack balance rather than with the live low-stock badge: the 10-pack threshold is a current-inventory heuristic and would mislabel a historical balance. `moneyReceived` intentionally includes payments for earlier sales, and `outstandingDebtAtMonthEnd` is cumulative debt as of month end, so the page explains both instead of implying they are monthly-only figures.
 
@@ -197,7 +197,7 @@ Replace the dead "Team & preferences" link with a real `/settings` page covering
 
 Team data comes from one `GET /api/v1/staff` request. Because the session carries no staff role, the page does not guess whether the user is an owner: it performs the request and renders "Owner access required" on 403, an empty state on the backend's 404 "No staff found", and a retry on other failures. The "Add staff" action is only shown once the list load succeeds.
 
-Staff onboarding offers both verified owner paths — email invitation (`POST /api/v1/staff/invite`) and direct creation with an initial password (`POST /api/v1/staff`). The public `/accept-invite?token=…` page completes the invitation using the token as the credential.
+Staff onboarding offers both verified owner paths â€” email invitation (`POST /api/v1/staff/invite`) and direct creation with an initial password (`POST /api/v1/staff`). The public `/accept-invite?token=â€¦` page completes the invitation using the token as the credential.
 
 Reason:
 The previous navigation item pointed at a route that did not exist, which made the shell look broken and hid staff onboarding entirely. Showing an owner-only failure state is honest and avoids replicating backend authorization in the client. Supporting both creation paths keeps the feature usable even when invitation email is misconfigured; the backend currently lacks `STAFF_INVITE_PREVIEW_URL`, so invitations answer 500 while password mode works.
@@ -243,7 +243,7 @@ There is no third unit, and no conversion rule beyond the product's `packsPerBag
 ## DEC-023: Five-Tab Mobile Navigation with a "More" Sheet
 
 Decision:
-Below `lg`, the shell exposes five bottom tabs — Stock (`/inventory`), Sale (`/sales`), Customers, Reports (`/overview`) and More — and puts Stock movements, Settings and Sign out in a "More" bottom sheet. The desktop sidebar is unchanged (six links) and becomes sticky under the header. Safe-area insets, 44 px touch targets and `100dvh` are part of the shell contract.
+Below `lg`, the shell exposes five bottom tabs â€” Stock (`/inventory`), Sale (`/sales`), Customers, Reports (`/overview`) and More â€” and puts Expenses, Audit, Stock movements, Settings and Sign out in a "More" bottom sheet. The desktop sidebar exposes the eight application sections and becomes sticky under the header. Safe-area insets, 44 px touch targets and `100dvh` are part of the shell contract.
 
 Reason:
 The previous four-tab bar left Overview and Movements with no mobile entry point at all: both were only reachable from the desktop sidebar, so those screens were effectively desktop-only. Six tabs would have produced labels too narrow to read and targets below the 44 px minimum. A five-tab bar plus a sheet keeps every destination reachable, matches the platform pattern staff already know, and leaves room for a signed-in identity and sign-out that the bar cannot hold.
@@ -254,4 +254,15 @@ Consequence:
 - New top-level sections either replace a tab or join the sheet; the bar stays at five items.
 - Desktop behaviour is unchanged apart from the sticky sidebar and the sticky header offset, so screenshots in the design handoff still describe the large layout.
 - Responsive verification is manual: there is no device/emulator automation in the project, so safe-area rendering on real iOS hardware remains a manual check.
+
+## DEC-024: Poppins Primary Typeface and Mobile Touch Sizing
+
+Decision:
+Use bundled Poppins as the primary application typeface, retaining Inter as the fallback. Bundle the Regular, SemiBold, and Bold font files with the SIL Open Font License. On small screens, keep enabled buttons at least 44 px tall, allow long table/code values to wrap, and prevent page-level horizontal overflow while preserving inner scrollers.
+
+Reason:
+The user requested Poppins and stronger mobile responsiveness. Locally bundled fonts avoid a runtime network dependency, and larger touch targets improve use on phones.
+
+Consequence:
+The original handoff's Manrope typography is superseded by this explicit project instruction. Safe-area and small-device visual behavior still needs a manual real-device pass.
 

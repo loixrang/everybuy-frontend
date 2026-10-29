@@ -4,6 +4,31 @@ Record meaningful frontend changes here.
 
 ## Unreleased
 
+### 2026-10-29: Poppins and Small-Screen Touch Polish
+
+Changed:
+- Switched the primary bundled typeface to Poppins; Inter remains the fallback. Included the Poppins SIL Open Font License.
+- On small screens, enabled buttons now have a 44 px minimum height, long table/code values can wrap, and page-level horizontal overflow is clipped while intentional inner scrollers remain available.
+- Verified that the inspected backend checkout still has no stocktake endpoints despite its stocktake schema; FE-041 remains blocked until an API contract is available.
+
+Checks: typecheck, lint, 24 tests, production build, and `git diff --check` passed. The build emitted the existing >500 kB chunk advisory.
+
+Responsive limitation: validated in code and compiled CSS; no device/emulator screenshot pass is available in this environment.
+
+### 2026-10-29: Roadmap and Active Task Reconciliation
+
+Changed:
+- Verified and documented the existing Expenses, Audit, Daily Overview, Profit Report, and Shop Settings integrations against the backend source. FE-054 is complete.
+- Updated the report roadmap and DEC-018 to reflect the daily and profit endpoints now used by `/overview`.
+- Kept FE-043 (Online Store) deferred and recorded FE-041 (Stocktaking) as blocked by missing backend endpoints in the inspected checkout.
+
+Checks:
+- `bunx.cmd tsc -b --noEmit`: passed
+- `bun.cmd run lint`: passed
+- `bun.cmd test`: 24 passed
+- `bun.cmd run build`: passed (Vite emitted the existing >500 kB chunk advisory)
+- `git diff --check`: passed
+
 ### 2026-10-29: FE-053 Mobile Navigation and Responsive Polish
 
 Changed:

@@ -170,14 +170,32 @@ Do not treat as full policy - verify per endpoint.
 - **Sale References**: Sales use UUID primary keys; there is no human-readable `SL-####` column, so the UI shows the first 8 characters of the UUID and keeps the full id in a tooltip.
 
 ### Reports Contract Notes:
-- **Monthly Only**: `GET /api/v1/reports/monthly` is the only verified reporting endpoint. It takes `month=YYYY-MM` and has no daily, weekly, or range variant.
+- **Access**: All report endpoints use `StaffGuard`.
+- **Daily Overview**: `GET /api/v1/reports/overview` returns `{ salesToday: { count, total }, paymentsReceived, customerBalances, lowStock, recentSales }`. Sales and payments are for the current Africa/Lagos day. `customerBalances` is current outstanding debt across all customer sales (not just today's sales); `lowStock` contains active products with 10 packs or fewer; `recentSales` is limited to five. The response is calculated in one read-only repeatable-read transaction.
+- **Monthly Report**: `GET /api/v1/reports/monthly?month=YYYY-MM` returns `{ month, timezone, salesTotal, moneyReceived, outstandingDebtAtMonthEnd, productsSold, closingStock }`.
 - **Month Boundaries**: The backend converts `YYYY-MM-01 00:00:00` and the following month to `Africa/Lagos` and filters with `>= start` and `< end`, so a report covers exactly one local calendar month. The frontend sends the month and never computes totals itself.
 - **salesTotal vs moneyReceived**: `salesTotal` sums `sales.itemsTotal` for sales `soldAt` in the month. `moneyReceived` independently sums `payments.amount` with `paidAt` in the month, so it includes repayments of earlier sales and excludes payments made after the month.
 - **outstandingDebtAtMonthEnd**: Sum of `greatest(itemsTotal - payments made before month end, 0)` across **all** customer sales before month end — a cumulative balance, not just that month's sales. Later repayments do not retroactively change the figure.
 - **productsSold**: Grouped by product for sales in the month. `bagsSold` counts `unit: 'Bag'` quantities (bags), `retailPacksSold` counts `unit: 'Pack'` quantities, and `totalPacksSold` sums `quantity × packsPerUnit`. Names come from the joined product row.
 - **closingStock**: Sum of `stockMovements.changePacks` per product created before month end, including movements dated before month end. It is a historical month-end balance, not current stock.
 - **Read Consistency**: The whole report is produced in one read-only `repeatable read` transaction.
-- **No Daily Overview**: The supplied `overview.svg` shows "Sales today / Payments received / Customer balances / Low stock / Recent sales", which no endpoint provides. The screen therefore uses the monthly figures and omits the daily cards, low-stock alert, and recent-sales table.
+- **Profit Report**: `GET /api/v1/reports/profit?month=YYYY-MM` returns `{ revenue, cogs, grossProfit, expenses, netProfit }`. Revenue sums sale totals for sales in the month; COGS sums quantity × packs-per-unit × saved cost-per-pack; expenses are summed by `spentAt`; gross profit is revenue minus COGS and net profit subtracts expenses. It returns 409 if any sale item in the month has a null saved cost-per-pack.
+
+### Expenses Contract Notes:
+- **Access and shape**: `GET /api/v1/expenses` and `POST /api/v1/expenses` use `StaffGuard`. The list returns all expenses, ordered by `spentAt` descending then id descending; it is not paginated. Rows have `{ id, requestId, title, category, amount, notes, spentAt, recordedBy, createdAt }`.
+- **Create validation**: `POST` requires UUID `requestId`, trimmed title (1–120 chars), category (1–80 chars), positive decimal amount as a string (up to 12 integer and 2 fractional digits), optional notes (up to 500 chars), and optional ISO datetime with an explicit offset for `spentAt`.
+- **Idempotency**: Repeating a requestId with the same effective payload returns the existing expense. Reusing it with different details returns 409. The audit row is written only for a new expense.
+
+### Audit Contract Notes:
+- `GET /api/v1/audit` is StaffGuard and returns all entries, newest first, with `{ actor, action, entity, entityId, at, detail }`. Actor uses the user name, then actor id, then `Unknown`. Currently expense creation is the only operation recorded. There is no pagination or filter parameter.
+
+### Shop Settings Contract Notes:
+- `GET /api/v1/settings/shop` is StaffGuard and returns one settings row `{ id, name, address, phone, currency, timezone, receiptFooter }`; it returns 404 if the row is absent.
+- `PATCH /api/v1/settings/shop/:id` requires `StaffGuard` and `OwnerGuard` and returns the updated database row. The controller does not attach the declared Zod schema to `@Body()`, so that schema is not applied at runtime. The frontend sends only `{ name, address, phone, currency, timezone, receiptFooter }` and reports a missing row; no create endpoint exists.
+
+### Stocktake Contract Notes:
+- **No verified stocktake API in the inspected backend checkout (2026-10-29)**: database schema contains `stocktakes`, `stocktake_items`, and a `Draft | Finalized | Cancelled` status enum, but no controller, service, DTOs, or registered module exposes a count lifecycle. The backend README states there is no separate stocktake session or approval pipeline in this release.
+- Existing stock endpoints (`POST /api/v1/stock/adjustments`, guarded by StaffGuard and OwnerGuard) support a direct reasoned correction only. They do not create count sessions, record counted quantities, or approve a count. Do not use them to simulate the missing workflow.
 
 ### Staff and Invitation Contract Notes:
 - **Owner-Only Staff Reads**: `StaffController` applies `StaffGuard` then `OwnerGuard`, so `GET /staff`, `POST /staff` and `POST /staff/invite` all require an owner. Staff accounts receive 403 `Owner access required`.

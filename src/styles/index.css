@@ -10,11 +10,28 @@ html, body, #root {
 }
 
 body {
+  min-height: 100%;
+  overflow-x: clip;
   background: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@media (max-width: 639px) {
+  /* Keep small phones usable and avoid accidental page-width growth from
+     long API values. Intentional horizontal scrollers remain independently
+     scrollable. */
+  button:not([data-compact]) {
+    min-height: 44px;
+  }
+
+  td,
+  th,
+  code {
+    overflow-wrap: anywhere;
+  }
 }
 
 * {

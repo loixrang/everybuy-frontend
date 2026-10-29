@@ -16,7 +16,7 @@ Status: COMPLETED
 
 - React, TypeScript, Vite, and Tailwind setup
 - Routing
-- Design tokens and typography (Manrope/Inter, tokens.css integrated)
+- Design tokens and typography (Poppins primary, Inter fallback)
 - Light and dark themes
 - Responsive inventory application shell (desktop sidebar, mobile bottom nav)
 - API client foundation (configurable base URL, credentials included)
@@ -132,6 +132,7 @@ The directory's design columns "Balance owed" and "Last sale" cannot be populate
 Status: COMPLETED
 
 - Verify the current reporting endpoints and response formats.
+- Display the daily overview, monthly totals, and profit figures from their verified report endpoints.
 - Display monthly sales totals and money received.
 - Show outstanding debt at month-end where supported.
 - Display product sales and stock figures returned by the backend.
@@ -141,10 +142,10 @@ Status: COMPLETED
 - Do not derive official totals from incomplete frontend data.
 
 Implemented scope:
-`/overview` is a monthly report using `GET /api/v1/reports/monthly?month=YYYY-MM`. It shows `salesTotal`, `moneyReceived`, `outstandingDebtAtMonthEnd`, product quantities sold (bags, packs, total packs), and month-end `closingStock`, with month navigation, "This month", loading/empty/error/retry states, and staff-access handling. The month defaults to the current `Africa/Lagos` month and is validated against the backend pattern.
+`/overview` has Today, Monthly, and Profit tabs backed by `GET /api/v1/reports/overview`, `/reports/monthly?month=YYYY-MM`, and `/reports/profit?month=YYYY-MM`. All are StaffGuard endpoints. The daily report shows today's sales, payments received, outstanding customer balances, low-stock products (10 packs or fewer), and five recent sales. Monthly and profit tabs show backend-computed totals using the Africa/Lagos calendar. Month values are validated, and all tabs handle loading, empty, error, and retry states.
 
 Verified limitation:
-The supplied `overview.svg` is a *daily* shop summary ("Sales today", "Payments received", "Customer balances", "Low stock", "Recent sales"). No daily aggregate exists: the sales list returns no totals or balances and the customer list returns no balances. The daily cards, low-stock alert, and recent-sales table are therefore omitted rather than computed in the frontend. `moneyReceived` includes payments for earlier sales, and `outstandingDebtAtMonthEnd` is cumulative debt at month end; the screen explains both. See DEC-018.
+The profit endpoint returns 409 when a sale in the month lacks a recorded product cost; the UI explains that profit cannot be calculated rather than substituting zero. `moneyReceived` includes payments for earlier sales, and `outstandingDebtAtMonthEnd` is cumulative debt at month end; the screen explains both. See DEC-018.
 
 ### FE-050: Settings and Team Access
 Status: COMPLETED
@@ -192,13 +193,28 @@ Status: COMPLETED
 Verified limitation:
 Responsive changes were validated through code review and the compiled CSS; no device/emulator automation exists, so iOS safe areas and the More sheet still need a manual phone pass. See DEC-023.
 
-## Deferred Work
+## Phase 5: Contract Reconciliation
+
+### FE-054: Verify Existing Financial and Shop Administration Integrations
+Status: COMPLETED
+
+- The frontend contains Expenses (`/expenses`), Audit (`/audit`), Daily Overview and Profit Report (`/overview`), and Shop Settings UI/API support.
+- These capabilities were missing from the prior roadmap and contract verification records; this task reconciles both.
+- Inspect the backend routes, DTOs, response shapes, roles, and permission guards; update `docs/API_CONTRACT.md` and record implementation status accurately.
+- Verified contracts are documented and the existing implementation is recorded above.
+
+Verified on 2026-10-29 against backend controllers, services, DTOs, database schemas, and guards. Expenses and Audit use StaffGuard; Reports use StaffGuard; Shop Settings GET uses StaffGuard and PATCH also requires OwnerGuard. Details are recorded in `docs/API_CONTRACT.md`.
+
+Completion checks: typecheck, lint, 24 tests, production build, and `git diff --check` passed.
+
+## Blocked and Deferred Work
 
 ### FE-041: Stocktaking
-Status: DEFERRED
+Status: BLOCKED
 
-- Do not implement until stocktaking is included in the agreed scope.
-- Before implementation, verify the backend supports stock counts and the required adjustment workflow.
+- The backend checkout inspected on 2026-10-29 (`master`, matching `origin/master`) has stocktake database tables and a status enum but no stocktake controller or API endpoints.
+- The backend README says there is no separate stocktake session or approval pipeline in this release. Existing owner-only stock adjustments are not a substitute for count creation, counted-item capture, and owner approval.
+- Resume when the stocktake API implementation is present in the backend checkout and its contracts and guards can be verified.
 
 ### FE-043: Online Store
 Status: DEFERRED

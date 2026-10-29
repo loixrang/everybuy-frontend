@@ -89,6 +89,9 @@ src/
     index.css
     tokens.css
     Fonts/
+      Poppins-Regular.ttf
+      Poppins-SemiBold.ttf
+      Poppins-Bold.ttf
       Inter.ttf
       Manrope.ttf
   types/
@@ -188,13 +191,25 @@ Implemented (FE-021):
 
 Implemented (FE-042):
 
-- `OverviewPage` (`/overview`) requests `GET /api/v1/reports/monthly?month=YYYY-MM` for one Africa/Lagos calendar month and renders the backend's numbers; it never recomputes totals from other endpoints.
+- `OverviewPage` (`/overview`) has Today, Monthly, and Profit tabs backed by `GET /api/v1/reports/overview`, `/api/v1/reports/monthly?month=YYYY-MM`, and `/api/v1/reports/profit?month=YYYY-MM`. All are StaffGuard routes, and the frontend renders backend aggregates rather than rebuilding official totals.
+- The daily tab shows today's sales and payments, current outstanding customer balances, products at or below 10 packs, and the five most recent sales. The balance is cumulative across customer sales, not today's-only debt.
+- The profit tab displays revenue, cost of goods sold, gross profit, expenses, and net profit. The backend returns 409 when any sale in the selected month has missing saved cost data; the UI reports that state instead of treating missing cost as zero.
+- The Monthly tab requests one Africa/Lagos calendar month and renders the backend's numbers; it never recomputes totals from other endpoints.
 - The initial month comes from `currentLagosMonth()` (an `Intl` lookup forced to `Africa/Lagos`), so the browser's local timezone cannot select the wrong month. Previous/Next controls use `shiftMonth`, the `type="month"` input is validated against the backend pattern (including the `0000` rejection), and a "This month" shortcut appears when browsing history.
 - Summary cards show `salesTotal`, `moneyReceived`, `outstandingDebtAtMonthEnd`, and the number of product lines in `productsSold`.
 - `productsSold` renders as a table (desktop) and cards (mobile) with bags, packs, and total packs. `closingStock` renders as a pack balance list with a link to inventory.
 - Closing stock is labelled as a month-end balance and does not reuse the live stock badge: the 10-pack low-stock threshold is a current-inventory heuristic and would mislabel a historical balance.
 - Loading skeleton, empty month, 401/403, validation/network error, and retry states are handled. Month changes refetch; stale responses are discarded with an `ignore` flag.
-- The daily `overview.svg` cards (Sales today, Payments received, Customer balances, Low stock, Recent sales) are omitted because there is no daily aggregate endpoint. See `DECISIONS.md`.
+- `moneyReceived` includes payments for earlier sales and outstanding debt at month-end is cumulative. See `DECISIONS.md`.
+
+## Expenses, Audit, and Shop Settings
+
+Implemented (FE-054):
+
+- `ExpensesPage` loads the StaffGuard expense list once and filters it locally. `RecordExpenseModal` validates the backend fields and submits a UUID `requestId`; it preserves the same key for retries of an unchanged payload and does not retry automatically.
+- `AuditPage` reads the StaffGuard audit list, filters it locally, and clearly states that expense creation is currently the only audited operation. The backend list is unpaginated.
+- `ShopSettingsSection` reads the settings row for staff. Owner-only saves use the row id and the verified PATCH route; a missing row is shown as unavailable because the backend has no create endpoint.
+- Backend routes, DTOs, response shapes, and guard behavior are recorded in `docs/API_CONTRACT.md`.
 
 ## Settings and Team Access
 
@@ -213,7 +228,7 @@ Implemented (FE-050):
 Implemented (FE-053):
 
 - `InventoryLayout` is the only authenticated shell. It owns the sticky header, the desktop sidebar and, below `lg`, the fixed five-tab bar: **Stock** (`/inventory`), **Sale** (`/sales`), **Customers**, **Reports** (`/overview`) and **More**.
-- Destinations that do not fit in the bar (Stock movements, Settings, Sign out) live in `MoreSheet`, a bottom sheet rendered inside the layout. It is a modal dialog: `role="dialog"`, `aria-modal`, labelled title, initial focus, a Tab cycle, Escape/backdrop/link dismissal, focus return to the More tab, body scroll lock, dismissal on `popstate`, and automatic close when the viewport reaches `lg`.
+- Destinations that do not fit in the bar (Expenses, Audit, Stock movements, Settings, Sign out) live in `MoreSheet`, a bottom sheet rendered inside the layout. It is a modal dialog: `role="dialog"`, `aria-modal`, labelled title, initial focus, a Tab cycle, Escape/backdrop/link dismissal, focus return to the More tab, body scroll lock, dismissal on `popstate`, and automatic close when the viewport reaches `lg`.
 - Active state is derived from `location.pathname` and exposed with `aria-current="page"`; the More tab also exposes `aria-expanded` and `aria-haspopup="dialog"`.
 - Every route change scrolls the document to the top, because the app renders full-page sections rather than an inner scroll container.
 - Safe areas are handled with `env(safe-area-inset-*)`: top padding on the header and the auth screens' floating toggle, bottom padding on the tab bar, sheets and dialogs, and a matching spacer so content is never hidden behind the bar. `index.html` sets `viewport-fit=cover` and a dark `theme-color` variant.
@@ -221,6 +236,7 @@ Implemented (FE-053):
 - Touch targets are 44 px on phones (header controls, tab bar, steppers, remove actions). Dialogs switch to bottom sheets below `sm`.
 - Dense lists provide a mobile equivalent rather than a squeezed table: inventory, sales, customers, reports, settings and product movements use cards on phones; the movements ledger table starts at `md` and scrolls horizontally.
 - `src/styles/index.css` owns the small-screen rules: pinned `text-size-adjust`, `.no-scrollbar` for horizontally scrolling filter chips, `.pb-safe`, and a 16 px minimum font size for text controls below `sm` (prevents iOS focus zoom).
+- Poppins is the primary bundled font. On phones, buttons have a 44 px minimum touch height, long table/code values can wrap, and page-level horizontal overflow is clipped while intentional inner scrollers remain available.
 - The navigation model is a frontend decision because the backend exposes no per-role navigation data. See `DECISIONS.md` DEC-023.
 
 ## Theme and Interactions
