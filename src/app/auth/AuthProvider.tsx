@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<AuthUser | null>(null);
   const [me, setMe] = useState<Me | null>(null);
+  const [roleResolved, setRoleResolved] = useState(false);
 
   // Guards against a slow `/me` response for a session that has since ended.
   const sessionUserId = useRef<string | null>(null);
@@ -51,17 +52,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadMe = useCallback(async (expectedUserId: string | null) => {
     if (!expectedUserId) {
       setMe(null);
+      setRoleResolved(true);
       return;
     }
+
+    setRoleResolved(false);
     try {
       const profile = await fetchMe();
       if (sessionUserId.current !== expectedUserId) return;
       setMe(profile);
     } catch {
       // A transient `/me` failure must not sign the user out; the layout
-      // simply treats the role as unknown until the next refresh.
+      // simply treats the role as unknown until the next refresh. Owner-only
+      // routes stay closed because `isOwner` remains false.
       if (sessionUserId.current !== expectedUserId) return;
       setMe(null);
+    } finally {
+      if (sessionUserId.current === expectedUserId) {
+        setRoleResolved(true);
+      }
     }
   }, []);
 
@@ -69,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionUserId.current = null;
     setUser(null);
     setMe(null);
+    setRoleResolved(true);
     setStatus('unauthenticated');
   }, []);
 
@@ -151,6 +161,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [loadMe],
   );
 
+  const signInWithPasskey = useCallback(async () => {
+    // Load the Better Auth browser client only when passwordless sign-in is
+    // requested, so it is not part of the initial authenticated bundle.
+    const { signInWithPasskey: requestPasskeySignIn } = await import(
+      '../../lib/api/passkeys'
+    );
+    const result = await requestPasskeySignIn();
+    sessionUserId.current = result.user.id;
+    setUser(result.user);
+    setStatus('authenticated');
+    await loadMe(result.user.id);
+  }, [loadMe]);
+
   const signOut = useCallback(async () => {
     await signOutRequest();
     clearSession();
@@ -181,20 +204,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       me,
       isOwner: me?.role === 'Owner',
+      roleResolved,
       refreshMe,
       refreshSession,
       signIn,
       verifyTwoFactor,
+      signInWithPasskey,
       signOut,
     }),
     [
       status,
       user,
       me,
+      roleResolved,
       refreshMe,
       refreshSession,
       signIn,
       verifyTwoFactor,
+      signInWithPasskey,
       signOut,
     ],
   );

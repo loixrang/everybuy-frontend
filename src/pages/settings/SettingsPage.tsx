@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../app/auth/auth-context';
 import { useTheme } from '../../lib/hooks/useTheme';
 import { updateMyName } from '../../lib/api/me';
 import { ApiError } from '../../lib/api/client';
 import { formatShortDate } from '../../lib/utils/format';
 import { TeamSection } from '../../components/settings/TeamSection';
-import { TwoFactorSettings } from '../../components/settings/TwoFactorSettings';
 import { ShopSettingsSection } from '../../components/settings/ShopSettingsSection';
 import {
   AlertCircleIcon,
   CheckCircleIcon,
+  ChevronRightIcon,
   MoonIcon,
   RefreshCwIcon,
+  ShieldIcon,
   SunIcon,
   XIcon,
 } from '../../components/ui/Icons';
@@ -26,8 +27,17 @@ export function SettingsPage() {
   const { user, me, isOwner, refreshMe, refreshSession, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(() => {
+    const state = location.state as { ownerOnly?: unknown } | null;
+    return state?.ownerOnly === true
+      ? {
+          tone: 'error',
+          message: 'Security settings require owner access.',
+        }
+      : null;
+  });
   const [signingOut, setSigningOut] = useState(false);
 
   const currentName = me?.name ?? user?.name ?? '';
@@ -283,10 +293,48 @@ export function SettingsPage() {
           </div>
         </section>
 
-        <TwoFactorSettings
-          enabled={user?.twoFactorEnabled === true}
-          refreshSession={refreshSession}
-        />
+        {isOwner && (
+          <section
+            aria-labelledby="security-heading"
+            className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-ink)]">
+                <ShieldIcon size={18} />
+              </div>
+              <div className="min-w-0">
+                <h2
+                  id="security-heading"
+                  className="text-sm font-bold text-[color:var(--color-ink)]"
+                >
+                  Security
+                </h2>
+                <p className="mt-1 text-xs text-[color:var(--color-muted)]">
+                  Owner-only controls for authenticator-app 2FA, recovery codes
+                  and passkeys.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-subtle)] p-3">
+              <div>
+                <p className="text-[11px] font-medium text-[color:var(--color-muted)]">
+                  Authenticator app
+                </p>
+                <p className="text-xs font-semibold text-[color:var(--color-ink)]">
+                  {user?.twoFactorEnabled ? 'Enabled' : 'Not enabled'}
+                </p>
+              </div>
+              <Link
+                to="/settings/security"
+                className="inline-flex h-11 shrink-0 items-center gap-1 rounded-[8px] px-3 text-xs font-semibold text-[color:var(--color-accent-ink)] hover:bg-[color:var(--color-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] sm:h-9"
+              >
+                Manage
+                <ChevronRightIcon size={14} />
+              </Link>
+            </div>
+          </section>
+        )}
 
         <section
           aria-labelledby="appearance-heading"

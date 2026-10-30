@@ -1,5 +1,25 @@
 # Changelog
 
+### 2026-10-30: FE-061 Owner Passkey and Authenticator-App Security
+
+Added:
+- Owner-only `/settings/security` page behind `OwnerRoute`, linked from a security card on `/settings`. Staff are redirected with an owner-only notice, while the backend hook remains the enforcement point.
+- Passkey management through the Better Auth browser client: list, owner-named registration, rename, and confirmed deletion with a warning when removing the only registered method. Device type and backup status render only when supplied.
+- "Sign in with passkey" on `/signin`, which adopts the returned `{ session, user }`, refreshes the owner role, and does not enter the TOTP/OTP challenge.
+- `ConfirmDialog` as the shared accessible confirmation surface for destructive security actions.
+- Tests for `otpauth://` parsing/formatting and normalized passkey error messages.
+
+Changed:
+- TOTP settings now show a QR code plus copyable setup key, reveal backup codes only after a valid authenticator code activates TOTP, require acknowledgment before leaving the codes, and use confirmation dialogs for regeneration and disable.
+- The TOTP enabled badge follows the confirmed mutation result even when the follow-up session read fails.
+- `AuthProvider` exposes `roleResolved` so `OwnerRoute` never redirects before `/api/v1/me` resolves.
+- The Better Auth client is dynamically imported for passkey sign-in, keeping it out of the initial bundle.
+
+Security:
+- Tokens, challenges, TOTP setup keys, QR contents, backup codes, and passkey credential payloads are never written to browser storage or logs; diagnostic logs contain only operation, error code, HTTP status, and failure source.
+
+Checks: typecheck, lint, 81 tests, production build, and `git diff --check` passed. Live WebAuthn registration/sign-in and TOTP enrolment need a running backend, owner credentials, and an authenticator, so they were not exercised end to end. The backend `better-auth@1.7.10` / `@better-auth/passkey@1.7.14` peer-version mismatch is recorded in `Issues.md`.
+
 ### 2026-10-30: Settings Responsive Polish
 
 Changed:

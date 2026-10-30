@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { GuestRoute, ProtectedRoute } from '../app/auth/RouteGuards';
+import { GuestRoute, OwnerRoute, ProtectedRoute } from '../app/auth/RouteGuards';
 
 const InventoryLayout = lazy(() =>
   import('../components/layout/InventoryLayout').then((module) => ({
@@ -77,6 +77,11 @@ const SettingsPage = lazy(() =>
     default: module.SettingsPage,
   })),
 );
+const SecuritySettingsPage = lazy(() =>
+  import('../pages/settings/SecuritySettingsPage').then((module) => ({
+    default: module.SecuritySettingsPage,
+  })),
+);
 const AcceptInvitePage = lazy(() =>
   import('../pages/auth/AcceptInvitePage').then((module) => ({
     default: module.AcceptInvitePage,
@@ -140,6 +145,9 @@ export function AppRouter() {
             <Route path="/audit" element={<AuditPage />} />
             <Route path="/overview" element={<OverviewPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route element={<OwnerRoute />}>
+              <Route path="/settings/security" element={<SecuritySettingsPage />} />
+            </Route>
             <Route path="/team" element={<Navigate to="/settings" replace />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
@@ -176,6 +184,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/expenses')) return 'Expenses';
   if (pathname.startsWith('/audit')) return 'Audit log';
   if (pathname.startsWith('/overview')) return 'Reports';
+  if (pathname === '/settings/security') return 'Security';
   if (pathname.startsWith('/settings') || pathname.startsWith('/team')) {
     return 'Settings';
   }

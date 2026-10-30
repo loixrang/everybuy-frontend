@@ -238,6 +238,19 @@ Checks passed locally: typecheck, lint, 24 tests, production build, and `git dif
 
 ## Phase 7: Product Quality
 
+### FE-061: Owner Passkey and Authenticator-App Two-Factor Security
+Status: COMPLETED
+
+- Verify the backend passkey plugin, owner authentication hook, TOTP endpoints, and Better Auth client methods before implementing.
+- Add an owner-only `/settings/security` page with `OwnerRoute`, reached from `/settings`; staff are redirected with a notice and backend enforcement remains authoritative.
+- TOTP enrolment with QR and manual key, verification before enabling, one-time backup codes with acknowledgment and download, regeneration, and password-confirmed disable.
+- Passkey listing, owner-named registration, rename, and confirmed deletion with a last-method warning.
+- Passkey sign-in that adopts the returned session and does not trigger the TOTP challenge.
+- Keep tokens, challenges, setup keys, QR contents, backup codes, and credential payloads out of storage and logs.
+- Tests for TOTP URI handling and passkey error mapping.
+
+Checks passed: typecheck, lint, 81 tests, production build, and `git diff --check`. Live WebAuthn registration/sign-in and TOTP enrolment need a running backend, owner credentials, and an authenticator, so they remain unverified end to end. The backend `better-auth`/passkey peer-version mismatch is tracked in `Issues.md`.
+
 ### FE-060: Staff Invitation Flow
 Status: COMPLETED
 

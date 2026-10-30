@@ -331,3 +331,19 @@ Consequence:
 - An expired invitation also disappears, so the owner re-invites from the Add staff dialog instead of revoking a dead link. The design has no invitation history view, and the backend exposes none.
 - `isPendingInvitation` in `src/lib/invitations.ts` owns the rule and `TeamSection` applies it, so the filter is testable without a DOM.
 
+## DEC-030: Owner-Only Security Page, Better Auth Passkey Client, and No Secret Persistence
+
+Decision:
+Put passkey and authenticator-app management on an `OwnerRoute`-protected `/settings/security` page, link it from an owner-only card on `/settings`, and keep staff out with a redirect and notice as well as the backend hook. Run passkey registration, listing, rename, delete, and sign-in through the official Better Auth browser client (`better-auth/react` plus `passkeyClient` at `basePath: '/api/v1/auth'`). Keep all other requests on the existing `apiFetch`. Never persist tokens, challenges, setup keys, QR contents, backup codes, or passkey credential payloads in browser storage, logs, or analytics.
+
+Reason:
+The backend restricts passkey and 2FA management to active owners in `ownerAuthenticationHook`, and passkey sign-in checks ownership again in `afterVerification`. Hiding buttons would not be enough: staff could still open the URL, and the backend must remain the security boundary. WebAuthn requires a browser-side ceremony with a challenge cookie, which the generic fetch wrapper does not implement; the official Better Auth client already handles registration/authentication options, base64url conversion, and error shapes. Secrets are one-time or session-scoped, so writing them anywhere durable would widen exposure for no product benefit.
+
+Consequence:
+- `roleResolved` in the auth context lets `OwnerRoute` wait for `/api/v1/me` before deciding, avoiding a premature redirect while the role is unknown.
+- A staff member who opens `/settings/security` lands on `/settings` with "Security settings require owner access."; a 401/403 from the backend still ends the session or shows the permission failure.
+- `authClient` is imported only by `src/lib/api/passkeys.ts` and is dynamically imported by `AuthProvider.signInWithPasskey`, keeping the WebAuthn client out of the initial bundle.
+- Passkey sign-in adopts `{ session, user }`, refreshes the role, and does not run the TOTP/OTP challenge. Password sign-in keeps the existing challenge flow.
+- TOTP setup keys and backup codes live only in component state for the current render/session; leaving the page or completing enrollment clears them. Backup codes are shown once after activation or regeneration and cannot be re-read because the backend exposes no browser endpoint for them.
+- Passkey names are owner-chosen and validated locally; the frontend shows device type and backup status only when Better Auth supplies them.
+

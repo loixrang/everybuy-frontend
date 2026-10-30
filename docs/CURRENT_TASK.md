@@ -1,5 +1,60 @@
 # Current Task
 
+## FE-061: Owner Passkey and Authenticator-App Two-Factor Security
+
+Status: COMPLETED
+
+## Goal
+
+Give an owner a single, owner-protected security area to enrol and manage authenticator-app (TOTP) two-factor authentication and passkeys, while keeping password sign-in's existing second-factor challenge and adding passkey sign-in without a false TOTP step.
+
+## Scope
+
+- Verify the backend's passkey plugin, owner hook, TOTP endpoints, and Better Auth client behavior before implementing.
+- Owner-only `/settings/security` page, reached from an owner card on `/settings`; staff are redirected rather than merely hidden from the link.
+- TOTP status, QR and manual setup key, six-digit verification before enabling, one-time backup codes with copy/download and required acknowledgment, regeneration, and password-confirmed disable.
+- Passkey list with name, creation date, device type, and backup status when supplied; owner-named registration, rename, and confirmed deletion with a last-method warning.
+- Passkey sign-in on `/signin` that adopts the returned session and does not trigger the TOTP challenge.
+- No tokens, challenges, setup keys, QR contents, backup codes, or credential payloads in storage or logs.
+
+## Out of Scope
+
+- Backend changes, schema changes, or new backend endpoints.
+- Email OTP policy changes, SMS/push second factors, or staff-managed security methods.
+- Reading existing backup codes or passkey counts beyond what the backend exposes.
+- Live WebAuthn or TOTP verification without a running backend, database, owner account, and authenticator.
+
+## Implemented
+
+- `src/lib/auth-client.ts`: Better Auth browser client with `baseURL` from `VITE_API_BASE_URL`, `basePath: '/api/v1/auth'`, `credentials: 'include'`, and the passkey client plugin. No session token is stored by the frontend.
+- `src/lib/api/passkeys.ts`: typed wrappers for `listUserPasskeys`, `addPasskey({ name })`, `updatePasskey({ id, name })`, `deletePasskey({ id })`, and `signIn.passkey()`, plus safe date/device/backup formatting and a secure-context support check.
+- `src/lib/passkey-errors.ts`: normalises Better Auth `{ data, error }` and WebAuthn failures into user-facing messages, distinguishes cancellation, network, and server failures, and logs only operation, code, status, and source.
+- `src/app/auth/RouteGuards.tsx`: `OwnerRoute` waits for the resolved role and redirects non-owners to `/settings` with an owner-only notice; `AuthProvider` exposes `roleResolved`.
+- `src/pages/settings/SecuritySettingsPage.tsx` (`/settings/security`): composes TOTP and passkey settings and explains the one-time nature of backup codes.
+- `src/pages/settings/SettingsPage.tsx`: owner-only security card; staff who arrive from the guarded route see "Security settings require owner access."
+- `src/components/settings/TwoFactorSettings.tsx`: password-confirmed enrollment, `QRCodeSVG` rendering of the `otpauth://` URI, manual setup-key copy, six-digit verification, post-verification backup codes with copy/download and mandatory acknowledgment, password-confirmed regeneration, and disable confirmation. The enabled badge follows the confirmed mutation result even if the follow-up session read fails.
+- `src/components/settings/PasskeySettings.tsx`: session-scoped passkey list, empty/unsupported/error states, owner-named registration, inline rename, delete confirmation, and a warning when deleting the only registered method.
+- `src/components/ui/ConfirmDialog.tsx`: shared accessible confirmation dialog with focus handling, Escape/cancel, and busy state.
+- `src/pages/auth/SignInPage.tsx` and `AuthProvider`: "Sign in with passkey" runs the WebAuthn ceremony, adopts `{ session, user }`, refreshes `/api/v1/me`, and does not enter the TOTP/OTP flow; the Better Auth client is dynamically imported for this action.
+- `src/lib/totp.ts` and `src/lib/browser-files.ts`: `otpauth://` parsing/formatting, clipboard copying, and text download without persisting secrets.
+- Tests: `src/lib/totp.test.ts` and `src/lib/passkey-errors.test.ts` cover URI parsing/formatting and passkey error mapping; the suite now has 81 tests.
+
+## Checks
+
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed
+- `bun test`: 81 passed
+- `bun run build`: passed
+- `git diff --check`: passed
+
+## Notes / Limitations
+
+- Live passkey registration and sign-in, and live TOTP enrollment/disable/regeneration, were not exercised: they need a running backend/database, owner credentials, and a browser authenticator. The implementation follows the verified plugin endpoints and types; it must not be described as end-to-end verified.
+- The backend exposes no HTTP endpoint or browser client method for existing backup codes, so the UI cannot show a count or re-display them. Codes are shown once after activation or regeneration.
+- Backend dependency follow-up: the backend resolves `better-auth@1.7.10` while `@better-auth/passkey@1.7.14` declares a peer dependency on `better-auth ^1.7.14`. This is a backend dependency alignment issue, not a frontend contract change; see `Issues.md`.
+- Backend owner enforcement remains authoritative: the hook rejects unauthenticated management with 401 and non-active-owner sessions with 403, and passkey sign-in rejects credentials that do not belong to an active owner.
+- No backend, database, migration, or environment file was changed.
+
 ## FE-060: Staff Invitation Flow
 
 Status: COMPLETED

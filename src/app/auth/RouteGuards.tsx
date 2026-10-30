@@ -45,6 +45,42 @@ export function ProtectedRoute() {
   return <Outlet />;
 }
 
+/**
+ * Requires the backend-reported Owner role. Staff are redirected to settings
+ * rather than seeing a blank or forbidden page; the backend still enforces
+ * authorization on every passkey and 2FA management request.
+ */
+export function OwnerRoute() {
+  const { status, isOwner, roleResolved } = useAuth();
+  const location = useLocation();
+
+  if (status === 'loading' || (status === 'authenticated' && !roleResolved)) {
+    return <AuthLoadingScreen />;
+  }
+
+  if (status === 'unauthenticated') {
+    return (
+      <Navigate
+        to="/signin"
+        replace
+        state={{ from: `${location.pathname}${location.search}` }}
+      />
+    );
+  }
+
+  if (!isOwner) {
+    return (
+      <Navigate
+        to="/settings"
+        replace
+        state={{ ownerOnly: true }}
+      />
+    );
+  }
+
+  return <Outlet />;
+}
+
 /** Keeps signed-in users away from the sign-in screen. */
 export function GuestRoute() {
   const { status } = useAuth();

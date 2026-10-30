@@ -2,12 +2,15 @@ import { useEffect, useId, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../app/auth/auth-context';
 import { sendTwoFactorOtp, sendVerificationEmail } from '../../lib/api/auth';
+import { isPasskeySupported } from '../../lib/api/passkeys';
 import { describeTwoFactorError } from '../../lib/auth-errors';
+import { describePasskeySignInError } from '../../lib/passkey-errors';
 import { ApiError } from '../../lib/api/client';
 import { useTheme } from '../../lib/hooks/useTheme';
 import {
   AlertCircleIcon,
   CheckCircleIcon,
+  KeyIcon,
   MoonIcon,
   ShoppingBagIcon,
   SunIcon,
@@ -55,7 +58,7 @@ function describeSignInError(error: unknown): string {
 }
 
 export function SignInPage() {
-  const { signIn, verifyTwoFactor } = useAuth();
+  const { signIn, verifyTwoFactor, signInWithPasskey } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
@@ -70,6 +73,8 @@ export function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [passkeySupported] = useState(() => isPasskeySupported());
   const [verifying, setVerifying] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
   const [otpCooldown, setOtpCooldown] = useState(0);
@@ -226,6 +231,22 @@ export function SignInPage() {
     }
   }
 
+  async function handlePasskeySignIn() {
+    if (passkeyBusy || submitting) return;
+
+    setPasskeyBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await signInWithPasskey();
+      navigate(destination, { replace: true });
+    } catch (err: unknown) {
+      setError(describePasskeySignInError(err));
+    } finally {
+      setPasskeyBusy(false);
+    }
+  }
+
   async function handleVerifySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (verifying) return;
@@ -358,6 +379,29 @@ export function SignInPage() {
                   {submitting ? 'Signing in…' : 'Sign in'}
                 </button>
               </form>
+
+              <div className="my-6 flex items-center gap-3" aria-hidden="true">
+                <div className="h-px flex-1 bg-[color:var(--color-border)]" />
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--color-muted)]">
+                  or
+                </span>
+                <div className="h-px flex-1 bg-[color:var(--color-border)]" />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void handlePasskeySignIn()}
+                disabled={passkeyBusy || submitting || !passkeySupported}
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm font-semibold text-[color:var(--color-ink)] transition-colors hover:bg-[color:var(--color-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <KeyIcon size={17} />
+                {passkeyBusy ? 'Waiting for your device…' : 'Sign in with a passkey'}
+              </button>
+              <p className="mt-2 text-center text-[11px] text-[color:var(--color-muted)]">
+                {passkeySupported
+                  ? 'Use a passkey saved on this device. No authenticator code is needed.'
+                  : 'Passkeys are not supported in this browser.'}
+              </p>
 
               <p className="mt-4 text-sm text-[color:var(--color-muted)]">
                 Ask the shop owner if you need access.

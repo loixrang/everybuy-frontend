@@ -42,17 +42,21 @@ src/
     layout/
       InventoryLayout.tsx
     settings/
+      PasskeySettings.tsx
       StaffAccountModal.tsx
       TeamSection.tsx
+      TwoFactorSettings.tsx
     stock/
       StockAdjustmentModal.tsx
     ui/
+      ConfirmDialog.tsx
       Icons.tsx
   lib/
     api/
       auth.ts
       client.ts
       customers.ts
+      passkeys.ts
       products.ts
       reports.ts
       sales.ts
@@ -63,7 +67,11 @@ src/
     utils/
       format.ts
       money.ts
+    auth-client.ts
+    browser-files.ts
     invitations.ts
+    passkey-errors.ts
+    totp.ts
   pages/
     auth/
       AcceptInvitePage.tsx
@@ -83,6 +91,7 @@ src/
       SaleDetailPage.tsx
       SalesPage.tsx
     settings/
+      SecuritySettingsPage.tsx
       SettingsPage.tsx
     stock/
       ReceiveStockPage.tsx
@@ -161,12 +170,16 @@ Use the existing backend authentication implementation.
 Implemented (FE-002):
 
 - `src/lib/api/auth.ts` calls the verified Better Auth endpoints under `/api/v1/auth`.
-- `AuthProvider` loads `GET /api/v1/auth/get-session` at startup and exposes `signIn`, `verifyTwoFactor`, and `signOut` through `useAuth`.
+- `AuthProvider` loads `GET /api/v1/auth/get-session` at startup and exposes `signIn`, `verifyTwoFactor`, `signOut`, `signInWithPasskey`, and `roleResolved` through `useAuth`.
 - No tokens are persisted in JavaScript; the browser sends the backend's HttpOnly session cookie because `apiFetch` uses `credentials: 'include'`.
-- `ProtectedRoute` blocks inventory routes until a session is confirmed and redirects to `/signin` (remembering the attempted path). `GuestRoute` keeps signed-in users off `/signin`.
+- `ProtectedRoute` blocks inventory routes until a session is confirmed and redirects to `/signin` (remembering the attempted path). `GuestRoute` keeps signed-in users off `/signin`. `OwnerRoute` additionally waits for `/api/v1/me` to resolve before redirecting, so a staff or as-yet-unresolved role never flashes or is denied by mistake.
 - `apiFetch` emits `everybuy:unauthorized` when a non-auth request returns 401; the provider clears local session state so the guard redirects immediately.
 - A Better Auth `twoFactorRedirect` is treated as a pending challenge, not an authenticated session. Sign-in supports authenticator TOTP, requested email OTP, and single-use recovery codes; the provider establishes local auth state only after a verification endpoint returns the verified user/session response.
-- `TwoFactorSettings` starts password-confirmed TOTP enrollment, shows the returned setup URI and one-time recovery codes, verifies a current authenticator code before activation, and supports password-confirmed disable and recovery-code replacement. It re-reads the Better Auth session after changes.
+- `TwoFactorSettings` starts password-confirmed TOTP enrollment, shows the returned setup URI as a QR code and manual setup key, reveals one-time recovery codes only after a valid authenticator code activates TOTP, requires acknowledgment before leaving the code screen, and supports password-confirmed disable and recovery-code replacement with confirmation dialogs. The enabled badge follows the confirmed mutation result even if the follow-up session read fails.
+- Passkey sign-in is a separate button on `/signin`. It runs Better Auth's WebAuthn ceremony through `src/lib/api/passkeys.ts`, adopts the returned `{ session, user }`, refreshes the owner role through `/api/v1/me`, and never enters the TOTP/OTP challenge flow. The Better Auth browser client is dynamically imported inside `signInWithPasskey`, so it is not part of the initial authenticated bundle.
+- `PasskeySettings` lists the owner's registered passkeys with name, creation date, device type, and backup status when supplied. Registration, rename, and delete run through the Better Auth client; delete requires confirmation and warns when it is the last remaining method. Raw challenges, credential payloads, and secrets never enter component state or logs.
+- `/settings/security` is wrapped in `OwnerRoute`. Staff are redirected to `/settings` with an owner-only notice, and the backend hook still rejects any owner-only request if the role changes mid-session.
+- `ConfirmDialog` provides the shared accessible confirmation surface for destructive security actions (bottom sheet on phones, centred card from `sm`), with focus handling and an explicit busy state.
 - The shared API client checks OTP request and 2FA mutation responses before displaying success. Email OTP UI says the request was accepted, because Better Auth 1.7.10 can return `{ status: true }` even when its provider callback failed.
 - The Better Auth session exposes no role. Owner/Staff permissions remain backend-enforced; pages surface 403 responses rather than guessing the role.
 
@@ -226,6 +239,7 @@ Implemented (FE-050):
 - The profile card reads account details from Better Auth / staff APIs. Display-name editing starts from a read-only view and opens an inline editor only when requested.
 - Shop details are read-only by default. Owners can enter edit mode, save through the existing shop settings API, or cancel and discard the draft; non-owners never see the edit action.
 - The Two-factor authentication section reflects `twoFactorEnabled` from the session. Enrollment, recovery-code replacement, and disable forms open only after the user chooses the corresponding action. No current backup codes are retrieved from profile/session APIs.
+- An Owner-only security card links to `/settings/security`, where `SecuritySettingsPage` composes `TwoFactorSettings` and `PasskeySettings`. The same page explains that backup codes are visible only once and that the API cannot list existing codes; staff who follow the URL are redirected with a notice.
 - The appearance card drives the shared theme store; the choice is stored in `localStorage` and applied to `<html data-theme>`.
 - The team card requests `GET /api/v1/staff` once. A 403 renders "Owner access required", a 404 renders an empty team, and other failures show the message with a retry. Per-member role and access controls are hidden behind a Manage action. No per-member requests are made.
 - `StaffAccountModal` supports the two verified owner paths: email invitation and direct account creation with an initial password. The invitation form sends only `{ name, email }` because the backend fixes the role to `Staff`; the dialog states that the role can be changed after acceptance. Client validation mirrors the backend (email shape, 12–128 character password, confirmation), and 409/500/503 responses produce actionable hints instead of raw errors.

@@ -19,6 +19,11 @@ export interface AuthContextValue {
   me: Me | null;
   /** True only when the backend reports the Owner role. */
   isOwner: boolean;
+  /**
+   * True once the role lookup has finished (successfully or not). Owner-only
+   * routes wait for this so staff are never briefly treated as owners.
+   */
+  roleResolved: boolean;
   /** Re-reads `/me`, e.g. after changing the display name. */
   refreshMe: () => Promise<void>;
   /** Re-reads the Better Auth session (e.g. after the profile name changes). */
@@ -27,6 +32,11 @@ export interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<SignInResult>;
   /** Completes a pending two-factor challenge and establishes the session. */
   verifyTwoFactor: (code: string, method: TwoFactorMethod) => Promise<void>;
+  /**
+   * Runs the browser passkey ceremony and adopts the session the backend
+   * creates. Throws `PasskeyError` on failure; no token is stored.
+   */
+  signInWithPasskey: () => Promise<void>;
   /** Revokes the session on the backend, then clears local state. */
   signOut: () => Promise<void>;
 }
