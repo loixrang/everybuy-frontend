@@ -264,7 +264,6 @@ export function SettingsPage() {
             </Link>
             <p className="text-[11px] text-[color:var(--color-muted)] mt-1">
               The reset link expires after one hour and signs out other sessions.
-              Changing your email address is not available in this release.
             </p>
           </div>
         </section>
@@ -312,11 +311,6 @@ export function SettingsPage() {
               <SlidersIcon size={14} />
               Preferences
             </div>
-            <p className="text-[11px] text-[color:var(--color-muted)] mt-1">
-              The backend stores shop name, currency, timezone and receipt footer
-              only. Notification and device preferences are not stored, so they
-              are not shown here.
-            </p>
           </div>
         </section>
       </div>

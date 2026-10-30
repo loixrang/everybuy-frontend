@@ -1,5 +1,21 @@
 # Changelog
 
+### 2026-10-30: FE-058 Move technical backend limitations out of the interface
+
+Added:
+- Root `Issues.md` to collect verified backend gaps and follow-ups for engineering.
+
+Changed:
+- Replaced user-facing implementation explanations with plain guidance or removed non-actionable limitation notices.
+- Kept implementation-specific details in engineering documentation rather than exposing them to shop staff.
+
+Checks:
+- `npm run typecheck`: passed
+- `npm run lint`: passed
+- `npm test`: 37 passed
+- `npm run build`: passed
+- `git diff --check`: passed
+
 Record meaningful frontend changes here.
 
 ## Unreleased

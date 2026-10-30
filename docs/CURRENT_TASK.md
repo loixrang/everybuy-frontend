@@ -1,5 +1,13 @@
 # Current Task
 
+## FE-058: Move Technical Backend Limitations Out of User-Facing Copy
+
+Status: COMPLETED
+
+Removed backend implementation details and non-actionable feature-limit explanations from user-facing screens, replacing necessary guidance with plain language. Added root `Issues.md` to collect verified backend and product follow-ups for engineering. No backend files were changed.
+
+Checks passed: typecheck, lint, 37 tests, production build, and `git diff --check`.
+
 ## FE-057: Audit and Complete Two-Factor Authentication and OTP
 
 Status: BLOCKED

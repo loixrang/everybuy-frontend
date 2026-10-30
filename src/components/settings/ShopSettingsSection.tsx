@@ -190,12 +190,10 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
       {load.status === 'missing' && (
         <div className="mt-4 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-subtle)] p-3">
           <p className="text-xs font-semibold text-[color:var(--color-ink)]">
-            No shop settings row exists
+            Shop details are not available yet
           </p>
           <p className="text-xs text-[color:var(--color-muted)] mt-1">
-            The backend returns 404 until a settings row is seeded, and it has no
-            endpoint that creates one. Add the row in the backend before editing
-            shop details here.
+            Please contact your administrator for help setting up shop details.
           </p>
         </div>
       )}

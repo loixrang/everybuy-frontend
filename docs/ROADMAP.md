@@ -236,6 +236,18 @@ Status: COMPLETED
 
 Checks passed locally: typecheck, lint, 24 tests, production build, and `git diff --check`. The GitHub workflow itself needs a first hosted run after push; Pages deployment is skipped until the documented variables and Pages setting are configured.
 
+## Phase 7: Product Quality
+
+### FE-058: Move Technical Backend Limitations Out of User-Facing Copy
+Status: COMPLETED
+
+- Remove backend implementation details and unsupported-feature explanations from customer-facing screens.
+- Keep actionable, plain-language guidance where a user needs it to proceed.
+- Track verified backend gaps in root `Issues.md` for engineering follow-up.
+- Preserve the existing API contract and do not modify backend files.
+
+Checks passed: typecheck, lint, 37 tests, production build, and `git diff --check`.
+
 ## Blocked and Deferred Work
 
 ### FE-041: Stocktaking

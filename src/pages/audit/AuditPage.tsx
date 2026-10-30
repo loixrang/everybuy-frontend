@@ -88,13 +88,6 @@ export function AuditPage() {
         </p>
       </div>
 
-      <div className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-subtle)] px-4 py-3">
-        <p className="text-xs text-[color:var(--color-muted)]">
-          The backend currently writes audit entries only when an expense is
-          recorded. Sales, stock and staff changes are not audited yet.
-        </p>
-      </div>
-
       <div className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4">
         <label className="block">
           <span className="block text-xs font-semibold text-[color:var(--color-muted)] mb-1">
@@ -259,7 +252,6 @@ export function AuditPage() {
           <p className="text-xs text-[color:var(--color-muted)]">
             {filtered.length} of {entries.length}{' '}
             {entries.length === 1 ? 'entry' : 'entries'} shown · newest first.
-            The audit log is not paginated by the backend.
           </p>
         </>
       )}

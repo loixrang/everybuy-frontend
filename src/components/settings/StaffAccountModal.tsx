@@ -106,7 +106,7 @@ export function StaffAccountModal({
         setError(err.message);
         if (mode === 'invite' && err.status === 500) {
           setHint(
-            'Email invitations need STAFF_INVITE_PREVIEW_URL on the backend. You can create the account with a password instead.',
+            'The invitation could not be sent. Try again later, or set a password for this staff member now.',
           );
         } else if (mode === 'invite' && err.status === 503) {
           setHint(
@@ -187,8 +187,8 @@ export function StaffAccountModal({
 
         <p className="text-xs text-[color:var(--color-muted)] mt-3">
           {mode === 'invite'
-            ? 'The backend emails a one-time link. The invitee chooses their own password.'
-            : 'The backend emails a verification link. Share the password with the staff member securely.'}
+            ? 'We’ll email a one-time link so the staff member can choose a password.'
+            : 'The staff member will receive an email verification link. Share their password securely.'}
         </p>
 
         <form className="mt-5 space-y-4" onSubmit={handleSubmit} noValidate>

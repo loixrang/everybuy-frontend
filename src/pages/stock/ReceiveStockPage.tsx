@@ -440,11 +440,6 @@ export function ReceiveStockPage() {
             </div>
           </div>
 
-          <p className="text-[11px] text-[color:var(--color-muted)]">
-            The backend does not store receipt references or notes, so they are not
-            collected here. The receipt appears in the movements ledger with its date,
-            product, and pack change.
-          </p>
         </div>
 
         {/* Actions */}

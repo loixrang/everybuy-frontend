@@ -338,7 +338,6 @@ export function ExpensesPage() {
           <p className="text-xs text-[color:var(--color-muted)]">
             {filtered.length} of {expenses.length}{' '}
             {expenses.length === 1 ? 'expense' : 'expenses'} shown · newest first.
-            Expenses are not paginated by the backend.
           </p>
         </>
       )}

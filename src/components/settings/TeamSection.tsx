@@ -37,8 +37,6 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
 
   const [invitations, setInvitations] = useState<StaffInvitation[]>([]);
   const [invitationsError, setInvitationsError] = useState<string | null>(null);
-  // `GET /staff/invitations` destructures the first row without a guard, so an
-  // empty table answers 500. Treat that as "none listed" instead of an error.
   const [invitationsLimited, setInvitationsLimited] = useState(false);
   const [pendingMember, setPendingMember] = useState<string | null>(null);
   const [pendingInvite, setPendingInvite] = useState<string | null>(null);
@@ -548,7 +546,7 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
         ) : invitations.length === 0 ? (
           <p className="text-xs text-[color:var(--color-muted)] mt-2">
             {invitationsLimited
-              ? 'No pending invitation is listed. The backend answers 500 when the invitation table is empty, so this list can stay blank even after an invite.'
+              ? 'Pending invitations could not be displayed. Refresh to try again.'
               : 'No pending invitations.'}
           </p>
         ) : (
@@ -580,16 +578,10 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
           </ul>
         )}
 
-        <p className="text-[11px] text-[color:var(--color-muted)] mt-3">
-          The backend returns a single invitation row from the invitations
-          endpoint, so only one pending invitation can be listed at a time.
-        </p>
       </div>
 
       <p className="px-5 py-3 border-t border-[color:var(--color-border)] text-[11px] text-[color:var(--color-muted)]">
-        You cannot change your own role or access here; ask another owner to do
-        it. The backend does not prevent an owner from demoting the last owner,
-        so changes here take effect immediately.
+        Ask another owner to change your access.
       </p>
 
       {modalOpen && (

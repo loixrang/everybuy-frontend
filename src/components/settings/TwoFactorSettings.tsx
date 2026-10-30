@@ -125,7 +125,7 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
       await refreshSession();
       setPassword('');
       setRecoveryCodes(null);
-      setNotice('The server confirmed that two-factor authentication is disabled.');
+      setNotice('Two-factor authentication is disabled.');
     } catch (err: unknown) {
       setError(describeError(err));
     } finally {
