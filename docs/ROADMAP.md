@@ -11,6 +11,13 @@ Statuses:
 
 ## Phase 0: Foundation
 
+### FE-056: Fix Email Verification Flow
+Status: COMPLETED
+
+- Explicit verification email request after Better Auth rejects sign-in with `EMAIL_NOT_VERIFIED`.
+- Accurate success, error, loading, resend and cooldown states; endpoint confirmed against backend configuration and Better Auth 1.7.x.
+- Checks passed: typecheck, lint, 27 tests, production build, and `git diff --check`. Live provider delivery remains unverified from this environment.
+
 ### FE-001: Frontend Foundation
 Status: COMPLETED
 

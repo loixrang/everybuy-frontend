@@ -4,6 +4,18 @@ Record meaningful frontend changes here.
 
 ## Unreleased
 
+### 2026-10-30: FE-056 Email Verification Flow
+
+Fixed:
+- An `EMAIL_NOT_VERIFIED` sign-in response now triggers Better Auth's `POST /api/v1/auth/send-verification-email` through the shared API client. The page shows an email-sent notice only after the endpoint confirms `{ status: true }`.
+- Added a resend/retry action with loading and failure states and a 30-second cooldown after confirmed sends. A failed request is not described as sent.
+
+Changed:
+- Documented that the backend requires email verification but does not enable `sendOnSignIn`; automatic email sending therefore does not occur on the sign-in rejection.
+- Added API tests for the endpoint path, payload, cookie credentials, unconfirmed response, and server failure.
+
+Checks: typecheck, lint, 27 tests, production build, and `git diff --check` passed. Live email delivery was not exercised because the hosted backend and production credentials are not available in this workspace.
+
 ### 2026-10-29: SEO Hygiene, Route Splitting, and CI/CD
 
 Changed:

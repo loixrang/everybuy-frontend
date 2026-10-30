@@ -1,7 +1,7 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../app/auth/auth-context';
-import { sendTwoFactorOtp } from '../../lib/api/auth';
+import { sendTwoFactorOtp, sendVerificationEmail } from '../../lib/api/auth';
 import { ApiError } from '../../lib/api/client';
 import { useTheme } from '../../lib/hooks/useTheme';
 import {
@@ -13,7 +13,7 @@ import {
 } from '../../components/ui/Icons';
 import type { TwoFactorMethod } from '../../types/auth';
 
-type Mode = 'credentials' | 'two-factor';
+type Mode = 'credentials' | 'two-factor' | 'email-verification';
 
 const DEFAULT_DESTINATION = '/inventory';
 const CODE_PATTERN = /^\d{6}$/;
@@ -32,7 +32,7 @@ function describeSignInError(error: unknown): string {
     const code = errorCodeOf(error);
 
     if (code === 'EMAIL_NOT_VERIFIED') {
-      return 'This email address has not been verified yet. Open the verification link sent to your inbox, then sign in again.';
+      return 'Your email address is not verified yet. We could not send a verification email. You can try again below.';
     }
     if (code === 'INVALID_ORIGIN') {
       return 'This site is not trusted by the API. The backend FRONTEND_URL must match the address you are using.';
@@ -102,12 +102,39 @@ export function SignInPage() {
   const [submitting, setSubmitting] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
+  const [sendingVerification, setSendingVerification] = useState(false);
+  const [verificationCooldown, setVerificationCooldown] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const [methods, setMethods] = useState<TwoFactorMethod[]>([]);
   const [method, setMethod] = useState<TwoFactorMethod>('totp');
   const [code, setCode] = useState('');
+
+  useEffect(() => {
+    if (verificationCooldown <= 0) return;
+    const timer = window.setTimeout(
+      () => setVerificationCooldown((remaining) => Math.max(0, remaining - 1)),
+      1000,
+    );
+    return () => window.clearTimeout(timer);
+  }, [verificationCooldown]);
+
+  async function requestVerificationEmail(address: string) {
+    if (sendingVerification) return;
+    setSendingVerification(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await sendVerificationEmail(address);
+      setNotice('Your email is not verified. A verification email has been sent. Check your inbox and spam folder, then sign in again.');
+      setVerificationCooldown(30);
+    } catch {
+      setError('Your email is not verified, and we could not send the verification email. Check your connection and try again.');
+    } finally {
+      setSendingVerification(false);
+    }
+  }
 
   const state = location.state as { from?: unknown } | null;
   const destination =
@@ -196,7 +223,13 @@ export function SignInPage() {
         await requestCode();
       }
     } catch (err: unknown) {
-      setError(describeSignInError(err));
+      if (err instanceof ApiError && errorCodeOf(err) === 'EMAIL_NOT_VERIFIED') {
+        setEmail(trimmedEmail);
+        setMode('email-verification');
+        await requestVerificationEmail(trimmedEmail);
+      } else {
+        setError(describeSignInError(err));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -336,6 +369,45 @@ export function SignInPage() {
               <p className="mt-4 text-sm text-[color:var(--color-muted)]">
                 Ask the shop owner if you need access.
               </p>
+            </>
+          ) : mode === 'email-verification' ? (
+            <>
+              <h1 className="text-xl font-semibold tracking-tight">
+                Verify your email
+              </h1>
+              <p className="mt-2 text-sm text-[color:var(--color-muted)]">
+                This account&rsquo;s email address has not been verified.
+              </p>
+
+              <div className="mt-6 space-y-4">
+                {notice && <AuthNoticePanel message={notice} />}
+                {error && <AuthErrorPanel message={error} />}
+                <button
+                  type="button"
+                  onClick={() => void requestVerificationEmail(email)}
+                  disabled={sendingVerification || verificationCooldown > 0}
+                  className="w-full h-11 rounded-[8px] font-semibold text-sm bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {sendingVerification
+                    ? 'Sending…'
+                    : verificationCooldown > 0
+                      ? `Resend in ${verificationCooldown}s`
+                      : notice
+                        ? 'Resend verification email'
+                        : 'Try sending again'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('credentials');
+                    setError(null);
+                    setNotice(null);
+                  }}
+                  className="w-full h-11 rounded-[8px] font-semibold text-sm border border-[color:var(--color-border)] hover:bg-[color:var(--color-subtle)]"
+                >
+                  Back to sign in
+                </button>
+              </div>
             </>
           ) : (
             <>

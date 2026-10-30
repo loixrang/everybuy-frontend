@@ -44,6 +44,26 @@ export async function signInWithEmail(
 }
 
 /**
+ * Ask Better Auth to send an email verification link
+ * (`POST /api/v1/auth/send-verification-email`). Better Auth accepts the
+ * email and an optional callbackURL, and returns `{ status: true }` only
+ * after the configured mail callback succeeds.
+ */
+export async function sendVerificationEmail(email: string): Promise<void> {
+  const result = await apiFetch<{ status: boolean }>(
+    `${AUTH_BASE}/send-verification-email`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    },
+  );
+
+  if (result.status !== true) {
+    throw new Error('The verification email request was not confirmed.');
+  }
+}
+
+/**
  * Revoke the current session and clear its cookie
  * (`POST /api/v1/auth/sign-out`).
  */

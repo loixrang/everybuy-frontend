@@ -1,5 +1,15 @@
 # Current Task
 
+## FE-056: Fix Email Verification Flow
+
+Status: COMPLETED
+
+After a password sign-in is rejected with Better Auth's `EMAIL_NOT_VERIFIED`, the page explicitly requests a verification email through the existing configured auth API client. It shows success only after `{ status: true }`, offers retry after failure, and applies a 30-second cooldown after confirmed sends. Existing sign-in and two-factor behavior is preserved.
+
+Checks passed: typecheck, lint, 27 tests, production build, and `git diff --check`. The live mail provider flow could not be exercised because the hosted production backend and credentials are not available in this workspace.
+
+## Previous Task
+
 ## FE-055: Search Visibility, Performance, and CI/CD Preparation
 
 Status: COMPLETED
