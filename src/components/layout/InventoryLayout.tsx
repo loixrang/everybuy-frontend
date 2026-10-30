@@ -13,6 +13,7 @@ import {
   MoreHorizontalIcon,
   WalletIcon,
   XIcon,
+  ClipboardListIcon,
 } from '../ui/Icons';
 import { useAuth } from '../../app/auth/auth-context';
 import { ApiError } from '../../lib/api/client';
@@ -32,6 +33,7 @@ export function InventoryLayout() {
 
   const isInventoryActive = location.pathname.startsWith('/inventory');
   const isMovementsActive = location.pathname.startsWith('/movements');
+  const isStockTakesActive = location.pathname.startsWith('/stocktakes');
   const isOverviewActive = location.pathname === '/overview';
   const isSalesActive = location.pathname.startsWith('/sales');
   const isCustomersActive = location.pathname.startsWith('/customers');
@@ -194,6 +196,12 @@ export function InventoryLayout() {
                 icon={<HistoryIcon size={18} />}
               />
               <SidebarNavLink
+                to="/stocktakes"
+                label="Stocktakes"
+                active={isStockTakesActive}
+                icon={<ClipboardListIcon size={18} />}
+              />
+              <SidebarNavLink
                 to="/settings"
                 label="Settings"
                 active={isSettingsActive}
@@ -264,6 +272,7 @@ export function InventoryLayout() {
             label="More"
             active={
               isMovementsActive ||
+              isStockTakesActive ||
               isSettingsActive ||
               isExpensesActive ||
               isAuditActive ||
@@ -286,6 +295,7 @@ export function InventoryLayout() {
           email={user?.email}
           showSettings={!isSettingsActive}
           showMovements={!isMovementsActive}
+          showStockTakes={!isStockTakesActive}
           showExpenses={!isExpensesActive}
           showAudit={!isAuditActive}
           signingOut={signingOut}
@@ -387,6 +397,7 @@ function MoreSheet({
   email,
   showSettings,
   showMovements,
+  showStockTakes,
   showExpenses,
   showAudit,
   signingOut,
@@ -397,6 +408,7 @@ function MoreSheet({
   email?: string;
   showSettings: boolean;
   showMovements: boolean;
+  showStockTakes: boolean;
   showExpenses: boolean;
   showAudit: boolean;
   signingOut: boolean;
@@ -520,6 +532,15 @@ function MoreSheet({
               label="Stock movements"
               description="Receipts, sales and adjustments"
               icon={<HistoryIcon size={18} />}
+              onNavigate={onClose}
+            />
+          )}
+          {showStockTakes && (
+            <SheetLink
+              to="/stocktakes"
+              label="Stocktakes"
+              description="Count stock and approve differences"
+              icon={<ClipboardListIcon size={18} />}
               onNavigate={onClose}
             />
           )}

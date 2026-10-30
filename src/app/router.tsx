@@ -32,6 +32,16 @@ const StockMovementsPage = lazy(() =>
     default: module.StockMovementsPage,
   })),
 );
+const StockTakesPage = lazy(() =>
+  import('../pages/stocktakes/StockTakesPage').then((module) => ({
+    default: module.StockTakesPage,
+  })),
+);
+const StockTakeDetailPage = lazy(() =>
+  import('../pages/stocktakes/StockTakeDetailPage').then((module) => ({
+    default: module.StockTakeDetailPage,
+  })),
+);
 const ReceiveStockPage = lazy(() =>
   import('../pages/stock/ReceiveStockPage').then((module) => ({
     default: module.ReceiveStockPage,
@@ -135,6 +145,8 @@ export function AppRouter() {
             <Route path="/inventory/:id" element={<ProductDetailPage />} />
             <Route path="/inventory/:id/edit" element={<ProductSetupPage />} />
             <Route path="/movements" element={<StockMovementsPage />} />
+            <Route path="/stocktakes" element={<StockTakesPage />} />
+            <Route path="/stocktakes/:id" element={<StockTakeDetailPage />} />
             <Route path="/sales" element={<SalesPage />} />
             <Route path="/sales/new" element={<RecordSalePage />} />
             <Route path="/sales/:id" element={<SaleDetailPage />} />
@@ -175,6 +187,8 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/inventory/')) return 'Product details';
   if (pathname.startsWith('/inventory')) return 'Inventory';
   if (pathname.startsWith('/movements')) return 'Stock movements';
+  if (pathname.startsWith('/stocktakes/')) return 'Stocktake';
+  if (pathname.startsWith('/stocktakes')) return 'Stocktakes';
   if (pathname.startsWith('/sales/new')) return 'Record a sale';
   if (/^\/sales\/[^/]+/.test(pathname)) return 'Sale details';
   if (pathname.startsWith('/sales')) return 'Sales';

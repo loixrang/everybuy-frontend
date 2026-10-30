@@ -286,11 +286,12 @@ Checks passed: typecheck, lint, 37 tests, production build, and `git diff --chec
 ## Blocked and Deferred Work
 
 ### FE-041: Stocktaking
-Status: BLOCKED
+Status: WORKING
 
-- The backend checkout inspected on 2026-10-29 (`master`, matching `origin/master`) has stocktake database tables and a status enum but no stocktake controller or API endpoints.
-- The backend README says there is no separate stocktake session or approval pipeline in this release. Existing owner-only stock adjustments are not a substitute for count creation, counted-item capture, and owner approval.
-- Resume when the stocktake API implementation is present in the backend checkout and its contracts and guards can be verified.
+- Stocktake API is now present in the backend checkout: `StockTakesModule` is registered in `AppModule`, and `StockTakesController` exposes create, list, detail, count, finalize, and cancel routes.
+- Frontend implementation is in progress in `src/pages/stocktakes/`, `src/components/stocktakes/`, and `src/lib/api/stockTakes.ts`.
+- Owner-only finalize and cancel controls; staff can record counts. Backend remains authoritative for permissions and status transitions.
+- Frontend typecheck, lint, tests, and production build pass. Live end-to-end verification against a running API and database remains outstanding.
 
 ### FE-043: Online Store
 Status: DEFERRED

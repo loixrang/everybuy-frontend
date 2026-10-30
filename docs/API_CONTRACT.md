@@ -231,8 +231,14 @@ Do not treat as full policy - verify per endpoint.
 - `PATCH /api/v1/settings/shop/:id` requires `StaffGuard` and `OwnerGuard` and returns the updated database row. The controller does not attach the declared Zod schema to `@Body()`, so that schema is not applied at runtime. The frontend sends only `{ name, address, phone, currency, timezone, receiptFooter }` and reports a missing row; no create endpoint exists.
 
 ### Stocktake Contract Notes:
-- **No verified stocktake API in the inspected backend checkout (2026-10-29)**: database schema contains `stocktakes`, `stocktake_items`, and a `Draft | Finalized | Cancelled` status enum, but no controller, service, DTOs, or registered module exposes a count lifecycle. The backend README states there is no separate stocktake session or approval pipeline in this release.
-- Existing stock endpoints (`POST /api/v1/stock/adjustments`, guarded by StaffGuard and OwnerGuard) support a direct reasoned correction only. They do not create count sessions, record counted quantities, or approve a count. Do not use them to simulate the missing workflow.
+- **Verified stocktake routes**: `StockTakesController` is registered through `StockTakesModule` in `AppModule`. All routes require `StaffGuard`; finalize and cancel additionally require `OwnerGuard`.
+- `POST /api/v1/stock-takes` accepts `{ name }`, creates a `Draft` stocktake and snapshots every active product's `stockPacks` into one item per product. It returns the stocktake and `totalProducts`.
+- `GET /api/v1/stock-takes?page=&limit=` returns `{ data, page, limit, total }`, newest first. Page defaults to 1, limit defaults to 20 and is capped at 100.
+- `GET /api/v1/stock-takes/:id` returns stocktake metadata, items with product name, pack name, size, packs per bag, expected and count fields, and `totalProducts` / `countedProducts`.
+- `PATCH /api/v1/stock-takes/:id/items/:itemId/count` accepts `{ countedPacks }` as a non-negative integer. Draft state and item ownership are checked. The backend captures current stock in `stockAtCountPacks`; saving a count does not change product stock.
+- `POST /api/v1/stock-takes/:id/finalize` is Owner only and requires every item counted. It reconciles each product with `countedPacks - stockAtCountPacks` added to current stock, records non-zero differences as Adjustment movements, then marks the stocktake Finalized in one transaction.
+- `POST /api/v1/stock-takes/:id/cancel` is Owner only and cancels a Draft without stock changes.
+- A stocktake cannot be created when there are no active products. The frontend surfaces the backend's 400 response; add an active product before starting a stocktake.
 
 ### Staff and Invitation Contract Notes:
 - **Invitation paths are singular**: the implemented routes are `POST /api/v1/staff/invite`, `GET /api/v1/staff/invite/preview`, and `POST /api/v1/staff/invite/accept`. Earlier task text referenced `/api/v1/staff/invitations/preview` and `/api/v1/staff/invitations/accept`; those paths do not exist in the inspected backend (`staff.controller.ts`, `public-staff-invitation.controller.ts`). The frontend uses the singular paths because they are what the backend mounts and what the emailed `STAFF_INVITE_PREVIEW_URL` points at.
