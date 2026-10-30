@@ -125,8 +125,8 @@ function MonthPicker({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="flex items-center gap-2">
+    <div className="flex w-full sm:w-auto flex-wrap items-center gap-2">
+      <div className="flex w-full sm:w-auto items-center gap-2">
         <button
           type="button"
           onClick={() => goToMonth(shiftMonth(month, -1))}
@@ -143,7 +143,7 @@ function MonthPicker({
           type="month"
           value={month}
           onChange={(event) => goToMonth(event.target.value)}
-          className="h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)]"
+          className="h-11 w-auto flex-1 sm:flex-none min-w-0 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)]"
         />
         <button
           type="button"
