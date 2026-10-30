@@ -14,6 +14,7 @@ import {
   MoonIcon,
   RefreshCwIcon,
   ShieldIcon,
+  ClipboardListIcon,
   SunIcon,
   XIcon,
 } from '../../components/ui/Icons';
@@ -332,6 +333,21 @@ export function SettingsPage() {
                 Manage
                 <ChevronRightIcon size={14} />
               </Link>
+            </div>
+          </section>
+        )}
+
+        {isOwner && (
+          <section aria-labelledby="catalog-heading" className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-ink)]"><ClipboardListIcon size={18} /></div>
+              <div className="min-w-0 flex-1">
+                <h2 id="catalog-heading" className="text-sm font-bold text-[color:var(--color-ink)]">Categories &amp; brands</h2>
+                <p className="mt-1 text-xs text-[color:var(--color-muted)]">Add, deactivate or reactivate product categories and brands.</p>
+                <Link to="/settings/catalog" className="mt-3 inline-flex h-11 items-center gap-1 rounded-[8px] px-3 text-xs font-semibold text-[color:var(--color-accent-ink)] hover:bg-[color:var(--color-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] sm:h-9">
+                  Manage catalog <ChevronRightIcon size={14} />
+                </Link>
+              </div>
             </div>
           </section>
         )}

@@ -92,6 +92,11 @@ const SecuritySettingsPage = lazy(() =>
     default: module.SecuritySettingsPage,
   })),
 );
+const CatalogManagementPage = lazy(() =>
+  import('../pages/settings/CatalogManagementPage').then((module) => ({
+    default: module.CatalogManagementPage,
+  })),
+);
 const AcceptInvitePage = lazy(() =>
   import('../pages/auth/AcceptInvitePage').then((module) => ({
     default: module.AcceptInvitePage,
@@ -159,6 +164,7 @@ export function AppRouter() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route element={<OwnerRoute />}>
               <Route path="/settings/security" element={<SecuritySettingsPage />} />
+              <Route path="/settings/catalog" element={<CatalogManagementPage />} />
             </Route>
             <Route path="/team" element={<Navigate to="/settings" replace />} />
             <Route path="*" element={<NotFoundPage />} />
@@ -199,6 +205,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/audit')) return 'Audit log';
   if (pathname.startsWith('/overview')) return 'Reports';
   if (pathname === '/settings/security') return 'Security';
+  if (pathname === '/settings/catalog') return 'Categories & brands';
   if (pathname.startsWith('/settings') || pathname.startsWith('/team')) {
     return 'Settings';
   }

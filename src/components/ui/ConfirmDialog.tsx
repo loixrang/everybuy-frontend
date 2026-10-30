@@ -18,7 +18,7 @@ const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
- * Shared confirmation dialog for destructive security actions. It behaves as
+ * Shared confirmation dialog for consequential actions. It behaves as
  * a bottom sheet on phones and a centred card on larger screens, matching the
  * existing settings dialogs. Sensitive values belong in transient form state,
  * never in this component's props beyond the current render.

@@ -69,13 +69,16 @@ export function ProductSetupPage() {
         ]);
 
         if (ignore) return;
-        setCategories(catsRes);
-        setBrands(brandsRes);
+        // Inactive catalog records remain visible on management screens only.
+        const activeCategories = catsRes.filter((category) => category.active);
+        const activeBrands = brandsRes.filter((brand) => brand.active);
+        setCategories(activeCategories);
+        setBrands(activeBrands);
 
         // Pre-select first category and brand if creating
         if (!isEdit) {
-          if (catsRes.length > 0) setCategoryId(catsRes[0].id);
-          if (brandsRes.length > 0) setBrandId(brandsRes[0].id);
+          if (activeCategories.length > 0) setCategoryId(activeCategories[0].id);
+          if (activeBrands.length > 0) setBrandId(activeBrands[0].id);
         }
 
         // If editing, load the existing product

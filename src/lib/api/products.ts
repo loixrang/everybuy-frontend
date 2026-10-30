@@ -91,3 +91,45 @@ export async function fetchCategories(): Promise<Category[]> {
 export async function fetchBrands(): Promise<Brand[]> {
   return apiFetch<Brand[]>('/api/v1/brands');
 }
+
+/** Create a category. The backend returns an array containing the created row. */
+export async function createCategory(name: string): Promise<Category> {
+  const rows = await apiFetch<Category[]>('/api/v1/categories', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  });
+  const category = rows[0];
+  if (!category) throw new Error('The server did not return the created category.');
+  return category;
+}
+
+/** Create a brand. The backend returns an array containing the created row. */
+export async function createBrand(name: string): Promise<Brand> {
+  const rows = await apiFetch<Brand[]>('/api/v1/brands', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  });
+  const brand = rows[0];
+  if (!brand) throw new Error('The server did not return the created brand.');
+  return brand;
+}
+
+export async function setCategoryActive(id: string, active: boolean): Promise<Category> {
+  const rows = await apiFetch<Category[]>(`/api/v1/categories/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ active }),
+  });
+  const category = rows[0];
+  if (!category) throw new Error('The server did not return the updated category.');
+  return category;
+}
+
+export async function setBrandActive(id: string, active: boolean): Promise<Brand> {
+  const rows = await apiFetch<Brand[]>(`/api/v1/brands/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ active }),
+  });
+  const brand = rows[0];
+  if (!brand) throw new Error('The server did not return the updated brand.');
+  return brand;
+}

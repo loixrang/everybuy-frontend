@@ -1,5 +1,24 @@
 # Current Task
 
+# FE-062: Owner Category and Brand Management
+
+Status: COMPLETED
+
+## Goal
+
+Provide an owner-only interface to view, create, deactivate, and reactivate categories and brands without deleting records.
+
+## Implemented
+
+- `/settings/catalog` is owner-route guarded and linked from Settings only for Owners. Categories and Brands tabs list all records, including inactive records.
+- Uses `GET /api/v1/categories`, `GET /api/v1/brands`, `POST` with `{ name }`, and `PATCH /:id` with `{ active }`; soft status changes preserve the existing rows.
+- Includes name validation, success/error/loading/empty states, duplicate feedback, mutation disabling, and confirmation before deactivation.
+- Product setup filters out inactive categories and brands in create and edit forms.
+
+## Checks
+
+Verified backend now applies `OwnerGuard` as well as `StaffGuard` to category POST and PATCH (and DELETE, which the UI does not call). Typecheck, lint, all 109 tests, production build, and `git diff --check` pass. No live API run was performed.
+
 ## FE-061: Owner Passkey and Authenticator-App Two-Factor Security
 
 Status: COMPLETED
@@ -82,10 +101,10 @@ Make staff invitations usable end to end against the verified backend: an owner 
 
 ## Implemented
 
-- `src/lib/invitations.ts` holds the flow's pure rules: token trimming, the 12–128 character password check with confirmation, the duplicate-submit guard, safe error translation for preview and acceptance, the derived invitation status, and a diagnostic logger that excludes tokens and passwords.
+- `src/lib/invitations.ts` holds the flow's pure rules: token trimming, the 12â€“128 character password check with confirmation, the duplicate-submit guard, safe error translation for preview and acceptance, the derived invitation status, and a diagnostic logger that excludes tokens and passwords.
 - `src/pages/auth/AcceptInvitePage.tsx` is the public landing page:
   - Reads `token` from the query string; a missing token shows guidance and never calls the API.
-  - Previews through `GET /api/v1/staff/invite/preview?token=…` and shows the invited name, email, fixed `Staff` role, and expiry.
+  - Previews through `GET /api/v1/staff/invite/preview?token=â€¦` and shows the invited name, email, fixed `Staff` role, and expiry.
   - Distinct loading skeleton, unavailable (400), rate-limited (429), server, and network states, with retry.
   - Password and confirmation fields with inline mismatch feedback and local length validation before submitting.
   - Submits `{ token, password }` to `POST /api/v1/staff/invite/accept` once at a time (ref guard plus disabled button).
@@ -244,13 +263,13 @@ Use the backend's actual selling units in the interface: **packs** and **bags**.
 
 ### Implemented
 
-- Product setup: "Bags & selling prices", "Packs per bag *", "Bag price (₦) *", "Bag rules and permissions", and the page subtitle.
+- Product setup: "Bags & selling prices", "Packs per bag *", "Bag price (â‚¦) *", "Bag rules and permissions", and the page subtitle.
 - Product detail: "Bag price", "Bag conversion", and the stock breakdown ("2 bags + 3 packs").
 - Inventory list: subtitle and empty-state copy.
-- Receive stock: "Sealed bags", "Each bag contains N packs", the option text ("N packs/bag"), the summary line ("2 bags × 6 packs"), and the validation message. Form state was renamed (`cartons` → `bags`, `cartonCount` → `bagCount`, `totalPacksFromBags`); the input id is now `receive-bags`.
-- Record sale: "Sell packs or bags", the price hint ("₦X/pack · ₦Y/bag"), and the "Bag" add button.
+- Receive stock: "Sealed bags", "Each bag contains N packs", the option text ("N packs/bag"), the summary line ("2 bags Ã— 6 packs"), and the validation message. Form state was renamed (`cartons` â†’ `bags`, `cartonCount` â†’ `bagCount`, `totalPacksFromBags`); the input id is now `receive-bags`.
+- Record sale: "Sell packs or bags", the price hint ("â‚¦X/pack Â· â‚¦Y/bag"), and the "Bag" add button.
 - Sale detail: unit labels render `Bag` / `Pack` directly.
-- Monthly report: "Bags and packs sold…", the "Bags" column, and the mobile card ("N bags").
+- Monthly report: "Bags and packs soldâ€¦", the "Bags" column, and the mobile card ("N bags").
 - Documentation uses bags consistently (API_CONTRACT, ARCHITECTURE, ROADMAP, CHANGELOG, CURRENT_TASK).
 
 ### Checks
@@ -302,8 +321,8 @@ Replace the dead "Team & preferences" navigation item with a real settings page,
 - `StaffAccountModal` with two verified modes:
   - Email invitation (`POST /api/v1/staff/invite`).
   - Create account with an initial password (`POST /api/v1/staff`).
-  - Client validation mirrors the backend (valid email, password 12–128, confirmation match) and maps 409/500/503 responses to actionable hints.
-- `AcceptInvitePage` (`/accept-invite?token=…`, public):
+  - Client validation mirrors the backend (valid email, password 12â€“128, confirmation match) and maps 409/500/503 responses to actionable hints.
+- `AcceptInvitePage` (`/accept-invite?token=â€¦`, public):
   - Previews the invitation from `GET /api/v1/staff/invite/preview`.
   - Shows the invitee name, email and expiry, then creates the account via `POST /api/v1/staff/invite/accept`.
   - Handles missing/invalid/expired tokens, network failures, short passwords and mismatches.
@@ -356,7 +375,7 @@ Finish the Everybuy identity in the UI, make the dark theme genuinely dark, give
 - `bunx tsc -b --noEmit`: passed
 - `bun run lint`: passed
 - `bun run build`: passed
-- Live dev server: `/`, `/signin`, `/settings`, `/accept-invite?token=…`, `/inventory` all serve the SPA with the Everybuy title; backend CORS returns 204 with the correct origin and credentials.
+- Live dev server: `/`, `/signin`, `/settings`, `/accept-invite?token=â€¦`, `/inventory` all serve the SPA with the Everybuy title; backend CORS returns 204 with the correct origin and credentials.
 
 ### Notes / Limitations:
 
@@ -371,7 +390,7 @@ Status: COMPLETED
 
 ## Goal
 
-Give staff an authoritative monthly view of shop performance — sales, money received, outstanding customer debt, product quantities sold, and closing stock — using the backend's monthly report instead of totals computed in the browser.
+Give staff an authoritative monthly view of shop performance â€” sales, money received, outstanding customer debt, product quantities sold, and closing stock â€” using the backend's monthly report instead of totals computed in the browser.
 
 ## Scope
 
@@ -662,7 +681,7 @@ Implement the sale recording flow according to the verified backend contract: mu
   - Amount paid input with backend regex validation (`^\d{1,12}(\.\d{1,2})?$`), over-payment guard, and customer-required-when-balance-remains rule (mirrors backend 400s).
   - Sale summary card (items, total, amount paid, balance owed, cash/credit line) with "Save sale".
   - Idempotent `requestId`: kept across retries of an identical payload, regenerated when the sale is edited (backend 409s a reused id with different content), cleared only on success.
-  - 409 → "Save blocked" panel with "Refresh stock" (matches `sale_conflict.svg`); 404/403/400/network errors mapped to user-facing messages.
+  - 409 â†’ "Save blocked" panel with "Refresh stock" (matches `sale_conflict.svg`); 404/403/400/network errors mapped to user-facing messages.
   - Success state with total/paid/balance/customer, `replayed` notice, "Record another sale" (resets form and refreshes stock).
 - Registered `/sales/new` and a minimal `/sales` placeholder (nav already linked to it) in `AppRouter`.
 

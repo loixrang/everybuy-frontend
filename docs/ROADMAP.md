@@ -11,6 +11,15 @@ Statuses:
 
 ## Phase 0: Foundation
 
+### FE-062: Owner Category and Brand Management
+Status: COMPLETED
+
+- Owner-only catalog page is implemented at `/settings/catalog`; lists all active and inactive records and supports create, soft-deactivate, and reactivate through verified category and brand endpoints.
+- Product setup now offers active categories and brands only.
+- Backend category POST and PATCH owner enforcement was rechecked on 2026-10-30: both routes apply OwnerGuard alongside StaffGuard. Brand create/update are also owner protected.
+- Checks passed: typecheck, lint, 109 tests, production build, and `git diff --check`. Live API scenarios were not exercised.
+
+
 ### FE-057: Audit and Complete Two-Factor Authentication and OTP
 Status: BLOCKED
 

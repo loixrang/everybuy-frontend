@@ -1,3 +1,20 @@
+# 2026-10-30: FE-062 Category and Brand Management
+
+Added:
+- Owner-only `/settings/catalog` management page with Categories and Brands tabs, showing active and inactive records and supporting create, soft-deactivation, and reactivation.
+- Confirmed deactivation, validation, duplicate and authorization feedback, and loading, empty, success, and error states.
+- API wrappers use the verified category and brand list, create, and update routes.
+
+Changed:
+- Product setup now excludes inactive categories and brands from both creation and editing selectors.
+- Owner Settings includes the catalog management link; the route guard also blocks staff direct navigation.
+
+Blocked:
+- Typecheck, lint, all 109 tests, production build, and `git diff --check` passed.
+
+Authorization recheck:
+- Confirmed `CategoriesController` now applies `OwnerGuard` to category POST and PATCH in addition to the controller-level `StaffGuard`. Updated the API contract and marked FE-062 complete. No backend files were modified in this frontend workspace.
+
 # Changelog
 
 ### 2026-10-30: FE-061 Owner Passkey and Authenticator-App Security
@@ -188,7 +205,7 @@ Notes:
 Changed:
 - The interface now says **bag/bags** instead of "carton/cartons" for the bulk unit, matching the backend enum (`Bag` | `Pack`) and the `packsPerBag` / `bagPrice` field names.
 - Updated copy across product setup, product detail, inventory, receive stock, record sale, sale detail, and the monthly report ("Bags" column and mobile summary).
-- Receive-stock form state and ids were renamed (`cartons` → `bags`, `receive-cartons` → `receive-bags`).
+- Receive-stock form state and ids were renamed (`cartons` â†’ `bags`, `receive-cartons` â†’ `receive-bags`).
 - Documentation updated to use bags consistently.
 
 Notes:
@@ -199,7 +216,7 @@ Notes:
 Added:
 - `SettingsPage` (`/settings`): profile summary from the session, appearance control, owner-only team list, session sign-out, and notices. `/team` now redirects to `/settings`, and the navigation item is "Settings" (desktop) / "More" (mobile).
 - `StaffAccountModal` with two verified onboarding paths: email invitation (`POST /api/v1/staff/invite`) and account creation with an initial password (`POST /api/v1/staff`), including backend-aligned validation and 409/500/503 hints.
-- `AcceptInvitePage` (`/accept-invite?token=…`, public): previews an invitation, shows invitee/expiry, creates the account via `POST /api/v1/staff/invite/accept`, and handles invalid/expired tokens and network errors.
+- `AcceptInvitePage` (`/accept-invite?token=â€¦`, public): previews an invitation, shows invitee/expiry, creates the account via `POST /api/v1/staff/invite/accept`, and handles invalid/expired tokens and network errors.
 - `src/lib/api/staff.ts` and `src/types/staff.ts` for the verified staff contract.
 - Shared theme store: `useTheme` now uses `useSyncExternalStore` so the settings control and the header toggle stay in sync and the stored theme applies before first paint.
 
@@ -366,7 +383,7 @@ Added:
 - Sale domain types in `src/types/sale.ts`: `Sale`, `SaleItem`, `Payment`, `SaleUnit`, `CreateSaleInput`, `CreateSaleResult` (with `replayed` flag) verified against `sales.service.ts` and the schema.
 - Customer types in `src/types/customer.ts` (`Customer`, `CreateCustomerInput`).
 - Money helpers in `src/lib/utils/money.ts` (`toKobo`/`fromKobo`), ported from the backend so client-side totals use integer kobo arithmetic and never drift through floats.
-- Sales API client in `src/lib/api/sales.ts` (`createSale` → `POST /api/v1/sales`).
+- Sales API client in `src/lib/api/sales.ts` (`createSale` â†’ `POST /api/v1/sales`).
 - Customers API client in `src/lib/api/customers.ts` (`fetchCustomers`, `createCustomer`; both StaffGuard).
 - `RecordSalePage` (`/sales/new`):
   - Client-side product search (backend has no search parameter) with Pack/Bag add buttons; re-adding the same product+unit increases the line quantity (the backend rejects duplicate product+unit lines).
