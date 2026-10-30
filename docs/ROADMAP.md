@@ -238,6 +238,16 @@ Checks passed locally: typecheck, lint, 24 tests, production build, and `git dif
 
 ## Phase 7: Product Quality
 
+### FE-059: Settings UX and Progressive Disclosure
+Status: COMPLETED
+
+- Show saved shop and profile information first; open editing controls only after an explicit action.
+- Reveal security and team-management controls only when selected.
+- Review all major pages and preserve dedicated workflows where forms are the primary purpose.
+- Keep existing APIs, validation, permissions, and responsive behavior.
+
+Checks passed: typecheck, lint, 37 tests, production build, and `git diff --check`. UI interactions were reviewed in code; the project has no browser/component automation setup.
+
 ### FE-058: Move Technical Backend Limitations Out of User-Facing Copy
 Status: COMPLETED
 

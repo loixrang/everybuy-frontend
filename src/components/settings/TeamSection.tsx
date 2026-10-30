@@ -39,6 +39,7 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
   const [invitationsError, setInvitationsError] = useState<string | null>(null);
   const [invitationsLimited, setInvitationsLimited] = useState(false);
   const [pendingMember, setPendingMember] = useState<string | null>(null);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [pendingInvite, setPendingInvite] = useState<string | null>(null);
   const [rowError, setRowError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -130,6 +131,7 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
       const updated = await updateStaff(member.staffId, { role });
       applyUpdated(updated);
       setNotice(`${member.name} is now ${role === 'Owner' ? 'an owner' : 'staff'}.`);
+      setEditingMemberId(null);
     } catch (err: unknown) {
       setRowError(
         err instanceof ApiError
@@ -153,6 +155,7 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
       setNotice(
         `${member.name} was ${nextActive ? 'reactivated' : 'deactivated'}.`,
       );
+      setEditingMemberId(null);
     } catch (err: unknown) {
       setRowError(
         err instanceof ApiError
@@ -378,6 +381,9 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
                   <th className="py-3 px-5 text-xs font-medium text-[color:var(--color-muted)]">
                     Joined
                   </th>
+                  <th className="py-3 px-5 text-xs font-medium text-[color:var(--color-muted)] text-right">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[color:var(--color-border)]">
@@ -400,55 +406,31 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
                         </span>
                       </td>
                       <td className="py-3 px-5">
-                        {isSelf ? (
-                          <RoleBadge role={member.role} />
-                        ) : (
-                          <label className="sr-only" htmlFor={`role-${member.staffId}`}>
-                            Role for {member.name}
-                          </label>
-                        )}
-                        {!isSelf && (
-                          <select
-                            id={`role-${member.staffId}`}
-                            value={member.role}
-                            disabled={busy}
-                            onChange={(event) =>
-                              void changeRole(
-                                member,
-                                event.target.value as StaffRole,
-                              )
-                            }
-                            className="h-9 px-2 rounded-[6px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-xs font-semibold text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)] disabled:opacity-60 disabled:cursor-not-allowed"
-                          >
-                            <option value="Staff">Staff</option>
-                            <option value="Owner">Owner</option>
-                          </select>
-                        )}
+                        <RoleBadge role={member.role} />
                       </td>
                       <td className="py-3 px-5">
-                        {isSelf ? (
-                          <AccessBadge active={member.active} />
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => void toggleActive(member)}
-                            disabled={busy}
-                            className={`inline-flex items-center px-2 py-0.5 rounded-[4px] text-[11px] font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
-                              member.active
-                                ? 'bg-[color:var(--color-success-bg)] text-[color:var(--color-success-ink)]'
-                                : 'bg-[color:var(--color-danger-bg)] text-[color:var(--color-danger-ink)]'
-                            }`}
-                          >
-                            {busy
-                              ? 'Saving…'
-                              : member.active
-                                ? 'Active · deactivate'
-                                : 'Inactive · reactivate'}
-                          </button>
-                        )}
+                        <AccessBadge active={member.active} />
                       </td>
                       <td className="py-3 px-5 text-sm text-[color:var(--color-muted)] whitespace-nowrap">
                         {formatShortDate(member.createdAt)}
+                      </td>
+                      <td className="py-3 px-5 text-right">
+                        {!isSelf && (
+                          <div className="flex items-center justify-end gap-2">
+                            <button type="button" aria-expanded={editingMemberId === member.staffId} aria-controls={`member-actions-${member.staffId}`} onClick={() => setEditingMemberId(editingMemberId === member.staffId ? null : member.staffId)} className="h-9 px-2 rounded-[6px] text-xs font-semibold text-[color:var(--color-accent-ink)] hover:bg-[color:var(--color-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]">
+                              {editingMemberId === member.staffId ? 'Done' : 'Manage'}
+                            </button>
+                            <div id={`member-actions-${member.staffId}`} hidden={editingMemberId !== member.staffId} className={`${editingMemberId === member.staffId ? 'flex' : 'hidden'} items-center gap-2`}>
+                                <label className="sr-only" htmlFor={`role-${member.staffId}`}>Role for {member.name}</label>
+                                <select id={`role-${member.staffId}`} value={member.role} disabled={busy} onChange={(event) => void changeRole(member, event.target.value as StaffRole)} className="h-9 px-2 rounded-[6px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-xs font-semibold text-[color:var(--color-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60">
+                                  <option value="Staff">Staff</option><option value="Owner">Owner</option>
+                                </select>
+                                <button type="button" onClick={() => void toggleActive(member)} disabled={busy} className="h-9 px-2 rounded-[6px] text-xs font-semibold text-[color:var(--color-muted)] hover:bg-[color:var(--color-subtle)] disabled:opacity-60">
+                                  {busy ? 'Saving…' : member.active ? 'Deactivate' : 'Reactivate'}
+                                </button>
+                            </div>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );
@@ -483,39 +465,21 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
                     <span className="text-xs text-[color:var(--color-muted)]">
                       Joined {formatShortDate(member.createdAt)}
                     </span>
-                    {isSelf ? (
+                    <div className="flex items-center gap-2">
                       <RoleBadge role={member.role} />
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <label className="sr-only" htmlFor={`role-m-${member.staffId}`}>
-                          Role for {member.name}
-                        </label>
-                        <select
-                          id={`role-m-${member.staffId}`}
-                          value={member.role}
-                          disabled={busy}
-                          onChange={(event) =>
-                            void changeRole(member, event.target.value as StaffRole)
-                          }
-                          className="h-9 px-2 rounded-[6px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-xs font-semibold text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)] disabled:opacity-60"
-                        >
-                          <option value="Staff">Staff</option>
-                          <option value="Owner">Owner</option>
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() => void toggleActive(member)}
-                          disabled={busy}
-                          className="h-9 px-3 rounded-[6px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-xs font-semibold text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors disabled:opacity-60"
-                        >
-                          {busy
-                            ? 'Saving…'
-                            : member.active
-                              ? 'Deactivate'
-                              : 'Reactivate'}
+                      {!isSelf && <>
+                        <button type="button" aria-expanded={editingMemberId === member.staffId} aria-controls={`member-mobile-actions-${member.staffId}`} onClick={() => setEditingMemberId(editingMemberId === member.staffId ? null : member.staffId)} className="h-9 px-2 text-xs font-semibold text-[color:var(--color-accent-ink)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]">
+                          {editingMemberId === member.staffId ? 'Done' : 'Manage'}
                         </button>
-                      </div>
-                    )}
+                        <div id={`member-mobile-actions-${member.staffId}`} hidden={editingMemberId !== member.staffId} className={`${editingMemberId === member.staffId ? 'flex' : 'hidden'} flex-wrap items-center gap-2`}>
+                          <label className="sr-only" htmlFor={`role-m-${member.staffId}`}>Role for {member.name}</label>
+                          <select id={`role-m-${member.staffId}`} value={member.role} disabled={busy} onChange={(event) => void changeRole(member, event.target.value as StaffRole)} className="h-9 px-2 rounded-[6px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-xs font-semibold text-[color:var(--color-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60">
+                            <option value="Staff">Staff</option><option value="Owner">Owner</option>
+                          </select>
+                          <button type="button" onClick={() => void toggleActive(member)} disabled={busy} className="h-9 px-2 rounded-[6px] text-xs font-semibold text-[color:var(--color-muted)] hover:bg-[color:var(--color-subtle)] disabled:opacity-60">{busy ? 'Saving…' : member.active ? 'Deactivate' : 'Reactivate'}</button>
+                        </div>
+                      </>}
+                    </div>
                   </div>
                 </li>
               );

@@ -4,7 +4,6 @@ import { ApiError } from '../../lib/api/client';
 import type { ShopSettings } from '../../types/shop';
 import {
   AlertCircleIcon,
-  CheckCircleIcon,
   RefreshCwIcon,
 } from '../ui/Icons';
 
@@ -53,6 +52,7 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
     receiptFooter: '',
   });
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -90,6 +90,12 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
   }, [reloadKey]);
 
   const retry = useCallback(() => setReloadKey((key) => key + 1), []);
+
+  function cancelEdit() {
+    if (load.status === 'ready') setForm(toForm(load.settings));
+    setEditing(false);
+    setError(null);
+  }
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -134,6 +140,7 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
       setLoad({ status: 'ready', settings: updated });
       setForm(toForm(updated));
       setSaved(true);
+      setEditing(false);
     } catch (err: unknown) {
       setError(
         err instanceof ApiError
@@ -211,6 +218,7 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
       )}
 
       {load.status === 'ready' && (
+        editing ? (
         <form className="mt-4 space-y-4" onSubmit={handleSubmit} noValidate>
           <Field
             id="shop-name"
@@ -282,18 +290,16 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
             </div>
           )}
 
-          {saved && (
-            <div
-              role="status"
-              className="flex gap-2 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-success-bg)] p-3 text-xs text-[color:var(--color-success-ink)]"
-            >
-              <CheckCircleIcon size={16} className="shrink-0 mt-0.5" />
-              <span>Shop details saved.</span>
-            </div>
-          )}
-
           {canEdit && (
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={cancelEdit}
+                className="h-11 px-4 rounded-[8px] text-sm font-semibold text-[color:var(--color-muted)] hover:bg-[color:var(--color-subtle)] disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]"
+              >
+                Cancel
+              </button>
               <button
                 type="submit"
                 disabled={saving}
@@ -304,8 +310,45 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
             </div>
           )}
         </form>
+        ) : (
+          <>
+            <dl className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+              <ReadOnlyDetail label="Shop name" value={load.settings.name} />
+              <ReadOnlyDetail label="Address" value={load.settings.address} />
+              <ReadOnlyDetail label="Phone" value={load.settings.phone} />
+              <ReadOnlyDetail label="Currency" value={load.settings.currency} />
+              <ReadOnlyDetail label="Timezone" value={load.settings.timezone} />
+              <ReadOnlyDetail label="Receipt footer" value={load.settings.receiptFooter} />
+            </dl>
+            <div className="mt-4 flex items-center justify-between gap-3">
+              {saved ? (
+                <p role="status" className="text-xs text-[color:var(--color-success-ink)]">Shop details saved.</p>
+              ) : <span />}
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => { setForm(toForm(load.settings)); setEditing(true); setSaved(false); }}
+                  className="h-9 px-3 rounded-[8px] text-xs font-semibold text-[color:var(--color-accent-ink)] hover:bg-[color:var(--color-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+          </>
+        )
       )}
     </section>
+  );
+}
+
+function ReadOnlyDetail({ label, value }: { label: string; value: string | null }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[11px] font-medium text-[color:var(--color-muted)]">{label}</dt>
+      <dd className="mt-1 break-words text-sm font-semibold text-[color:var(--color-ink)]">
+        {value?.trim() || '—'}
+      </dd>
+    </div>
   );
 }
 

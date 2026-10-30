@@ -13,7 +13,6 @@ import {
   CheckCircleIcon,
   MoonIcon,
   RefreshCwIcon,
-  SlidersIcon,
   SunIcon,
   XIcon,
 } from '../../components/ui/Icons';
@@ -35,6 +34,7 @@ export function SettingsPage() {
   // `null` means "no unsaved edit", so the field follows the loaded profile
   // without an effect that would fight the user's typing.
   const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
 
@@ -80,6 +80,7 @@ export function SettingsPage() {
       await updateMyName(trimmed);
       await Promise.all([refreshSession(), refreshMe()]);
       setNameDraft(null);
+      setEditingName(false);
       setNotice({ tone: 'success', message: 'Your name was updated.' });
     } catch (err: unknown) {
       setNameError(
@@ -162,43 +163,57 @@ export function SettingsPage() {
             Read from your Everybuy account.
           </p>
 
-          <form className="mt-4 space-y-3" onSubmit={handleSaveName} noValidate>
-            <div>
-              <label
-                htmlFor="profile-name"
-                className="block text-xs font-semibold text-[color:var(--color-ink)] mb-1"
-              >
-                Display name
-              </label>
-              <div className="flex gap-2">
+          <div className="mt-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium text-[color:var(--color-muted)]">Display name</p>
+                <p className="mt-1 break-words text-sm font-semibold text-[color:var(--color-ink)]">{currentName || '—'}</p>
+              </div>
+              {!editingName && (
+                <button
+                  type="button"
+                  onClick={() => { setNameDraft(currentName); setEditingName(true); setNameError(null); }}
+                  className="h-9 px-3 rounded-[8px] text-xs font-semibold text-[color:var(--color-accent-ink)] hover:bg-[color:var(--color-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+            {editingName && (
+              <form className="mt-3 space-y-2" onSubmit={handleSaveName} noValidate>
+                <label htmlFor="profile-name" className="block text-xs font-semibold text-[color:var(--color-ink)]">
+                  Display name
+                </label>
                 <input
                   id="profile-name"
                   type="text"
                   value={nameValue}
                   maxLength={120}
-                  onChange={(event) => {
-                    setNameDraft(event.target.value);
-                    setNameError(null);
-                  }}
-                  className="flex-1 min-w-0 h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)]"
+                  autoFocus
+                  onChange={(event) => { setNameDraft(event.target.value); setNameError(null); }}
+                  className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)]"
                 />
-                <button
-                  type="submit"
-                  disabled={
-                    savingName || nameValue.trim() === currentName
-                  }
-                  className="h-11 px-4 rounded-[8px] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] text-xs font-semibold hover:bg-[color:var(--color-accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                >
-                  {savingName ? 'Saving…' : 'Save'}
-                </button>
-              </div>
-              {nameError && (
-                <p className="text-xs text-[color:var(--color-danger-ink)] mt-1">
-                  {nameError}
-                </p>
-              )}
-            </div>
-          </form>
+                {nameError && <p role="alert" className="text-xs text-[color:var(--color-danger-ink)]">{nameError}</p>}
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    disabled={savingName}
+                    onClick={() => { setNameDraft(null); setEditingName(false); setNameError(null); }}
+                    className="h-10 px-3 rounded-[8px] text-xs font-semibold text-[color:var(--color-muted)] hover:bg-[color:var(--color-subtle)] disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingName || nameValue.trim() === currentName}
+                    className="h-10 px-4 rounded-[8px] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] text-xs font-semibold hover:bg-[color:var(--color-accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {savingName ? 'Saving…' : 'Save'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
 
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex items-start justify-between gap-4">
@@ -306,12 +321,6 @@ export function SettingsPage() {
             />
           </div>
 
-          <div className="mt-5 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-subtle)] p-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-[color:var(--color-ink)]">
-              <SlidersIcon size={14} />
-              Preferences
-            </div>
-          </div>
         </section>
       </div>
 

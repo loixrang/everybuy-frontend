@@ -221,10 +221,11 @@ Implemented (FE-054):
 Implemented (FE-050):
 
 - `SettingsPage` (`/settings`) is reachable from the sidebar ("Settings") and the mobile "More" tab; `/team` redirects there so older links keep working.
-- The profile card is read-only and comes from the Better Auth session (`name`, `email`, `emailVerified`, `createdAt`, `twoFactorEnabled`); the page states that profile editing is not available.
-- The Two-factor authentication section reflects `twoFactorEnabled` from that session and exposes TOTP enrollment, disable, and recovery-code regeneration. No current backup codes are retrieved from profile/session APIs.
+- The profile card reads account details from Better Auth / staff APIs. Display-name editing starts from a read-only view and opens an inline editor only when requested.
+- Shop details are read-only by default. Owners can enter edit mode, save through the existing shop settings API, or cancel and discard the draft; non-owners never see the edit action.
+- The Two-factor authentication section reflects `twoFactorEnabled` from the session. Enrollment, recovery-code replacement, and disable forms open only after the user chooses the corresponding action. No current backup codes are retrieved from profile/session APIs.
 - The appearance card drives the shared theme store; the choice is stored in `localStorage` and applied to `<html data-theme>`.
-- The team card requests `GET /api/v1/staff` once. A 403 renders "Owner access required", a 404 renders an empty team, and other failures show the message with a retry. No per-member requests are made.
+- The team card requests `GET /api/v1/staff` once. A 403 renders "Owner access required", a 404 renders an empty team, and other failures show the message with a retry. Per-member role and access controls are hidden behind a Manage action. No per-member requests are made.
 - `StaffAccountModal` supports the two verified owner paths: email invitation and direct account creation with an initial password. Client validation mirrors the backend (email shape, 12–128 character password, confirmation), and 409/500/503 responses produce actionable hints instead of raw errors.
 - `AcceptInvitePage` (`/accept-invite?token=…`) is public and rendered outside the auth guards. It previews the token, shows the invited name/email/expiry, and submits the password to `POST /api/v1/staff/invite/accept`.
 - The page never derives the user's role from the session: staff have no role claim, so owner-only data is requested and permission failures are handled explicitly. See `DECISIONS.md`.

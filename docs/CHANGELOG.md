@@ -1,5 +1,19 @@
 # Changelog
 
+### 2026-10-30: FE-059 Settings UX and Progressive Disclosure
+
+Changed:
+- Shop details and profile name now display as read-only values until Edit is selected; both support cancel and save states.
+- Two-factor setup/maintenance forms and per-member team controls appear only after the matching action is selected.
+- Removed an empty preferences panel and kept create/edit forms on their existing dedicated routes or dialogs.
+
+Checks:
+- `npm run typecheck`: passed
+- `npm run lint`: passed
+- `npm test`: 37 passed
+- `npm run build`: passed
+- `git diff --check`: passed
+
 ### 2026-10-30: FE-058 Move technical backend limitations out of the interface
 
 Added:

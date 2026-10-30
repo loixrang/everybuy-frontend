@@ -1,5 +1,13 @@
 # Current Task
 
+## FE-059: Settings UX and Progressive Disclosure
+
+Status: COMPLETED
+
+Shop Details and profile display saved values by default, with owner-gated/explicit editing, cancel, and save states. Two-factor setup and maintenance forms and staff member controls appear only after selection. Reviewed major routes; dedicated creation/editing screens and forms remain direct because data entry is their primary purpose. No API, validation, permission, or backend behavior changed.
+
+Checks passed: typecheck, lint, 37 tests, production build, and `git diff --check`. No browser/component automation is configured, so click-through behavior was checked by implementation review rather than an automated UI test.
+
 ## FE-058: Move Technical Backend Limitations Out of User-Facing Copy
 
 Status: COMPLETED

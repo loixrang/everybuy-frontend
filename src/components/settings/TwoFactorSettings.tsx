@@ -39,6 +39,8 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [manageAction, setManageAction] = useState<'recovery' | 'disable' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -78,6 +80,7 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
       await refreshSession();
       setRecoveryCodes(enrollment.backupCodes);
       setEnrollment(null);
+      setSetupOpen(false);
       setCode('');
       setNotice('Authenticator verification succeeded. Two-factor authentication is enabled. Save your recovery codes now.');
     } catch (err: unknown) {
@@ -103,6 +106,7 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
       setPassword('');
       setRecoveryCodes(nextCodes);
       setNotice('New recovery codes were generated. All previous recovery codes are now invalid. Save this set now.');
+      setManageAction(null);
     } catch (err: unknown) {
       setError(describeError(err));
     } finally {
@@ -125,6 +129,7 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
       await refreshSession();
       setPassword('');
       setRecoveryCodes(null);
+      setManageAction(null);
       setNotice('Two-factor authentication is disabled.');
     } catch (err: unknown) {
       setError(describeError(err));
@@ -162,21 +167,26 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
       )}
 
       {!enabled && !enrollment && (
-        <form onSubmit={beginEnrollment} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-          <label className="flex-1 text-xs font-semibold text-[color:var(--color-ink)]">
-            Current password
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="mt-2 h-11 w-full rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 text-sm"
-            />
-          </label>
-          <button type="submit" disabled={busy} className="h-11 rounded-[8px] bg-[color:var(--color-accent)] px-4 text-xs font-semibold text-[color:var(--color-on-accent)] disabled:opacity-60">
-            {busy ? 'Preparing…' : 'Set up authenticator'}
+        <div className="mt-4">
+          <button type="button" aria-expanded={setupOpen} disabled={busy} onClick={() => { setSetupOpen((open) => !open); setPassword(''); setError(null); }} className="h-10 px-3 rounded-[8px] text-xs font-semibold text-[color:var(--color-accent-ink)] hover:bg-[color:var(--color-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60">
+            {setupOpen ? 'Cancel setup' : 'Set up authenticator'}
           </button>
-        </form>
+          {setupOpen && <form id="two-factor-setup-form" onSubmit={beginEnrollment} className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <label className="flex-1 text-xs font-semibold text-[color:var(--color-ink)]">
+              Current password
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="mt-2 h-11 w-full rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 text-sm"
+              />
+            </label>
+            <button type="submit" disabled={busy} className="h-11 rounded-[8px] bg-[color:var(--color-accent)] px-4 text-xs font-semibold text-[color:var(--color-on-accent)] disabled:opacity-60">
+              {busy ? 'Preparing…' : 'Continue'}
+            </button>
+          </form>}
+        </div>
       )}
 
       {enrollment && (
@@ -207,7 +217,7 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
             <button type="submit" disabled={busy} className="h-11 rounded-[8px] bg-[color:var(--color-accent)] px-4 text-xs font-semibold text-[color:var(--color-on-accent)] disabled:opacity-60">
               {busy ? 'Verifying…' : 'Verify and enable 2FA'}
             </button>
-            <button type="button" disabled={busy} onClick={() => { setEnrollment(null); setCode(''); setError(null); }} className="ml-3 h-11 px-3 text-xs font-semibold text-[color:var(--color-muted)] disabled:opacity-60">
+            <button type="button" disabled={busy} onClick={() => { setEnrollment(null); setCode(''); setPassword(''); setSetupOpen(false); setError(null); }} className="ml-3 h-11 px-3 text-xs font-semibold text-[color:var(--color-muted)] disabled:opacity-60">
               Cancel setup
             </button>
           </form>
@@ -231,7 +241,15 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
 
       {enabled && !enrollment && (
         <div className="mt-4 space-y-4">
-          <form onSubmit={regenerateCodes} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            <button type="button" aria-expanded={manageAction === 'recovery'} disabled={busy} onClick={() => { setManageAction(manageAction === 'recovery' ? null : 'recovery'); setPassword(''); setError(null); }} className="h-9 text-xs font-semibold text-[color:var(--color-accent-ink)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60">
+              {manageAction === 'recovery' ? 'Cancel' : 'Generate new recovery codes'}
+            </button>
+            <button type="button" aria-expanded={manageAction === 'disable'} disabled={busy} onClick={() => { setManageAction(manageAction === 'disable' ? null : 'disable'); setPassword(''); setError(null); }} className="h-9 text-xs font-semibold text-[color:var(--color-danger-ink)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60">
+              {manageAction === 'disable' ? 'Cancel' : 'Disable 2FA'}
+            </button>
+          </div>
+          {manageAction === 'recovery' && <form id="two-factor-recovery-form" onSubmit={regenerateCodes} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <label className="flex-1 text-xs font-semibold text-[color:var(--color-ink)]">
               Current password to replace recovery codes
               <input
@@ -246,7 +264,8 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
               {busy ? 'Working…' : 'Generate new recovery codes'}
             </button>
           </form>
-          <form onSubmit={turnOff} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          }
+          {manageAction === 'disable' && <form id="two-factor-disable-form" onSubmit={turnOff} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <label className="flex-1 text-xs font-semibold text-[color:var(--color-ink)]">
               Current password to disable 2FA
               <input
@@ -261,6 +280,7 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
               {busy ? 'Working…' : 'Disable 2FA'}
             </button>
           </form>
+          }
         </div>
       )}
     </section>

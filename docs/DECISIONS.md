@@ -279,3 +279,14 @@ Inventory, customer, sales, and staff pages are not public content. Search snipp
 Consequence:
 Search visibility is intentionally disabled for the application. The current CI/CD pipeline targets optional GitHub Pages deployment, gated by production API/base-path variables and backend origin configuration; it is not enabled in this checkout.
 
+## DEC-026: Read-First Settings and On-Demand Management Controls
+
+Decision:
+Show saved profile and shop information by default. Reveal their forms only after an explicit Edit action. Keep two-factor setup and maintenance forms, and per-member staff controls, hidden until the user chooses the relevant action.
+
+Reason:
+Settings are mainly used to check current values. Showing every editing control continuously makes the page longer and makes routine review feel like data entry.
+
+Consequence:
+Forms for dedicated create/edit workflows remain directly visible on their own routes or open after an explicit create action. This is a presentation change only; API contracts, validation and permission checks remain unchanged.
+
