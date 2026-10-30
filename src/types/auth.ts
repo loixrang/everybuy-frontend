@@ -8,6 +8,10 @@
  * - POST /two-factor/send-otp    -> `{ status }`
  * - POST /two-factor/verify-otp  -> `{ token, user }`
  * - POST /two-factor/verify-totp -> `{ token, user }`
+ * - POST /two-factor/enable     -> TOTP URI and one-time backup codes
+ * - POST /two-factor/disable    -> `{ status: true }`
+ * - POST /two-factor/verify-backup-code -> `{ token, user }`
+ * - POST /two-factor/generate-backup-codes -> one-time backup codes
  */
 
 export interface AuthUser {
@@ -16,7 +20,7 @@ export interface AuthUser {
   email: string;
   emailVerified: boolean;
   image: string | null;
-  twoFactorEnabled?: boolean;
+  twoFactorEnabled: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,8 +38,22 @@ export interface AuthSession {
   user: AuthUser;
 }
 
-/** Methods the backend reports for an account that has two-factor enabled. */
-export type TwoFactorMethod = 'totp' | 'otp';
+/** Methods the backend reports in its pending login challenge. */
+export type TwoFactorLoginMethod = 'totp' | 'otp';
+
+/** UI verification choices; backup codes use a separate endpoint, not a challenge method value. */
+export type TwoFactorMethod = TwoFactorLoginMethod | 'backup';
+
+export interface TOTPEnrollmentResponse {
+  method: 'totp';
+  totpURI: string;
+  backupCodes: string[];
+}
+
+export interface BackupCodesResponse {
+  status: true;
+  backupCodes: string[];
+}
 
 export interface SignInSuccess {
   token: string;
@@ -50,7 +68,7 @@ export interface SignInSuccess {
  */
 export interface TwoFactorChallenge {
   twoFactorRedirect: true;
-  twoFactorMethods?: TwoFactorMethod[];
+  twoFactorMethods?: TwoFactorLoginMethod[];
 }
 
 export type SignInResponse = SignInSuccess | TwoFactorChallenge;

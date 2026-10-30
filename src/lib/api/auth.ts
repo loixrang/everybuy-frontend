@@ -1,11 +1,30 @@
 import { apiFetch } from './client';
 import type {
   AuthSession,
+  BackupCodesResponse,
   SignInResponse,
+  TOTPEnrollmentResponse,
   TwoFactorVerifyResponse,
 } from '../../types/auth';
 
 const AUTH_BASE = '/api/v1/auth';
+
+function requireTwoFactorSession(value: unknown): TwoFactorVerifyResponse {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('user' in value) ||
+    typeof value.user !== 'object' ||
+    value.user === null ||
+    !('id' in value.user) ||
+    typeof value.user.id !== 'string' ||
+    !('token' in value) ||
+    typeof value.token !== 'string'
+  ) {
+    throw new Error('The authentication server did not confirm the two-factor sign-in.');
+  }
+  return value as TwoFactorVerifyResponse;
+}
 
 /**
  * Read the current Better Auth session.
@@ -79,36 +98,103 @@ export async function signOut(): Promise<void> {
  * (`POST /api/v1/auth/two-factor/send-otp`).
  */
 export async function sendTwoFactorOtp(): Promise<void> {
-  await apiFetch<{ status: boolean }>(`${AUTH_BASE}/two-factor/send-otp`, {
+  const result = await apiFetch<{ status: boolean }>(`${AUTH_BASE}/two-factor/send-otp`, {
     method: 'POST',
     body: JSON.stringify({}),
   });
+  if (result.status !== true) {
+    throw new Error('The email code request was not confirmed.');
+  }
 }
 
 /** Verify an emailed two-factor code (`POST /api/v1/auth/two-factor/verify-otp`). */
 export async function verifyTwoFactorOtp(
   code: string,
 ): Promise<TwoFactorVerifyResponse> {
-  return await apiFetch<TwoFactorVerifyResponse>(
+  const result = await apiFetch<unknown>(
     `${AUTH_BASE}/two-factor/verify-otp`,
     {
       method: 'POST',
       body: JSON.stringify({ code }),
     },
   );
+  return requireTwoFactorSession(result);
 }
 
 /** Verify an authenticator-app code (`POST /api/v1/auth/two-factor/verify-totp`). */
 export async function verifyTwoFactorTotp(
   code: string,
 ): Promise<TwoFactorVerifyResponse> {
-  return await apiFetch<TwoFactorVerifyResponse>(
+  const result = await apiFetch<unknown>(
     `${AUTH_BASE}/two-factor/verify-totp`,
     {
       method: 'POST',
       body: JSON.stringify({ code }),
     },
   );
+  return requireTwoFactorSession(result);
+}
+
+/** Begin authenticator-app enrollment. Better Auth keeps it pending until a valid TOTP is verified. */
+export async function enableTwoFactorTotp(
+  password: string,
+): Promise<TOTPEnrollmentResponse> {
+  const result = await apiFetch<TOTPEnrollmentResponse>(
+    `${AUTH_BASE}/two-factor/enable`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ password, method: 'totp', issuer: 'Everybuy' }),
+    },
+  );
+  if (
+    result.method !== 'totp' ||
+    typeof result.totpURI !== 'string' ||
+    !Array.isArray(result.backupCodes) ||
+    !result.backupCodes.every((code) => typeof code === 'string')
+  ) {
+    throw new Error('The API returned an invalid authenticator setup response.');
+  }
+  return result;
+}
+
+/** Disable 2FA; Better Auth requires the active session and current password. */
+export async function disableTwoFactor(password: string): Promise<void> {
+  const result = await apiFetch<{ status: boolean }>(
+    `${AUTH_BASE}/two-factor/disable`,
+    { method: 'POST', body: JSON.stringify({ password }) },
+  );
+  if (result.status !== true) {
+    throw new Error('The API did not confirm that two-factor authentication was disabled.');
+  }
+}
+
+/** Verify a backup code during a pending sign-in challenge or active session. */
+export async function verifyTwoFactorBackupCode(
+  code: string,
+): Promise<TwoFactorVerifyResponse> {
+  const result = await apiFetch<unknown>(
+    `${AUTH_BASE}/two-factor/verify-backup-code`,
+    { method: 'POST', body: JSON.stringify({ code }) },
+  );
+  return requireTwoFactorSession(result);
+}
+
+/** Replace all existing recovery codes. The previous set becomes invalid. */
+export async function generateTwoFactorBackupCodes(
+  password: string,
+): Promise<string[]> {
+  const result = await apiFetch<BackupCodesResponse>(
+    `${AUTH_BASE}/two-factor/generate-backup-codes`,
+    { method: 'POST', body: JSON.stringify({ password }) },
+  );
+  if (
+    result.status !== true ||
+    !Array.isArray(result.backupCodes) ||
+    !result.backupCodes.every((code) => typeof code === 'string')
+  ) {
+    throw new Error('The API did not confirm that new backup codes were generated.');
+  }
+  return result.backupCodes;
 }
 
 /**

@@ -2,6 +2,7 @@ import { useEffect, useId, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../app/auth/auth-context';
 import { sendTwoFactorOtp, sendVerificationEmail } from '../../lib/api/auth';
+import { describeTwoFactorError } from '../../lib/auth-errors';
 import { ApiError } from '../../lib/api/client';
 import { useTheme } from '../../lib/hooks/useTheme';
 import {
@@ -11,12 +12,13 @@ import {
   ShoppingBagIcon,
   SunIcon,
 } from '../../components/ui/Icons';
-import type { TwoFactorMethod } from '../../types/auth';
+import type { TwoFactorLoginMethod, TwoFactorMethod } from '../../types/auth';
 
 type Mode = 'credentials' | 'two-factor' | 'email-verification';
 
 const DEFAULT_DESTINATION = '/inventory';
 const CODE_PATTERN = /^\d{6}$/;
+const BACKUP_CODE_PATTERN = /^[A-Z0-9]{5}-[A-Z0-9]{5}$/;
 
 function errorCodeOf(error: ApiError): string | null {
   const data = error.data;
@@ -52,38 +54,6 @@ function describeSignInError(error: unknown): string {
   return 'Cannot reach the API server. Check your connection and that VITE_API_BASE_URL is correct.';
 }
 
-function describeTwoFactorError(error: unknown): string {
-  if (error instanceof ApiError) {
-    const code = errorCodeOf(error);
-
-    if (code === 'INVALID_CODE' || error.status === 401) {
-      return 'That code is not correct. Check it and try again.';
-    }
-    if (code === 'OTP_HAS_EXPIRED') {
-      return 'That code has expired. Request a new code.';
-    }
-    if (
-      code === 'TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE' ||
-      code === 'ACCOUNT_TEMPORARILY_LOCKED' ||
-      error.status === 429
-    ) {
-      return 'Too many verification attempts. Request a new code or try again later.';
-    }
-    if (code === 'INVALID_TWO_FACTOR_COOKIE') {
-      return 'This sign-in attempt expired. Go back and sign in again.';
-    }
-    if (code === 'TOTP_NOT_ENABLED') {
-      return 'Authenticator-app codes are not enabled for this account. Use an email code instead.';
-    }
-    if (code === 'OTP_NOT_CONFIGURED' || code === 'OTP_NOT_ENABLED') {
-      return 'Email codes are not available for this account. Use your authenticator app.';
-    }
-    return error.message || 'Verification failed. Try again.';
-  }
-
-  return 'Cannot reach the API server. Check your connection and try again.';
-}
-
 export function SignInPage() {
   const { signIn, verifyTwoFactor } = useAuth();
   const navigate = useNavigate();
@@ -102,12 +72,13 @@ export function SignInPage() {
   const [submitting, setSubmitting] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
   const [sendingVerification, setSendingVerification] = useState(false);
   const [verificationCooldown, setVerificationCooldown] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const [methods, setMethods] = useState<TwoFactorMethod[]>([]);
+  const [methods, setMethods] = useState<TwoFactorLoginMethod[]>([]);
   const [method, setMethod] = useState<TwoFactorMethod>('totp');
   const [code, setCode] = useState('');
 
@@ -119,6 +90,15 @@ export function SignInPage() {
     );
     return () => window.clearTimeout(timer);
   }, [verificationCooldown]);
+
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = window.setTimeout(
+      () => setOtpCooldown((remaining) => Math.max(0, remaining - 1)),
+      1000,
+    );
+    return () => window.clearTimeout(timer);
+  }, [otpCooldown]);
 
   async function requestVerificationEmail(address: string) {
     if (sendingVerification) return;
@@ -145,15 +125,22 @@ export function SignInPage() {
       : DEFAULT_DESTINATION;
 
   async function requestCode() {
-    if (sendingCode) return;
+    if (sendingCode || otpCooldown > 0) return;
     setSendingCode(true);
     setError(null);
     setNotice(null);
     try {
       await sendTwoFactorOtp();
-      setNotice('A 6-digit code was sent to your email.');
+      setNotice('The email code request was accepted. Check your inbox and spam folder.');
+      setOtpCooldown(10);
     } catch (err: unknown) {
-      setError(describeTwoFactorError(err));
+      setError(
+        err instanceof Error &&
+          !(err instanceof ApiError) &&
+          err.message === 'The email code request was not confirmed.'
+          ? err.message
+          : describeTwoFactorError(err),
+      );
     } finally {
       setSendingCode(false);
     }
@@ -166,7 +153,11 @@ export function SignInPage() {
     setError(null);
     setNotice(null);
     if (next === 'otp') {
-      void requestCode();
+      if (otpCooldown > 0) {
+        setNotice('Use the email code already requested for this sign-in. You can request another when the timer ends.');
+      } else {
+        void requestCode();
+      }
     }
   }
 
@@ -240,8 +231,10 @@ export function SignInPage() {
     if (verifying) return;
 
     const trimmed = code.trim();
-    if (!CODE_PATTERN.test(trimmed)) {
-      setError('Enter the 6-digit code.');
+    if (method === 'backup' ? !BACKUP_CODE_PATTERN.test(trimmed) : !CODE_PATTERN.test(trimmed)) {
+      setError(method === 'backup'
+        ? 'Enter the recovery code in XXXXX-XXXXX format.'
+        : 'Enter the 6-digit code.');
       return;
     }
 
@@ -417,7 +410,9 @@ export function SignInPage() {
               <p className="mt-2 text-sm text-[color:var(--color-muted)]">
                 {method === 'totp'
                   ? 'Enter the 6-digit code from your authenticator app.'
-                  : 'Enter the 6-digit code we emailed to you.'}
+                  : method === 'otp'
+                    ? 'Enter the 6-digit email code requested for this sign-in.'
+                    : 'Enter one of your unused recovery codes.'}
               </p>
 
               <form
@@ -430,21 +425,27 @@ export function SignInPage() {
                     htmlFor={codeId}
                     className="block text-sm font-semibold text-[color:var(--color-ink)] mb-2"
                   >
-                    {method === 'totp' ? 'Authenticator code' : 'Email code'}
+                    {method === 'totp'
+                      ? 'Authenticator code'
+                      : method === 'otp'
+                        ? 'Email code'
+                        : 'Recovery code'}
                   </label>
                   <input
                     id={codeId}
                     name="code"
                     type="text"
-                    inputMode="numeric"
+                    inputMode={method === 'backup' ? 'text' : 'numeric'}
                     autoComplete="one-time-code"
                     autoFocus
-                    maxLength={6}
+                    maxLength={method === 'backup' ? 11 : 6}
                     value={code}
-                    onChange={(event) =>
-                      setCode(event.target.value.replace(/\D/g, '').slice(0, 6))
-                    }
-                    placeholder="000000"
+                    onChange={(event) => setCode(
+                      method === 'backup'
+                        ? event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 11)
+                        : event.target.value.replace(/\D/g, '').slice(0, 6),
+                    )}
+                    placeholder={method === 'backup' ? 'ABCDE-12345' : '000000'}
                     className="w-full h-[46px] px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-lg font-semibold tracking-[0.35em] text-center text-[color:var(--color-ink)] placeholder:text-[color:var(--color-muted)] focus:outline-none focus:border-[color:var(--color-accent)]"
                   />
                 </div>
@@ -466,6 +467,7 @@ export function SignInPage() {
                   <button
                     type="button"
                     onClick={() => switchMethod('otp')}
+                    disabled={verifying || sendingCode}
                     className="font-semibold text-[color:var(--color-accent)] hover:text-[color:var(--color-accent-hover)]"
                   >
                     Email me a code instead
@@ -475,6 +477,7 @@ export function SignInPage() {
                   <button
                     type="button"
                     onClick={() => switchMethod('totp')}
+                    disabled={verifying || sendingCode}
                     className="font-semibold text-[color:var(--color-accent)] hover:text-[color:var(--color-accent-hover)]"
                   >
                     Use my authenticator app instead
@@ -484,10 +487,34 @@ export function SignInPage() {
                   <button
                     type="button"
                     onClick={() => void requestCode()}
-                    disabled={sendingCode}
+                    disabled={sendingCode || otpCooldown > 0}
                     className="font-semibold text-[color:var(--color-accent)] hover:text-[color:var(--color-accent-hover)] disabled:opacity-60"
                   >
-                    {sendingCode ? 'Sending…' : 'Send a new code'}
+                    {sendingCode
+                      ? 'Requesting…'
+                      : otpCooldown > 0
+                        ? `Request another in ${otpCooldown}s`
+                        : 'Request a new code'}
+                  </button>
+                )}
+                {method !== 'backup' && (
+                  <button
+                    type="button"
+                    onClick={() => switchMethod('backup')}
+                    disabled={verifying || sendingCode}
+                    className="block font-semibold text-[color:var(--color-accent)] hover:text-[color:var(--color-accent-hover)]"
+                  >
+                    Use a recovery code instead
+                  </button>
+                )}
+                {method === 'backup' && (
+                  <button
+                    type="button"
+                    onClick={() => switchMethod(methods.includes('totp') ? 'totp' : 'otp')}
+                    disabled={verifying || sendingCode}
+                    className="block font-semibold text-[color:var(--color-accent)] hover:text-[color:var(--color-accent-hover)]"
+                  >
+                    Use an authenticator or email code
                   </button>
                 )}
                 <button

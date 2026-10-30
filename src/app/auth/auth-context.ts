@@ -1,12 +1,12 @@
 import { createContext, useContext } from 'react';
-import type { AuthUser, TwoFactorMethod } from '../../types/auth';
+import type { AuthUser, TwoFactorLoginMethod, TwoFactorMethod } from '../../types/auth';
 import type { Me } from '../../types/me';
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
 export interface SignInResult {
   twoFactorRequired: boolean;
-  methods: TwoFactorMethod[];
+  methods: TwoFactorLoginMethod[];
 }
 
 export interface AuthContextValue {

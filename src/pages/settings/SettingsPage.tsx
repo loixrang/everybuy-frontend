@@ -6,6 +6,7 @@ import { updateMyName } from '../../lib/api/me';
 import { ApiError } from '../../lib/api/client';
 import { formatShortDate } from '../../lib/utils/format';
 import { TeamSection } from '../../components/settings/TeamSection';
+import { TwoFactorSettings } from '../../components/settings/TwoFactorSettings';
 import { ShopSettingsSection } from '../../components/settings/ShopSettingsSection';
 import {
   AlertCircleIcon,
@@ -267,6 +268,11 @@ export function SettingsPage() {
             </p>
           </div>
         </section>
+
+        <TwoFactorSettings
+          enabled={user?.twoFactorEnabled === true}
+          refreshSession={refreshSession}
+        />
 
         <section
           aria-labelledby="appearance-heading"

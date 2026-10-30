@@ -11,6 +11,14 @@ Statuses:
 
 ## Phase 0: Foundation
 
+### FE-057: Audit and Complete Two-Factor Authentication and OTP
+Status: BLOCKED
+
+- Audit Better Auth 1.7.10's exact login challenge, TOTP, email OTP, backup code, error, and rate-limit behavior.
+- Frontend implements authenticated TOTP setup/verification/disable and backup-code recovery, plus email OTP and backup-code login. Challenge-cookie gating remains in place.
+- Blocked from full completion: Better Auth 1.7.10 swallows email sender callback failures and still returns `{ status: true }`; the frontend cannot distinguish provider failure from an accepted request. OTP storage is plaintext by default. Backend changes are excluded per the user's direction.
+- Frontend typecheck, lint, 37 tests, production build, and `git diff --check` pass. Live verification was unavailable because the API and database were not running.
+
 ### FE-056: Fix Email Verification Flow
 Status: COMPLETED
 

@@ -15,6 +15,7 @@ import {
 import {
   fetchSession,
   signInWithEmail,
+  verifyTwoFactorBackupCode,
   signOut as signOutRequest,
   verifyTwoFactorOtp,
   verifyTwoFactorTotp,
@@ -138,7 +139,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response =
         method === 'totp'
           ? await verifyTwoFactorTotp(code)
-          : await verifyTwoFactorOtp(code);
+          : method === 'otp'
+            ? await verifyTwoFactorOtp(code)
+            : await verifyTwoFactorBackupCode(code);
 
       sessionUserId.current = response.user.id;
       setUser(response.user);

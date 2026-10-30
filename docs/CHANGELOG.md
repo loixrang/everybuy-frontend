@@ -4,6 +4,19 @@ Record meaningful frontend changes here.
 
 ## Unreleased
 
+### 2026-10-30: FE-057 Two-Factor Authentication and OTP
+
+Added:
+- `TwoFactorSettings` for authenticated TOTP enrollment, setup URI display, required verification before activation, password-confirmed disable, and recovery-code replacement/display.
+- Backup-code login alongside TOTP and email OTP. Auth state stays unauthenticated until Better Auth returns the verified user/session.
+- Better Auth 1.7.10 API contract and security findings in `docs/API_CONTRACT.md`, including rate limits, expiry, attempt limits, production email configuration, plaintext OTP-at-rest default, and provider error response behavior.
+
+Changed:
+- The shared auth API client now validates 2FA response shapes and confirmed status values; all requests continue to use the configured API base and cookie credentials.
+- Email OTP copy says the request was accepted and does not claim delivery, because the backend can hide provider callback failures. No backend files were changed, per the user's direction.
+
+Checks: typecheck, lint, 37 tests, production build, and `git diff --check` passed. The API health endpoint and database were unavailable, so live authenticated flows and actual email delivery were not exercised.
+
 ### 2026-10-30: FE-056 Email Verification Flow
 
 Fixed:

@@ -1,5 +1,15 @@
 # Current Task
 
+## FE-057: Audit and Complete Two-Factor Authentication and OTP
+
+Status: BLOCKED
+
+Frontend work is implemented: authenticated TOTP enrollment (verification required before activation), disable and recovery-code regeneration; email OTP and backup-code login; challenge-state gating; and shared-client response/error handling. Contract recorded in `docs/API_CONTRACT.md` before implementation. The task remains blocked because Better Auth 1.7.10 can return `{ status: true }` when its email sender callback failed, so a frontend-only change cannot determine that email delivery failed. The user directed that the backend must remain untouched. The backend also stores OTP values in plaintext by default; no backend file was changed.
+
+Frontend checks passed: typecheck, lint, 37 tests, production build, and `git diff --check`. The backend health endpoint and database port were unavailable, so authenticated sign-in, actual mail delivery, and database-backed TOTP/backup-code flows were not exercised end to end.
+
+## Previous Task
+
 ## FE-056: Fix Email Verification Flow
 
 Status: COMPLETED
@@ -7,8 +17,6 @@ Status: COMPLETED
 After a password sign-in is rejected with Better Auth's `EMAIL_NOT_VERIFIED`, the page explicitly requests a verification email through the existing configured auth API client. It shows success only after `{ status: true }`, offers retry after failure, and applies a 30-second cooldown after confirmed sends. Existing sign-in and two-factor behavior is preserved.
 
 Checks passed: typecheck, lint, 27 tests, production build, and `git diff --check`. The live mail provider flow could not be exercised because the hosted production backend and credentials are not available in this workspace.
-
-## Previous Task
 
 ## FE-055: Search Visibility, Performance, and CI/CD Preparation
 

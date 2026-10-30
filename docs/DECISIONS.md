@@ -138,6 +138,8 @@ The backend (verified in `src/auth.ts` and `@thallesp/nestjs-better-auth`) issue
 
 Related:
 - Two-factor challenges are completed with `/two-factor/verify-otp` (email code) or `/two-factor/verify-totp` (authenticator app) before a session exists.
+- Backup-code login uses `/two-factor/verify-backup-code`; backup codes are shown only immediately after enrollment or regeneration, never read back from profile data.
+- Account settings enroll TOTP with `/two-factor/enable`, require `/two-factor/verify-totp` before activation, and require the current password to disable or replace backup codes.
 - The session does not include the Owner/Staff role; the UI does not infer it, and backend guards remain authoritative.
 
 ## DEC-015: No Per-Customer Statement Fan-Out

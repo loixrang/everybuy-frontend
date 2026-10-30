@@ -163,7 +163,9 @@ Implemented (FE-002):
 - No tokens are persisted in JavaScript; the browser sends the backend's HttpOnly session cookie because `apiFetch` uses `credentials: 'include'`.
 - `ProtectedRoute` blocks inventory routes until a session is confirmed and redirects to `/signin` (remembering the attempted path). `GuestRoute` keeps signed-in users off `/signin`.
 - `apiFetch` emits `everybuy:unauthorized` when a non-auth request returns 401; the provider clears local session state so the guard redirects immediately.
-- The sign-in screen handles authenticator-app and emailed two-factor codes when the backend asks for one.
+- A Better Auth `twoFactorRedirect` is treated as a pending challenge, not an authenticated session. Sign-in supports authenticator TOTP, requested email OTP, and single-use recovery codes; the provider establishes local auth state only after a verification endpoint returns the verified user/session response.
+- `TwoFactorSettings` starts password-confirmed TOTP enrollment, shows the returned setup URI and one-time recovery codes, verifies a current authenticator code before activation, and supports password-confirmed disable and recovery-code replacement. It re-reads the Better Auth session after changes.
+- The shared API client checks OTP request and 2FA mutation responses before displaying success. Email OTP UI says the request was accepted, because Better Auth 1.7.10 can return `{ status: true }` even when its provider callback failed.
 - The Better Auth session exposes no role. Owner/Staff permissions remain backend-enforced; pages surface 403 responses rather than guessing the role.
 
 Do not implement a separate authentication system.
@@ -220,6 +222,7 @@ Implemented (FE-050):
 
 - `SettingsPage` (`/settings`) is reachable from the sidebar ("Settings") and the mobile "More" tab; `/team` redirects there so older links keep working.
 - The profile card is read-only and comes from the Better Auth session (`name`, `email`, `emailVerified`, `createdAt`, `twoFactorEnabled`); the page states that profile editing is not available.
+- The Two-factor authentication section reflects `twoFactorEnabled` from that session and exposes TOTP enrollment, disable, and recovery-code regeneration. No current backup codes are retrieved from profile/session APIs.
 - The appearance card drives the shared theme store; the choice is stored in `localStorage` and applied to `<html data-theme>`.
 - The team card requests `GET /api/v1/staff` once. A 403 renders "Owner access required", a 404 renders an empty team, and other failures show the message with a retry. No per-member requests are made.
 - `StaffAccountModal` supports the two verified owner paths: email invitation and direct account creation with an initial password. Client validation mirrors the backend (email shape, 12–128 character password, confirmation), and 409/500/503 responses produce actionable hints instead of raw errors.
