@@ -72,8 +72,9 @@ export async function createStaffAccount(input: {
 
 /**
  * List staff invitations (`GET /api/v1/staff/invitations`, OwnerGuard).
- * Backend quirk: `viewInvite()` returns a single invitation row (or nothing),
- * not an array, so both shapes are normalised here.
+ * The backend returns every row in `staff_invitations`, including invitations
+ * that were already accepted, and 404 when the table is empty. Callers that
+ * show "pending" invitations must filter with `isPendingInvitation`.
  */
 export async function fetchStaffInvitations(): Promise<StaffInvitation[]> {
   const result = await apiFetch<StaffInvitation | StaffInvitation[] | null>(

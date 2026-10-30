@@ -113,7 +113,9 @@ export function AppRouter() {
   return (
     <Suspense fallback={<RouteLoading />}>
       <Routes>
-        <Route path="/accept-invite" element={<AcceptInvitePage />} />
+        {/* Public routes: never wrapped in ProtectedRoute or the dashboard. */}
+        <Route path="/invite/accept" element={<AcceptInvitePage />} />
+        <Route path="/accept-invite" element={<LegacyInviteRedirect />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route element={<GuestRoute />}>
@@ -147,9 +149,16 @@ export function AppRouter() {
   );
 }
 
+function LegacyInviteRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={`/invite/accept${search}`} replace />;
+}
+
 function getPageTitle(pathname: string): string {
   if (pathname === '/signin') return 'Sign in';
-  if (pathname === '/accept-invite') return 'Accept invitation';
+  if (pathname === '/invite/accept' || pathname === '/accept-invite') {
+    return 'Accept invitation';
+  }
   if (pathname === '/forgot-password') return 'Forgot password';
   if (pathname === '/reset-password') return 'Reset password';
   if (pathname.startsWith('/inventory/new')) return 'New product';

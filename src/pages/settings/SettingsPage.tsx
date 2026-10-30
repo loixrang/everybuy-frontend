@@ -148,7 +148,7 @@ export function SettingsPage() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-4 sm:gap-6 lg:grid-cols-2">
         <section
           aria-labelledby="profile-heading"
           className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5"
@@ -173,7 +173,7 @@ export function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => { setNameDraft(currentName); setEditingName(true); setNameError(null); }}
-                  className="h-9 px-3 rounded-[8px] text-xs font-semibold text-[color:var(--color-accent-ink)] hover:bg-[color:var(--color-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]"
+                  className="inline-flex h-11 shrink-0 items-center rounded-[8px] px-3 text-xs font-semibold text-[color:var(--color-accent-ink)] hover:bg-[color:var(--color-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] sm:h-9"
                 >
                   Edit
                 </button>

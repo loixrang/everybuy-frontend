@@ -6,6 +6,12 @@ import {
   updateStaff,
 } from '../../lib/api/staff';
 import { ApiError } from '../../lib/api/client';
+import {
+  invitationStatusLabel,
+  invitationStatusOf,
+  isPendingInvitation,
+  type InvitationDisplayStatus,
+} from '../../lib/invitations';
 import { formatShortDate } from '../../lib/utils/format';
 import type {
   CreatedStaff,
@@ -215,6 +221,12 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
     setReloadKey((key) => key + 1);
   }
 
+  // The endpoint returns every invitation row, including accepted ones. Only
+  // invitations still waiting for the person to accept belong in this section.
+  const pendingInvitations = invitations.filter((invitation) =>
+    isPendingInvitation(invitation),
+  );
+
   return (
     <section
       aria-labelledby="team-heading"
@@ -240,7 +252,7 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
               setNotice(null);
               setModalOpen(true);
             }}
-            className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-[8px] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] text-xs font-semibold hover:bg-[color:var(--color-accent-hover)] transition-colors shrink-0"
+            className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-[8px] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] text-xs font-semibold hover:bg-[color:var(--color-accent-hover)] transition-colors shrink-0 sm:h-10"
           >
             <PlusIcon size={14} />
             Add staff
@@ -468,15 +480,15 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
                     <div className="flex items-center gap-2">
                       <RoleBadge role={member.role} />
                       {!isSelf && <>
-                        <button type="button" aria-expanded={editingMemberId === member.staffId} aria-controls={`member-mobile-actions-${member.staffId}`} onClick={() => setEditingMemberId(editingMemberId === member.staffId ? null : member.staffId)} className="h-9 px-2 text-xs font-semibold text-[color:var(--color-accent-ink)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]">
+                        <button type="button" aria-expanded={editingMemberId === member.staffId} aria-controls={`member-mobile-actions-${member.staffId}`} onClick={() => setEditingMemberId(editingMemberId === member.staffId ? null : member.staffId)} className="inline-flex h-11 items-center px-2 text-xs font-semibold text-[color:var(--color-accent-ink)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)] sm:h-9">
                           {editingMemberId === member.staffId ? 'Done' : 'Manage'}
                         </button>
                         <div id={`member-mobile-actions-${member.staffId}`} hidden={editingMemberId !== member.staffId} className={`${editingMemberId === member.staffId ? 'flex' : 'hidden'} flex-wrap items-center gap-2`}>
                           <label className="sr-only" htmlFor={`role-m-${member.staffId}`}>Role for {member.name}</label>
-                          <select id={`role-m-${member.staffId}`} value={member.role} disabled={busy} onChange={(event) => void changeRole(member, event.target.value as StaffRole)} className="h-9 px-2 rounded-[6px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-xs font-semibold text-[color:var(--color-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60">
+                          <select id={`role-m-${member.staffId}`} value={member.role} disabled={busy} onChange={(event) => void changeRole(member, event.target.value as StaffRole)} className="h-11 rounded-[6px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-2 text-xs font-semibold text-[color:var(--color-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60 sm:h-9">
                             <option value="Staff">Staff</option><option value="Owner">Owner</option>
                           </select>
-                          <button type="button" onClick={() => void toggleActive(member)} disabled={busy} className="h-9 px-2 rounded-[6px] text-xs font-semibold text-[color:var(--color-muted)] hover:bg-[color:var(--color-subtle)] disabled:opacity-60">{busy ? 'Saving…' : member.active ? 'Deactivate' : 'Reactivate'}</button>
+                          <button type="button" onClick={() => void toggleActive(member)} disabled={busy} className="h-11 rounded-[6px] px-2 text-xs font-semibold text-[color:var(--color-muted)] hover:bg-[color:var(--color-subtle)] disabled:opacity-60 sm:h-9">{busy ? 'Saving…' : member.active ? 'Deactivate' : 'Reactivate'}</button>
                         </div>
                       </>}
                     </div>
@@ -490,13 +502,19 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
 
       <div className="px-5 py-4 border-t border-[color:var(--color-border)]">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-xs font-bold text-[color:var(--color-ink)]">
-            Pending invitations
-          </h3>
+          <div>
+            <h3 className="text-xs font-bold text-[color:var(--color-ink)]">
+              Pending invitations
+            </h3>
+            <p className="text-[11px] text-[color:var(--color-muted)] mt-0.5">
+              Only invitations waiting to be accepted are shown. They expire
+              after 24 hours.
+            </p>
+          </div>
           <button
             type="button"
             onClick={retry}
-            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[6px] border border-[color:var(--color-border)] text-[11px] font-semibold text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"
+            className="inline-flex items-center gap-1.5 h-11 px-2.5 rounded-[6px] border border-[color:var(--color-border)] text-[11px] font-semibold text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors sm:h-8"
           >
             <RefreshCwIcon size={12} />
             Refresh
@@ -507,7 +525,7 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
           <p className="text-xs text-[color:var(--color-danger-ink)] mt-2">
             {invitationsError}
           </p>
-        ) : invitations.length === 0 ? (
+        ) : pendingInvitations.length === 0 ? (
           <p className="text-xs text-[color:var(--color-muted)] mt-2">
             {invitationsLimited
               ? 'Pending invitations could not be displayed. Refresh to try again.'
@@ -515,30 +533,37 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
           </p>
         ) : (
           <ul className="mt-2 divide-y divide-[color:var(--color-border)]">
-            {invitations.map((invitation) => (
-              <li
-                key={invitation.id}
-                className="py-2 flex items-center justify-between gap-3"
-              >
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-[color:var(--color-ink)] truncate">
-                    {invitation.name} · {invitation.email}
-                  </p>
-                  <p className="text-[11px] text-[color:var(--color-muted)] mt-0.5">
-                    {invitation.status} · expires{' '}
-                    {formatShortDate(invitation.expiresAt)}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void revokeInvitation(invitation)}
-                  disabled={pendingInvite === invitation.id}
-                  className="h-8 px-3 rounded-[6px] border border-[color:var(--color-border)] text-[11px] font-semibold text-[color:var(--color-danger-ink)] hover:bg-[color:var(--color-danger-bg)] transition-colors disabled:opacity-60 shrink-0"
+            {pendingInvitations.map((invitation) => {
+              const status = invitationStatusOf(invitation);
+              return (
+                <li
+                  key={invitation.id}
+                  className="py-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                 >
-                  {pendingInvite === invitation.id ? 'Revoking…' : 'Revoke'}
-                </button>
-              </li>
-            ))}
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-[color:var(--color-ink)] truncate">
+                      {invitation.name} · {invitation.email}
+                    </p>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                      <InvitationStatusBadge status={status} />
+                      <span className="text-[11px] text-[color:var(--color-muted)]">
+                        Staff · expires {formatShortDate(invitation.expiresAt)}
+                      </span>
+                    </div>
+                  </div>
+                  {status !== 'accepted' && (
+                    <button
+                      type="button"
+                      onClick={() => void revokeInvitation(invitation)}
+                      disabled={pendingInvite === invitation.id}
+                      className="inline-flex h-11 w-full shrink-0 items-center justify-center rounded-[6px] border border-[color:var(--color-border)] text-[11px] font-semibold text-[color:var(--color-danger-ink)] hover:bg-[color:var(--color-danger-bg)] transition-colors disabled:opacity-60 sm:h-8 sm:w-auto sm:px-3"
+                    >
+                      {pendingInvite === invitation.id ? 'Revoking…' : 'Revoke'}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
 
@@ -583,6 +608,25 @@ function AccessBadge({ active }: { active: boolean }) {
       }`}
     >
       {active ? 'Active' : 'Inactive'}
+    </span>
+  );
+}
+
+function InvitationStatusBadge({ status }: { status: InvitationDisplayStatus }) {
+  const tone =
+    status === 'pending'
+      ? 'bg-[color:var(--color-warning-bg)] text-[color:var(--color-warning-ink)]'
+      : status === 'accepted'
+        ? 'bg-[color:var(--color-success-bg)] text-[color:var(--color-success-ink)]'
+        : status === 'processing'
+          ? 'bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-ink)]'
+          : 'bg-[color:var(--color-subtle)] text-[color:var(--color-muted)]';
+
+  return (
+    <span
+      className={`inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[10px] font-semibold ${tone}`}
+    >
+      {invitationStatusLabel(status)}
     </span>
   );
 }

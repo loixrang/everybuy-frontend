@@ -43,6 +43,7 @@ src/
       InventoryLayout.tsx
     settings/
       StaffAccountModal.tsx
+      TeamSection.tsx
     stock/
       StockAdjustmentModal.tsx
     ui/
@@ -62,6 +63,7 @@ src/
     utils/
       format.ts
       money.ts
+    invitations.ts
   pages/
     auth/
       AcceptInvitePage.tsx
@@ -226,9 +228,23 @@ Implemented (FE-050):
 - The Two-factor authentication section reflects `twoFactorEnabled` from the session. Enrollment, recovery-code replacement, and disable forms open only after the user chooses the corresponding action. No current backup codes are retrieved from profile/session APIs.
 - The appearance card drives the shared theme store; the choice is stored in `localStorage` and applied to `<html data-theme>`.
 - The team card requests `GET /api/v1/staff` once. A 403 renders "Owner access required", a 404 renders an empty team, and other failures show the message with a retry. Per-member role and access controls are hidden behind a Manage action. No per-member requests are made.
-- `StaffAccountModal` supports the two verified owner paths: email invitation and direct account creation with an initial password. Client validation mirrors the backend (email shape, 12–128 character password, confirmation), and 409/500/503 responses produce actionable hints instead of raw errors.
-- `AcceptInvitePage` (`/accept-invite?token=…`) is public and rendered outside the auth guards. It previews the token, shows the invited name/email/expiry, and submits the password to `POST /api/v1/staff/invite/accept`.
+- `StaffAccountModal` supports the two verified owner paths: email invitation and direct account creation with an initial password. The invitation form sends only `{ name, email }` because the backend fixes the role to `Staff`; the dialog states that the role can be changed after acceptance. Client validation mirrors the backend (email shape, 12–128 character password, confirmation), and 409/500/503 responses produce actionable hints instead of raw errors.
+- `TeamSection` lists the team and, when invitations exist, shows only those still waiting to be accepted (`isPendingInvitation`: `pending` or `processing`) with the status badge, expiry time, and a revoke action. `GET /api/v1/staff/invitations` returns every row and keeps accepted ones, so the filter is what keeps "Pending invitations" truthful; expired invitations are not listed either.
 - The page never derives the user's role from the session: staff have no role claim, so owner-only data is requested and permission failures are handled explicitly. See `DECISIONS.md`.
+
+## Public Invitation Acceptance
+
+Implemented (FE-060):
+
+- `/invite/accept` is a public route declared outside both the auth guards and `InventoryLayout`, so an invitee without a session never sees the dashboard shell. `/accept-invite` is retained as a redirect that preserves the query string, because older links and the backend's configured preview URL may still point there.
+- The token is read from the `token` query parameter and trimmed by `getInvitationToken`. A missing token renders an explanatory state and never calls the API. The page does not store the token anywhere (no `localStorage`, no session storage, no analytics, no logging).
+- Preview uses `GET /api/v1/staff/invite/preview?token=…` and renders the invited name, email, and expiry. Loading, missing-token, invalid/unavailable (400), rate-limited (429), server, and network states are distinct; 400 is described as "no longer available" because the backend cannot distinguish expired, used, revoked, and malformed tokens.
+- Acceptance posts `{ token, password }` to `POST /api/v1/staff/invite/accept` with a password and confirmation validated locally against the 12–128 character rule before sending. A ref-backed guard plus `isInvitationSubmitBlocked` prevents a second submit while the first is in flight or after success.
+- On success the page shows a confirmation, replaces the URL with `/invite/accept` (no query string) so the token is no longer in the address bar or browser history, and links to `/signin`. It never navigates to the dashboard or signs the user in; acceptance returns a staff row, not a session.
+- Error copy comes from `describeInvitationPreviewError` / `describeInvitationAcceptError` in `src/lib/invitations.ts`; raw backend messages are never displayed and the password is never logged. `logInvitationDiagnostic` records only the HTTP status and message for unexpected failures.
+- The UI never claims it can tell which reason invalidated a token, and it does not offer resend or self-service re-invite because no such endpoint exists.
+- Logic is covered by `src/lib/invitations.test.ts`, the API client by `src/lib/api/staff.test.ts`, and the rendered states by `src/pages/auth/AcceptInvitePage.test.tsx` (server-render assertions; the project has no DOM test library).
+
 
 ## Navigation and Mobile Layout
 

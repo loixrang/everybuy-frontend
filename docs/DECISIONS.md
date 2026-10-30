@@ -290,3 +290,44 @@ Settings are mainly used to check current values. Showing every editing control 
 Consequence:
 Forms for dedicated create/edit workflows remain directly visible on their own routes or open after an explicit create action. This is a presentation change only; API contracts, validation and permission checks remain unchanged.
 
+## DEC-027: Use the Backend's Singular Invitation Routes and Its Fixed Staff Role
+
+Decision:
+Integrate the invitation flow with the routes the backend actually mounts: `POST /api/v1/staff/invite`, `GET /api/v1/staff/invite/preview?token=…`, and `POST /api/v1/staff/invite/accept`. Do not use the plural `/api/v1/staff/invitations/preview` and `/api/v1/staff/invitations/accept` paths from the earlier task text, and do not offer a role selector in the invitation form. Invitations always create a `Staff` account, and the form says so.
+
+Reason:
+`staff.controller.ts` and `public-staff-invitation.controller.ts` mount only the singular paths, and the backend's own `STAFF_INVITE_PREVIEW_URL` points at `http://localhost:5173/invite/accept`. Calling the plural paths would 404. `CreateInviteDto` accepts only `{ name, email }`, and the service writes `role: 'Staff'` unconditionally, so a role control in the invite dialog would be a promise the backend cannot keep. A role can only be changed after acceptance through the verified `PATCH /api/v1/staff/:staffId`.
+
+Consequence:
+- The frontend must be updated if the backend ever renames these routes; nothing should be written against the plural path.
+- The owner invitation form sends exactly `{ name, email }` and states that the role is Staff, with the role change available on the team list afterwards.
+- The emailed link must target `/invite/accept`; `/accept-invite` is kept only as a redirect that preserves the query string for older links.
+- `GET /api/v1/staff/invitations` returns the whole invitation table, including rows that were already accepted, so the settings screen shows only invitations that are still waiting to be accepted.
+
+## DEC-028: Treat Any Unavailable Invitation Token as One State
+
+Decision:
+Render a single "this invitation is no longer available" state for a 400 from the invitation preview or accept endpoints, plus distinct states for a missing token, rate limiting, server errors, and network failures. State the password rule locally, strip the token from the URL after acceptance, and never sign the invitee in automatically.
+
+Reason:
+The backend answers 400 for invalid, expired, already-accepted, and revoked tokens with no distinguishing code or message; accepted and revoked invitations also leave no usable pending row. Claiming to know which case applies would be invented information. Separately, acceptance returns a staff row but no session cookie, so an automatic redirect to the dashboard would only bounce the user back to sign-in.
+
+Consequence:
+- The public page explains how to get a new invitation instead of guessing why the old one failed.
+- The token lives only in component state; it is not written to storage, logged, or sent anywhere except the two invitation endpoints, and after a confirmed acceptance the URL is replaced with `/invite/accept` so it is no longer in the address bar or history.
+- The invitee signs in afterwards with the created email and password; the success screen links to `/signin`.
+- If the backend later returns reason-specific status codes, the copy can be split per reason without changing the route or the flow.
+
+## DEC-029: "Pending Invitations" Shows Only Invitations Awaiting Acceptance
+
+Decision:
+Filter the owner's pending-invitation list to invitations whose derived status is `pending` or `processing`. Do not render accepted rows there, and do not render expired ones either. When nothing qualifies, show "No pending invitations."
+
+Reason:
+The backend keeps accepted invitation rows in the table, so an unfiltered list showed an already-joined person's invitation labelled "Accepted" underneath a heading that says the invitations are pending. That is contradictory and makes the section look stale. There is no declined state in the backend enum, so the only non-pending states are accepted and expired, neither of which is waiting for anyone.
+
+Consequence:
+- A just-accepted invitation disappears from the list as soon as the team data is refreshed; the new member is already visible in the team table, which is the meaningful confirmation.
+- An expired invitation also disappears, so the owner re-invites from the Add staff dialog instead of revoking a dead link. The design has no invitation history view, and the backend exposes none.
+- `isPendingInvitation` in `src/lib/invitations.ts` owns the rule and `TeamSection` applies it, so the filter is testable without a DOM.
+

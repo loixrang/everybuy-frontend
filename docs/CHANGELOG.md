@@ -1,5 +1,48 @@
 # Changelog
 
+### 2026-10-30: Settings Responsive Polish
+
+Changed:
+- The settings card grid uses top alignment, so short cards (two-factor, appearance) no longer stretch to the height of the taller profile card on desktop, and spacing tightens from 6 to 4 on phones.
+- The two-factor header stacks the title above the status badge on phones and sits them side by side from `sm`.
+- Two-factor trigger buttons, password forms and destructive actions use 44 px targets on phones, stack the field above a full-width button, and return to compact inline sizing from `sm`.
+- The pending-invitation row stacks the details above a full-width Revoke button on phones, then returns to a single row with a compact button on larger screens.
+- Mobile team controls (Manage, role select, deactivate/reactivate) and the invitation Refresh/Add staff buttons meet the 44 px touch height, with compact heights retained on desktop.
+
+Checks: typecheck, lint, 64 tests, production build, and `git diff --check` passed. Verified through code review and the compiled classes; no device automation is configured.
+
+### 2026-10-30: Pending invitations stay pending; compact security card
+
+Changed:
+- The settings "Pending invitations" list now shows only invitations still waiting to be accepted (`pending` or `processing`). Accepted and expired rows no longer appear under a "pending" heading, and the empty state reads "No pending invitations."
+- The two-factor authentication card no longer stretches to match the taller profile card: the settings grid aligns its children to the top, so each card is only as tall as its content.
+- The two-factor card header shows the enabled state as a badge next to the title and explains authenticator and email codes in one line instead of two paragraphs.
+
+Added:
+- `isPendingInvitation` in `src/lib/invitations.ts`, with tests covering pending, processing, accepted, and expired invitations.
+
+Fixed:
+- Corrected the documented invitation-list contract: `GET /api/v1/staff/invitations` returns every invitation row, including accepted ones; it does not return a single row.
+
+Checks: typecheck, lint, 64 tests, production build, and `git diff --check` passed.
+
+### 2026-10-30: FE-060 Staff Invitation Flow
+
+Added:
+- Public `/invite/accept` page outside the auth guards and dashboard shell: token preview (`GET /api/v1/staff/invite/preview`), password creation with confirmation, and acceptance through `POST /api/v1/staff/invite/accept`.
+- Distinct loading, missing-token, unavailable, rate-limited, server, and network states, a single-submit guard, and a success screen that links to sign in without signing the user in.
+- `src/lib/invitations.ts` for token handling, password validation, error translation, duplicate-submit blocking, invitation status derivation, and diagnostics that exclude tokens and passwords.
+- Pending-invitation status badges with expiry and revoke in the settings team section, limited to invitations still awaiting acceptance.
+- Tests for invitation logic, the staff API client, and the rendered public page states.
+
+Changed:
+- The invitation form sends only `{ name, email }` and states that the role is always Staff, because the backend's invite DTO accepts no role; roles are changed after acceptance via `PATCH /api/v1/staff/:staffId`.
+- `/accept-invite` now redirects to `/invite/accept` with the query string preserved.
+- Staff types and API client corrected to the verified shapes (`email`, `active`, `createdAt`, and `staff.staffId` on acceptance).
+- After a confirmed acceptance the token is removed from the URL, and raw backend error text is never displayed.
+
+Checks: typecheck, lint, 63 tests, production build, and `git diff --check` passed. A live owner-to-recipient invitation run was not possible without owner credentials and a real pending token.
+
 ### 2026-10-30: FE-059 Settings UX and Progressive Disclosure
 
 Changed:

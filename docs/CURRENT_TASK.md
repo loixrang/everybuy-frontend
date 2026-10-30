@@ -1,5 +1,65 @@
 # Current Task
 
+## FE-060: Staff Invitation Flow
+
+Status: COMPLETED
+
+## Goal
+
+Make staff invitations usable end to end against the verified backend: an owner sends an invitation and can see its status, and the recipient opens a public link, reviews the invitation, chooses a password, and gets a working staff account.
+
+## Scope
+
+- Verify the owner invite, invitation list, revoke, preview, and accept endpoints in the backend source.
+- Owner invitation form with name and email, validation, and clear success/failure feedback.
+- Owner view of the pending invitation, its expiry and derived status, with revoke.
+- Public `/invite/accept` route that works without a session and outside the dashboard layout.
+- Token lookup, preview, and acceptance with loading, missing-token, unavailable, rate-limited, server, and network states.
+- Password and confirmation with local validation and duplicate-submit protection.
+- Success confirmation that does not sign the user in and links to sign in.
+
+## Out of Scope
+
+- Choosing a role at invitation time (the backend always creates `Staff`).
+- Invitation history, resend, or bulk invitations (no endpoints).
+- Refusing to demote or deactivate the last owner (backend gap, tracked in `Issues.md`).
+- Backend changes of any kind.
+
+## Implemented
+
+- `src/lib/invitations.ts` holds the flow's pure rules: token trimming, the 12–128 character password check with confirmation, the duplicate-submit guard, safe error translation for preview and acceptance, the derived invitation status, and a diagnostic logger that excludes tokens and passwords.
+- `src/pages/auth/AcceptInvitePage.tsx` is the public landing page:
+  - Reads `token` from the query string; a missing token shows guidance and never calls the API.
+  - Previews through `GET /api/v1/staff/invite/preview?token=…` and shows the invited name, email, fixed `Staff` role, and expiry.
+  - Distinct loading skeleton, unavailable (400), rate-limited (429), server, and network states, with retry.
+  - Password and confirmation fields with inline mismatch feedback and local length validation before submitting.
+  - Submits `{ token, password }` to `POST /api/v1/staff/invite/accept` once at a time (ref guard plus disabled button).
+  - On success shows "Your account is ready", clears both password fields, replaces the URL with `/invite/accept` so the token is no longer in the address bar or history, and links to `/signin`. It never signs the user in.
+  - Raw backend messages are not shown; copy explains that an unavailable link may be expired, used, or replaced.
+- `src/app/router.tsx`: `/invite/accept` is registered outside `ProtectedRoute` and `InventoryLayout`; the old `/accept-invite` path redirects to it with the query string preserved; both paths use the "Accept invitation" page title.
+- `src/components/settings/StaffAccountModal.tsx`: the invitation form sends only `{ name, email }`, shows the fixed `Staff` role and the note that roles can be changed after acceptance, clears stale errors on input, and maps 409/500/503 to actionable messages instead of raw text.
+- `src/components/settings/TeamSection.tsx`: the pending-invitation list shows only invitations still waiting to be accepted (`pending` or `processing`), with the status badge and expiry, and a revoke action. Accepted and expired rows are not shown, because the backend keeps accepted rows and neither state is pending. Role changes and deactivation use the verified `PATCH /api/v1/staff/:staffId`.
+- `src/types/staff.ts` and `src/lib/api/staff.ts` were corrected to the verified shapes: staff rows include `email`, `active`, and `createdAt`, and acceptance returns `staff.staffId`.
+- Tests: `src/lib/invitations.test.ts` (token handling, password rules, submit blocking, error mapping, status derivation), `src/lib/api/staff.test.ts` (paths, payloads, single-row normalisation, error propagation), and `src/pages/auth/AcceptInvitePage.test.tsx` (rendered missing-token, invalid, error, form, and success states).
+
+## Checks
+
+- `bunx tsc -b --noEmit`: passed
+- `bun run lint`: passed (0 warnings, 0 errors)
+- `bun test`: 64 passed
+- `bun run build`: passed
+- `git diff --check`: passed
+- Live backend: health returned 200 and an invalid token preview returned 400.
+
+## Notes / Limitations
+
+- The task text named `/api/v1/staff/invitations/preview` and `/api/v1/staff/invitations/accept`. Those routes do not exist; the backend mounts `/api/v1/staff/invite/preview` and `/api/v1/staff/invite/accept`, so the frontend follows the backend. See `DEC-027`.
+- Invitations cannot carry a role: `POST /api/v1/staff/invite` accepts only `{ name, email }` and always creates `Staff`. The form says so instead of offering a control the backend ignores.
+- Preview answers 400 for invalid, expired, accepted, and revoked tokens without a reason code, so the page shows one unavailable state. See `DEC-028`.
+- `GET /api/v1/staff/invitations` returns the whole invitation table (404 when empty) and keeps accepted rows, so the owner section filters to `pending`/`processing` rather than showing already-accepted invitations as pending. See `DEC-029`.
+- A full live run (owner creates an invitation, recipient opens the email link and accepts) needs owner credentials and a real pending token, neither of which is available here. The frontend logic, API paths, and rendered states are covered by tests and by backend source inspection.
+- No backend, database, or environment file was changed.
+
 ## FE-059: Settings UX and Progressive Disclosure
 
 Status: COMPLETED

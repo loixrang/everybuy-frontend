@@ -10,11 +10,13 @@ This file tracks known backend and product gaps that should stay out of customer
 
 ## Shop administration
 
-- **Pending invitation list:** The current endpoint returns at most one invitation, and an empty invitation table can produce a server error. Return a stable empty list and support listing all pending invitations.
-- **Invitation email setup:** Invitation email generation depends on the backend preview URL configuration. Set and verify the production value so the email link works in the deployed frontend.
-- **Shop settings initialization:** The frontend can read and update an existing settings row, but there is no operation to create the initial row. Provide a safe initialization path or seed the row during deployment.
-- **Staff access safeguards:** The backend does not prevent demoting the last owner. Enforce a last-owner safeguard before allowing that role change.
-- **Profile management:** There is no verified operation to update the signed-in user's name or email. Add the required secure profile operations before exposing editing controls.
+- **Invitation list:** `GET /api/v1/staff/invitations` returns the entire `staff_invitations` table, including already-accepted rows, and answers 404 when the table is empty. It also still returns `tokenHash` even though the hash is not a usable credential. Return only the fields the owner screen needs, expose a status filter (or a dedicated pending-only view), and use an empty array instead of 404. An `accepted` row also blocks a new invitation for the same email through the email unique constraint, which should be handled explicitly.
+- **Invitation role:** `POST /api/v1/staff/invite` accepts only `{ name, email }` and always creates a `Staff` account. Accept an optional supported role if owners need to invite a second owner directly.
+- **Invitation failure reasons:** preview and accept answer 400 for invalid, expired, already-accepted, and revoked tokens with no distinguishing code, so the recipient sees one "no longer available" message. Return a reason code so the page can explain what happened.
+- **Invitation email setup:** invitation email generation depends on the backend preview URL configuration. Set and verify the production `STAFF_INVITE_PREVIEW_URL` (it must point at `<frontend origin>/invite/accept`) so the emailed link works in the deployed frontend.
+- **Shop settings initialization:** the frontend can read and update an existing settings row, but there is no operation to create the initial row. Provide a safe initialization path or seed the row during deployment.
+- **Staff access safeguards:** the backend does not prevent demoting or deactivating the last owner. Enforce a last-owner safeguard before allowing that role change.
+- **Profile management:** there is no verified operation to update the signed-in user's name or email. Add the required secure profile operations before exposing editing controls.
 
 ## Activity, records, and list sizes
 

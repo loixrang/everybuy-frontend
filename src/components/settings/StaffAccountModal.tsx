@@ -103,19 +103,40 @@ export function StaffAccountModal({
       }
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setError(err.message);
-        if (mode === 'invite' && err.status === 500) {
+        if (mode === 'invite') {
+          if (err.status === 400) {
+            setError('Check the name and email address, then try again.');
+          } else if (err.status === 409) {
+            setError(
+              'An account or open invitation already exists for this email address.',
+            );
+            setHint(
+              'The invitation list below shows the current open invitation. Revoke it before sending a new one.',
+            );
+          } else if (err.status === 500) {
+            setError('Invitation emails are unavailable right now.');
+            setHint(
+              'Try again later, or set a password for this staff member now.',
+            );
+          } else if (err.status === 503) {
+            setError('The invitation email could not be delivered.');
+            setHint(
+              'Try again, or create the account with a password instead.',
+            );
+          } else if (err.status === 429) {
+            setError('Too many requests. Wait a moment and try again.');
+          } else {
+            setError('The invitation could not be sent. Try again shortly.');
+          }
+        } else if (err.status === 409) {
+          setError('An account already exists for this email address.');
           setHint(
-            'The invitation could not be sent. Try again later, or set a password for this staff member now.',
+            'Use the email invitation flow if this person still needs access.',
           );
-        } else if (mode === 'invite' && err.status === 503) {
-          setHint(
-            'The invitation email could not be delivered. Try again, or create the account with a password instead.',
-          );
-        } else if (mode === 'invite' && err.status === 409) {
-          setHint('The staff member can sign in once the existing invite is used.');
-        } else if (mode === 'create' && err.status === 409) {
-          setHint('Use the email invitation flow if this person already has an invite.');
+        } else if (err.status === 429) {
+          setError('Too many requests. Wait a moment and try again.');
+        } else {
+          setError(err.message || 'The account could not be created.');
         }
       } else {
         setError(
@@ -191,6 +212,21 @@ export function StaffAccountModal({
             : 'The staff member will receive an email verification link. Share their password securely.'}
         </p>
 
+        <div className="mt-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-subtle)] p-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs font-semibold text-[color:var(--color-ink)]">
+              Role
+            </span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-[11px] font-semibold bg-[color:var(--color-surface)] text-[color:var(--color-muted)]">
+              Staff
+            </span>
+          </div>
+          <p className="text-[11px] text-[color:var(--color-muted)] mt-1">
+            Staff can record stock, sales, customers and expenses. An owner can
+            change the role from the team list after the account is active.
+          </p>
+        </div>
+
         <form className="mt-5 space-y-4" onSubmit={handleSubmit} noValidate>
           <div>
             <label
@@ -207,7 +243,11 @@ export function StaffAccountModal({
               autoComplete="off"
               required
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => {
+                setName(event.target.value);
+                setError(null);
+                setHint(null);
+              }}
               className="w-full h-[44px] px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-muted)] focus:outline-none focus:border-[color:var(--color-accent)]"
               placeholder="Ada Obi"
             />
@@ -229,7 +269,11 @@ export function StaffAccountModal({
               spellCheck={false}
               required
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setError(null);
+                setHint(null);
+              }}
               className="w-full h-[44px] px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-muted)] focus:outline-none focus:border-[color:var(--color-accent)]"
               placeholder="ada@example.com"
             />

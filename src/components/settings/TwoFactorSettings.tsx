@@ -143,14 +143,23 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
       aria-labelledby="two-factor-heading"
       className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5"
     >
-      <h2 id="two-factor-heading" className="text-sm font-bold text-[color:var(--color-ink)]">
-        Two-factor authentication
-      </h2>
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <h2 id="two-factor-heading" className="text-sm font-bold text-[color:var(--color-ink)]">
+          Two-factor authentication
+        </h2>
+        <span
+          className={`inline-flex shrink-0 items-center rounded-[4px] px-2 py-0.5 text-[11px] font-semibold ${
+            enabled
+              ? 'bg-[color:var(--color-success-bg)] text-[color:var(--color-success-ink)]'
+              : 'bg-[color:var(--color-subtle)] text-[color:var(--color-muted)]'
+          }`}
+        >
+          {enabled ? 'Enabled' : 'Not enabled'}
+        </span>
+      </div>
       <p className="mt-1 text-xs text-[color:var(--color-muted)]">
-        Status: <strong className="text-[color:var(--color-ink)]">{enabled ? 'Enabled' : 'Not enabled'}</strong>
-      </p>
-      <p className="mt-2 text-xs text-[color:var(--color-muted)]">
-        Authenticator codes require the authenticator app. Email codes are available as a sign-in alternative after 2FA is enabled.
+        Use an authenticator app for sign-in codes, with email codes as a
+        fallback once enabled.
       </p>
 
       {notice && (
@@ -168,7 +177,7 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
 
       {!enabled && !enrollment && (
         <div className="mt-4">
-          <button type="button" aria-expanded={setupOpen} disabled={busy} onClick={() => { setSetupOpen((open) => !open); setPassword(''); setError(null); }} className="h-10 px-3 rounded-[8px] text-xs font-semibold text-[color:var(--color-accent-ink)] hover:bg-[color:var(--color-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60">
+          <button type="button" aria-expanded={setupOpen} disabled={busy} onClick={() => { setSetupOpen((open) => !open); setPassword(''); setError(null); }} className="inline-flex h-11 items-center rounded-[8px] px-3 text-xs font-semibold text-[color:var(--color-accent-ink)] hover:bg-[color:var(--color-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60 sm:h-9">
             {setupOpen ? 'Cancel setup' : 'Set up authenticator'}
           </button>
           {setupOpen && <form id="two-factor-setup-form" onSubmit={beginEnrollment} className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -182,7 +191,7 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
                 className="mt-2 h-11 w-full rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 text-sm"
               />
             </label>
-            <button type="submit" disabled={busy} className="h-11 rounded-[8px] bg-[color:var(--color-accent)] px-4 text-xs font-semibold text-[color:var(--color-on-accent)] disabled:opacity-60">
+            <button type="submit" disabled={busy} className="h-11 w-full rounded-[8px] bg-[color:var(--color-accent)] px-4 text-xs font-semibold text-[color:var(--color-on-accent)] disabled:opacity-60 sm:w-auto">
               {busy ? 'Preparing…' : 'Continue'}
             </button>
           </form>}
@@ -214,10 +223,10 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
                 className="mt-2 h-11 w-full rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 text-center text-lg tracking-[0.35em]"
               />
             </label>
-            <button type="submit" disabled={busy} className="h-11 rounded-[8px] bg-[color:var(--color-accent)] px-4 text-xs font-semibold text-[color:var(--color-on-accent)] disabled:opacity-60">
+            <button type="submit" disabled={busy} className="h-11 w-full rounded-[8px] bg-[color:var(--color-accent)] px-4 text-xs font-semibold text-[color:var(--color-on-accent)] disabled:opacity-60 sm:w-auto">
               {busy ? 'Verifying…' : 'Verify and enable 2FA'}
             </button>
-            <button type="button" disabled={busy} onClick={() => { setEnrollment(null); setCode(''); setPassword(''); setSetupOpen(false); setError(null); }} className="ml-3 h-11 px-3 text-xs font-semibold text-[color:var(--color-muted)] disabled:opacity-60">
+            <button type="button" disabled={busy} onClick={() => { setEnrollment(null); setCode(''); setPassword(''); setSetupOpen(false); setError(null); }} className="h-11 w-full px-3 text-xs font-semibold text-[color:var(--color-muted)] disabled:opacity-60 sm:ml-3 sm:w-auto">
               Cancel setup
             </button>
           </form>
@@ -235,17 +244,17 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
           <h3 className="text-xs font-bold text-[color:var(--color-warning-ink)]">Save your recovery codes</h3>
           <p className="mt-1 text-xs text-[color:var(--color-warning-ink)]">They are shown only after generation. Previous codes stop working when you regenerate them.</p>
           <RecoveryCodeList codes={recoveryCodes} />
-          <button type="button" onClick={() => setRecoveryCodes(null)} className="mt-2 h-10 text-xs font-semibold text-[color:var(--color-warning-ink)] underline">I saved these codes</button>
+          <button type="button" onClick={() => setRecoveryCodes(null)} className="mt-2 inline-flex h-11 items-center text-xs font-semibold text-[color:var(--color-warning-ink)] underline">I saved these codes</button>
         </div>
       )}
 
       {enabled && !enrollment && (
         <div className="mt-4 space-y-4">
           <div className="flex flex-wrap gap-x-4 gap-y-2">
-            <button type="button" aria-expanded={manageAction === 'recovery'} disabled={busy} onClick={() => { setManageAction(manageAction === 'recovery' ? null : 'recovery'); setPassword(''); setError(null); }} className="h-9 text-xs font-semibold text-[color:var(--color-accent-ink)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60">
+            <button type="button" aria-expanded={manageAction === 'recovery'} disabled={busy} onClick={() => { setManageAction(manageAction === 'recovery' ? null : 'recovery'); setPassword(''); setError(null); }} className="inline-flex h-11 items-center text-xs font-semibold text-[color:var(--color-accent-ink)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60 sm:h-9">
               {manageAction === 'recovery' ? 'Cancel' : 'Generate new recovery codes'}
             </button>
-            <button type="button" aria-expanded={manageAction === 'disable'} disabled={busy} onClick={() => { setManageAction(manageAction === 'disable' ? null : 'disable'); setPassword(''); setError(null); }} className="h-9 text-xs font-semibold text-[color:var(--color-danger-ink)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60">
+            <button type="button" aria-expanded={manageAction === 'disable'} disabled={busy} onClick={() => { setManageAction(manageAction === 'disable' ? null : 'disable'); setPassword(''); setError(null); }} className="inline-flex h-11 items-center text-xs font-semibold text-[color:var(--color-danger-ink)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60 sm:h-9">
               {manageAction === 'disable' ? 'Cancel' : 'Disable 2FA'}
             </button>
           </div>
@@ -260,7 +269,7 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
                 className="mt-2 h-11 w-full rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 text-sm"
               />
             </label>
-            <button type="submit" disabled={busy} className="h-11 rounded-[8px] border border-[color:var(--color-border)] px-4 text-xs font-semibold disabled:opacity-60">
+            <button type="submit" disabled={busy} className="h-11 w-full rounded-[8px] border border-[color:var(--color-border)] px-4 text-xs font-semibold disabled:opacity-60 sm:w-auto">
               {busy ? 'Working…' : 'Generate new recovery codes'}
             </button>
           </form>
@@ -276,7 +285,7 @@ export function TwoFactorSettings({ enabled, refreshSession }: TwoFactorSettings
                 className="mt-2 h-11 w-full rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 text-sm"
               />
             </label>
-            <button type="submit" disabled={busy} className="h-11 rounded-[8px] border border-[color:var(--color-danger-ink)] px-4 text-xs font-semibold text-[color:var(--color-danger-ink)] disabled:opacity-60">
+            <button type="submit" disabled={busy} className="h-11 w-full rounded-[8px] border border-[color:var(--color-danger-ink)] px-4 text-xs font-semibold text-[color:var(--color-danger-ink)] disabled:opacity-60 sm:w-auto">
               {busy ? 'Working…' : 'Disable 2FA'}
             </button>
           </form>

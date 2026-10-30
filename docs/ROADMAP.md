@@ -173,7 +173,7 @@ Status: COMPLETED
 - Explain settings the backend cannot support yet.
 
 Verified limitations:
-`GET /api/v1/staff` returns only `{ staffId, userId, name, role }` (no email, active flag, or timestamps). There are no endpoints to change roles, deactivate members, list/revoke pending invitations, or edit the signed-in profile/password. There is also no current-user role endpoint, so owner-only UI is inferred from the staff-list 403. Staff invitation emails require `STAFF_INVITE_PREVIEW_URL`, currently unset, so the password mode is offered as a fallback. See DEC-019.
+`GET /api/v1/staff` now also returns `email`, `active`, `createdAt`, and role changes/deactivation are available through `PATCH /api/v1/staff/:staffId`. There is no endpoint to remove a member or to edit the signed-in profile/password. There is also no current-user role endpoint, so owner-only UI is inferred from the staff-list 403. The invitation flow was verified and completed in FE-060; see `docs/API_CONTRACT.md`.
 
 ### FE-051: Branding, Dark Theme, Cursor Affordances and Tests
 Status: COMPLETED
@@ -237,6 +237,18 @@ Status: COMPLETED
 Checks passed locally: typecheck, lint, 24 tests, production build, and `git diff --check`. The GitHub workflow itself needs a first hosted run after push; Pages deployment is skipped until the documented variables and Pages setting are configured.
 
 ## Phase 7: Product Quality
+
+### FE-060: Staff Invitation Flow
+Status: COMPLETED
+
+- Verify the owner invite, invitation list, revoke, public preview, and public accept endpoints against the backend source.
+- Owner invitation form sends only the fields the backend accepts, with validation and actionable success/failure feedback.
+- Owner view of the pending invitation with derived status, expiry, and revoke.
+- Public `/invite/accept` route outside the auth guards and dashboard, with the legacy `/accept-invite` path redirecting to it.
+- Token preview plus password creation with local validation, duplicate-submit protection, safe error copy, and no token retention or automatic sign-in.
+- Tests for invitation logic, API payloads, and the rendered public page states.
+
+Checks passed: typecheck, lint, 64 tests, production build, and `git diff --check`. A live owner-to-recipient run needs owner credentials and a real pending token, which are not available in this environment. Verified backend limitations (no role at invite time, ambiguous 400 for unavailable tokens, an invitation list that includes accepted rows) are recorded in `docs/API_CONTRACT.md` and `Issues.md`.
 
 ### FE-059: Settings UX and Progressive Disclosure
 Status: COMPLETED

@@ -6,14 +6,14 @@
  * - POST   /staff                     -> CreatedStaff (OwnerGuard)
  * - PATCH  /staff/:staffId            -> StaffRow[] (OwnerGuard)
  * - POST   /staff/invite              -> InviteStaffResult (OwnerGuard, sends email)
- * - GET    /staff/invitations         -> a single invitation row (OwnerGuard)
+ * - GET    /staff/invitations         -> StaffInvitation[] (OwnerGuard)
  * - DELETE /staff/invitations/:id     -> deleted invitation row (OwnerGuard)
  * - GET    /staff/invite/preview      -> InvitationPreview (public, token credential)
  * - POST   /staff/invite/accept       -> AcceptInvitationResult (public, token credential)
  *
- * Backend quirk: `viewInvite()` selects `.limit(1)`-style (`const [invite]`),
- * so the "list" endpoint currently returns one invitation object or an empty
- * body. The frontend accepts either a single object or an array.
+ * Backend quirk: `viewInvite()` selects the whole `staff_invitations` table, so
+ * the "list" endpoint returns accepted rows too and the response still carries
+ * `tokenHash` (a hash, not a usable credential; the frontend ignores it).
  */
 
 /** Backend pg enum `staff_role`. */
@@ -50,12 +50,18 @@ export interface CreatedStaff {
   active: boolean;
 }
 
-/** Row from GET /staff/invitations. `tokenHash` is never displayed. */
+/** Backend pg enum `staff_invitation_status`. */
+export type InvitationStatus = 'pending' | 'processing' | 'accepted';
+
+/**
+ * Row from GET /staff/invitations. The backend also returns `tokenHash`; it is
+ * omitted from this type because the frontend never reads or displays it.
+ */
 export interface StaffInvitation {
   id: string;
   name: string;
   email: string;
-  status: 'pending' | 'processing' | 'accepted' | string;
+  status: InvitationStatus;
   createdBy: string;
   expiresAt: string;
   acceptedAt: string | null;
@@ -68,11 +74,18 @@ export interface InvitationPreview {
   expiresAt: string;
 }
 
+/**
+ * Response from POST /staff/invite/accept. `finalize()` returns the created
+ * staff row plus the deleted invitation; the frontend only needs the account
+ * summary and must not display or retain the deleted invitation row.
+ */
 export interface AcceptInvitationResult {
   message: string;
   staff: {
-    id: string;
+    staffId: string;
     userId: string;
+    name: string;
+    email: string;
     role: StaffRole;
     active: boolean;
   };
