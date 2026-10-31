@@ -13,12 +13,12 @@ import { createSale } from '../../lib/api/sales';
 import { toKobo, fromKobo } from '../../lib/utils/money';
 import { formatNaira } from '../../lib/utils/format';
 import { ApiError } from '../../lib/api/client';
+import { BackNavigation } from '../../components/ui/BackNavigation';
 import {
   SearchIcon,
   AlertCircleIcon,
   RefreshCwIcon,
   CheckCircleIcon,
-  ArrowLeftIcon,
 } from '../../components/ui/Icons';
 
 // Matches the backend createSaleSchema: item quantity is an integer from 1 to 1,000,000.
@@ -588,13 +588,7 @@ export function RecordSalePage() {
     <div className="space-y-6 max-w-6xl pb-12">
       {/* Breadcrumb & heading */}
       <div className="space-y-2">
-        <Link
-          to="/sales"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[color:var(--color-accent)] hover:underline"
-        >
-          <ArrowLeftIcon size={16} />
-          Sales
-        </Link>
+        <BackNavigation fallback="/sales" label="Back to sales" />
         <h1 className="text-2xl lg:text-[32px] font-bold tracking-tight text-[color:var(--color-ink)]">
           Record a sale
         </h1>

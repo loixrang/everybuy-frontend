@@ -9,9 +9,9 @@ import {
 import type { CustomerStatement, StatementSale } from '../../types/customer';
 import { CustomerStatusBadge } from '../../components/customers/CustomerStatusBadge';
 import { RecordRepaymentModal } from '../../components/customers/RecordRepaymentModal';
+import { BackNavigation } from '../../components/ui/BackNavigation';
 import {
   AlertCircleIcon,
-  ArrowLeftIcon,
   CheckCircleIcon,
   PencilIcon,
   RefreshCwIcon,
@@ -468,15 +468,7 @@ export function CustomerDetailPage() {
 }
 
 function BackToCustomers() {
-  return (
-    <Link
-      to="/customers"
-      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] transition-colors"
-    >
-      <ArrowLeftIcon size={14} />
-      Customers
-    </Link>
-  );
+  return <BackNavigation fallback="/customers" label="Back to customers" />;
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {

@@ -99,3 +99,28 @@ export async function fetchSuppliers(): Promise<Supplier[]> {
   const result = await apiFetch<Supplier[]>('/api/v1/suppliers');
   return Array.isArray(result) ? result : [];
 }
+
+/** Add a supplier through the OwnerGuard-protected supplier endpoint. */
+export async function createSupplier(input: { name: string; phone?: string }): Promise<Supplier> {
+  const rows = await apiFetch<Supplier[]>('/api/v1/suppliers/add', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  const supplier = rows[0];
+  if (!supplier) throw new Error('The server did not return the created supplier.');
+  return supplier;
+}
+
+/** Update only supplied fields through the OwnerGuard-protected endpoint. */
+export async function updateSupplier(
+  id: number,
+  input: Partial<Pick<Supplier, 'name' | 'phone' | 'active'>>,
+): Promise<Supplier> {
+  const rows = await apiFetch<Supplier[]>(`/api/v1/suppliers/update/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+  const supplier = rows[0];
+  if (!supplier) throw new Error('The server did not return the updated supplier.');
+  return supplier;
+}

@@ -9,6 +9,7 @@ import {
 } from '../../lib/api/products';
 import { ApiError } from '../../lib/api/client';
 import { AlertCircleIcon } from '../../components/ui/Icons';
+import { BackNavigation } from '../../components/ui/BackNavigation';
 import type { Category, Brand, PackName } from '../../types/product';
 
 const PACK_NAMES: PackName[] = [
@@ -215,12 +216,7 @@ export function ProductSetupPage() {
     <div className="space-y-6 max-w-4xl">
       {/* Back breadcrumb */}
       <div>
-        <Link
-          to={isEdit && id ? `/inventory/${id}` : '/inventory'}
-          className="inline-flex items-center text-sm font-semibold text-[color:var(--color-accent)] hover:underline"
-        >
-          ← {isEdit ? 'Product detail' : 'Inventory'}
-        </Link>
+        <BackNavigation fallback={isEdit && id ? `/inventory/${id}` : '/inventory'} label={isEdit ? 'Back to product' : 'Back to inventory'} />
       </div>
 
       {/* Page Heading */}

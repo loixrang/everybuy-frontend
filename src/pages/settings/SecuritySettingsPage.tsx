@@ -1,8 +1,8 @@
-import { Link } from 'react-router-dom';
 import { useAuth } from '../../app/auth/auth-context';
 import { TwoFactorSettings } from '../../components/settings/TwoFactorSettings';
 import { PasskeySettings } from '../../components/settings/PasskeySettings';
-import { ArrowLeftIcon, ShieldIcon } from '../../components/ui/Icons';
+import { ShieldIcon } from '../../components/ui/Icons';
+import { BackNavigation } from '../../components/ui/BackNavigation';
 
 /**
  * Owner-only security workspace. Access is enforced by `OwnerRoute`; the
@@ -15,13 +15,7 @@ export function SecuritySettingsPage() {
   return (
     <div className="max-w-5xl space-y-6">
       <div>
-        <Link
-          to="/settings"
-          className="inline-flex h-11 items-center gap-2 rounded-[8px] text-xs font-semibold text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]"
-        >
-          <ArrowLeftIcon size={16} />
-          Back to settings
-        </Link>
+        <BackNavigation fallback="/settings" label="Back to settings" />
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-[color:var(--color-ink)] lg:text-[32px]">
           Security
         </h1>

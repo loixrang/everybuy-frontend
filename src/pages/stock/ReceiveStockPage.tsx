@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import type { Product } from '../../types/product';
 import type { Supplier } from '../../types/stock';
@@ -8,10 +8,10 @@ import {
   CheckCircleIcon,
   AlertCircleIcon,
   RefreshCwIcon,
-  ArrowLeftIcon,
 } from '../../components/ui/Icons';
 import { ApiError } from '../../lib/api/client';
 import { formatNaira } from '../../lib/utils/format';
+import { BackNavigation } from '../../components/ui/BackNavigation';
 
 // Matches the backend createStockSchema: quantity is an integer from 1 to 1,000,000.
 const MAX_QUANTITY = 1_000_000;
@@ -78,7 +78,7 @@ export function ReceiveStockPage() {
       }
 
       if (suppliersRes.status === 'fulfilled') {
-        setSuppliers(suppliersRes.value);
+        setSuppliers(suppliersRes.value.filter((supplier) => supplier.active));
       } else {
         // Suppliers are optional on the form, so this must not block receiving.
         setSuppliersError(
@@ -241,13 +241,7 @@ export function ReceiveStockPage() {
     <div className="space-y-6 max-w-4xl pb-12">
       {/* Back breadcrumb */}
       <div>
-        <Link
-          to={selectedProductId ? `/inventory/${selectedProductId}` : '/inventory'}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[color:var(--color-accent)] hover:underline"
-        >
-          <ArrowLeftIcon size={16} />
-          Back to inventory
-        </Link>
+        <BackNavigation fallback={selectedProductId ? `/inventory/${selectedProductId}` : '/inventory'} label="Back to inventory" />
       </div>
 
       {/* Heading */}

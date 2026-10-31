@@ -19,9 +19,9 @@ import {
   type SaleItem,
 } from '../../types/sale';
 import { RecordRepaymentModal } from '../../components/customers/RecordRepaymentModal';
+import { BackNavigation } from '../../components/ui/BackNavigation';
 import {
   AlertCircleIcon,
-  ArrowLeftIcon,
   CheckCircleIcon,
   RefreshCwIcon,
   WalletIcon,
@@ -520,15 +520,7 @@ function PaymentRow({ payment }: { payment: Payment }) {
 }
 
 function BackToSales() {
-  return (
-    <Link
-      to="/sales"
-      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] transition-colors"
-    >
-      <ArrowLeftIcon size={14} />
-      Sales history
-    </Link>
-  );
+  return <BackNavigation fallback="/sales" label="Back to sales" />;
 }
 
 function SummaryRow({

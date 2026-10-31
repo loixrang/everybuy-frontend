@@ -20,9 +20,9 @@ import { useAuth } from '../../app/auth/auth-context';
 import { StockTakeStatusBadge } from '../../components/stocktakes/StockTakeStatusBadge';
 import { CountStockModal } from '../../components/stocktakes/CountStockModal';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { BackNavigation } from '../../components/ui/BackNavigation';
 import {
   AlertCircleIcon,
-  ArrowLeftIcon,
   CheckCircleIcon,
   ClipboardCheckIcon,
   HistoryIcon,
@@ -154,8 +154,7 @@ export function StockTakeDetailPage() {
           to="/stocktakes"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-[color:var(--color-muted)] transition-colors hover:text-[color:var(--color-ink)]"
         >
-          <ArrowLeftIcon size={14} />
-          Stocktakes
+          <BackNavigation fallback="/stocktakes" label="Back to stocktakes" />
         </Link>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
