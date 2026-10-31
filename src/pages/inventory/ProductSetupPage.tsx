@@ -44,7 +44,7 @@ export function ProductSetupPage() {
   const [packName, setPackName] = useState<PackName>('Small Pack');
   const [size, setSize] = useState('');
   const [piecesPerPack, setPiecesPerPack] = useState('');
-  const [packsPerBag, setPacksPerBag] = useState('6');
+  const [packsPerBag, setPacksPerBag] = useState('');
   const [retailPrice, setRetailPrice] = useState('');
   const [bagPrice, setBagPrice] = useState('');
   const [active, setActive] = useState(true);
