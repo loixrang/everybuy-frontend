@@ -1,5 +1,20 @@
 # Current Task
 
+# FE-064: Theme Preferences and Startup Theme Initialization
+
+Status: WORKING
+
+## Goal
+
+Persist Light, Dark, or Device preferences and apply the effective theme before React mounts or Better Auth starts its session request.
+
+## Acceptance
+
+- The default is Device; explicit Light/Dark persist, and Device follows OS changes.
+- Settings offers an accessible Light/Dark/Device selector.
+- Startup background and foreground match the effective theme during session loading.
+- Typecheck, lint, tests, production build, and diff checks pass; browser startup verification is reported honestly.
+
 # FE-063: POS Search and Cart Refactor
 
 Status: COMPLETED

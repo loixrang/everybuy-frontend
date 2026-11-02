@@ -1,5 +1,9 @@
 # Frontend Architecture
 
+## Theme preference and initialization
+
+`index.html` synchronously reads `everybuy-theme` (`light`, `dark`, or `device`) before the module entry point. Missing, invalid, or inaccessible storage defaults to Device, which resolves through `prefers-color-scheme`. An inline base background keeps the document themed before the application stylesheet loads. `useTheme` owns the runtime preference store, local persistence, OS change listener, and cross-tab storage synchronization; React and the HTML initializer use the same storage key and `data-theme` attribute.
+
 ## Purpose
 
 This document describes the intended frontend structure.

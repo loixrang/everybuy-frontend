@@ -1,3 +1,15 @@
+# 2026-11-02: FE-064 Theme Preferences and Startup Initialization
+
+Added:
+- Device, Light, and Dark preference support with synchronous document-head resolution before React and the Better Auth session check.
+- Settings selector for the three preferences and tests for preference parsing and resolution.
+
+Changed:
+- Runtime theme state now preserves the selected preference, responds to OS theme changes in Device mode, and syncs across tabs.
+- The HTML startup surface has theme-appropriate foreground and background colors before application CSS loads.
+
+Verification: typecheck, lint, 112 tests, and production build passed. Browser startup verification is unavailable in this environment.
+
 # 2026-10-30: FE-062 Category and Brand Management
 
 Added:

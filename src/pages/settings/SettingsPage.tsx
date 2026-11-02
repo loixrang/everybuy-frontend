@@ -27,7 +27,7 @@ interface Notice {
 
 export function SettingsPage() {
   const { user, me, isOwner, refreshMe, refreshSession, signOut } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { preference, setPreference } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -382,19 +382,25 @@ export function SettingsPage() {
           <div
             role="group"
             aria-label="Theme"
-            className="mt-4 grid grid-cols-2 gap-2"
+            className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3"
           >
             <ThemeOption
               label="Light"
               icon={<SunIcon size={16} />}
-              active={theme === 'light'}
-              onClick={() => setTheme('light')}
+              active={preference === 'light'}
+              onClick={() => setPreference('light')}
             />
             <ThemeOption
               label="Dark"
               icon={<MoonIcon size={16} />}
-              active={theme === 'dark'}
-              onClick={() => setTheme('dark')}
+              active={preference === 'dark'}
+              onClick={() => setPreference('dark')}
+            />
+            <ThemeOption
+              label="Device"
+              icon={<SunIcon size={16} />}
+              active={preference === 'device'}
+              onClick={() => setPreference('device')}
             />
           </div>
 

@@ -1,5 +1,16 @@
 # Architecture and Project Decisions
 
+## DEC-031: Device-First Theme Preference and Pre-React Initialization
+
+Decision:
+Store the user's preference as `light`, `dark`, or `device` in localStorage under `everybuy-theme`. Resolve Device against `prefers-color-scheme`, apply the result synchronously in the document head, and use the same resolved value in the runtime `useTheme` store. The existing header toggle selects an explicit opposite theme; Settings provides all three preferences.
+
+Reason:
+The existing hook persisted the resolved color, making it impossible to distinguish a Device choice from an explicit Light/Dark selection. It also could not theme the document before stylesheet and React startup.
+
+Consequence:
+Device remains the default across reloads and follows OS changes. Browser storage failure falls back to Device for startup; subsequent explicit choices still work for the current tab but cannot persist when storage is unavailable.
+
 Record important decisions here so future sessions do not repeat them.
 
 ## DEC-001: Separate Repositories

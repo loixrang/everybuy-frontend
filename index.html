@@ -2,6 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <style>
+      html, body { min-height: 100%; background: #FAFAF7; color: #242B25; }
+      html[data-theme="dark"], html[data-theme="dark"] body { background: #0A0B0A; color: #F3F5F1; }
+    </style>
+    <script>
+      (function () {
+        var preference = 'device';
+        try {
+          var saved = localStorage.getItem('everybuy-theme');
+          if (saved === 'light' || saved === 'dark' || saved === 'device') preference = saved;
+        } catch (_) {}
+        var dark = preference === 'dark' || (preference === 'device' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#365E48" />

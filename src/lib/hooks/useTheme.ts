@@ -1,91 +1,113 @@
 import { useCallback, useSyncExternalStore } from 'react';
+import {
+  parseThemePreference,
+  resolveTheme,
+  THEME_STORAGE_KEY,
+  type Theme,
+  type ThemePreference,
+} from './theme-preference';
 
-export type Theme = 'light' | 'dark';
+export type { Theme, ThemePreference } from './theme-preference';
 
-const THEME_STORAGE_KEY = 'everybuy-theme';
-
-function readStoredTheme(): Theme | null {
-  if (typeof window === 'undefined') return null;
+function readPreference(): ThemePreference {
   try {
-    const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    return stored === 'light' || stored === 'dark' ? stored : null;
+    return parseThemePreference(localStorage.getItem(THEME_STORAGE_KEY));
   } catch {
-    // Storage can be unavailable (private mode, blocked cookies).
-    return null;
+    return 'device';
   }
 }
 
-function systemTheme(): Theme {
-  if (typeof window === 'undefined') return 'light';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
+function readSystemTheme(): Theme {
+  return typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
     ? 'dark'
     : 'light';
 }
 
-function getInitialTheme(): Theme {
-  return readStoredTheme() ?? systemTheme();
-}
-
-/*
- * A tiny module-level store keeps every mounted `useTheme()` consumer in sync.
- * The authenticated shell and the settings page can both be on screen, so a
- * local `useState` would leave the header icon stale after a settings change.
- */
-let currentTheme: Theme = getInitialTheme();
+let currentPreference = readPreference();
+let currentTheme = resolveTheme(currentPreference, readSystemTheme());
 const listeners = new Set<() => void>();
+const mediaQuery = typeof window === 'undefined'
+  ? null
+  : window.matchMedia('(prefers-color-scheme: dark)');
 
 function applyTheme(theme: Theme) {
   if (typeof document === 'undefined') return;
-  document.documentElement.setAttribute('data-theme', theme);
-  try {
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-  } catch {
-    // Persisting is best-effort; the applied theme still works for this tab.
-  }
+  const root = document.documentElement;
+  if (root.dataset.theme !== theme) root.dataset.theme = theme;
 }
 
-function setThemeValue(theme: Theme) {
-  if (theme === currentTheme) return;
-  currentTheme = theme;
-  applyTheme(theme);
+function notify() {
   for (const listener of listeners) listener();
 }
 
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
+function getSnapshot() {
+  return `${currentPreference}:${currentTheme}`;
 }
 
-// Apply before first paint so a stored dark preference never flashes light.
+function updateTheme(preference: ThemePreference, persist: boolean) {
+  currentPreference = preference;
+  const nextTheme = resolveTheme(preference, readSystemTheme());
+  if (persist) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, preference);
+    } catch {
+      // The in-memory setting remains usable when storage is blocked.
+    }
+  }
+  if (nextTheme !== currentTheme) {
+    currentTheme = nextTheme;
+    applyTheme(nextTheme);
+    notify();
+  } else {
+    applyTheme(nextTheme);
+    notify();
+  }
+}
+
+function handleSystemThemeChange() {
+  if (currentPreference === 'device') updateTheme('device', false);
+}
+
+function handleStorageChange(event: StorageEvent) {
+  if (event.key === THEME_STORAGE_KEY || event.key === null) {
+    updateTheme(parseThemePreference(event.newValue), false);
+  }
+}
+
+if (mediaQuery) {
+  mediaQuery.addEventListener('change', handleSystemThemeChange);
+  window.addEventListener('storage', handleStorageChange);
+}
+
+// Reconcile the HTML initializer with the store before React renders.
 applyTheme(currentTheme);
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
 
 export interface ThemeControls {
   theme: Theme;
-  setTheme: (theme: Theme) => void;
+  preference: ThemePreference;
+  setPreference: (preference: ThemePreference) => void;
   toggleTheme: () => void;
 }
 
-/**
- * Applies the stored/system theme to `<html data-theme>` and keeps it in
- * localStorage. Shared by the authenticated shell, the sign-in screen, and the
- * settings page so every surface honours the same light/dark preference.
- */
 export function useTheme(): ThemeControls {
-  const theme = useSyncExternalStore(
+  const snapshot = useSyncExternalStore(
     subscribe,
-    () => currentTheme,
-    () => 'light' as Theme,
+    getSnapshot,
+    () => 'device:light',
   );
-
-  const setTheme = useCallback((next: Theme) => {
-    setThemeValue(next);
+  const [preference, theme] = snapshot.split(':') as [ThemePreference, Theme];
+  const setPreference = useCallback((next: ThemePreference) => {
+    updateTheme(next, true);
   }, []);
-
   const toggleTheme = useCallback(() => {
-    setThemeValue(currentTheme === 'light' ? 'dark' : 'light');
-  }, []);
+    setPreference(currentTheme === 'light' ? 'dark' : 'light');
+  }, [setPreference]);
 
-  return { theme, setTheme, toggleTheme };
+  return { theme, preference, setPreference, toggleTheme };
 }

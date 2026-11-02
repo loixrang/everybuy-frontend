@@ -11,6 +11,12 @@ Statuses:
 
 ## Phase 0: Foundation
 
+### FE-064: Theme Preferences and Startup Theme Initialization
+Status: WORKING
+
+- Add persistent Light, Dark, and Device preferences with synchronous pre-React theme selection.
+- Settings exposes all three choices; Device follows operating system changes.
+
 ### FE-063: POS Search and Cart Refactor
 Status: COMPLETED
 
