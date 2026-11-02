@@ -127,12 +127,12 @@ export function RecordExpenseModal({
           );
         } else if (err.status >= 500) {
           setHint(
-            'The backend may have saved the expense before failing. Reload the list; resubmitting the unchanged form is safe because it reuses the same request id.',
+            'We could not confirm whether this expense was saved. Check the expenses list before trying again.',
           );
         }
       } else {
         setError(
-          'Unable to reach the backend. Check that it is running and try again.',
+          'Unable to connect. Check your connection and try again.',
         );
       }
     } finally {

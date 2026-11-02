@@ -130,7 +130,7 @@ export function SaleDetailPage() {
         } else {
           setError({
             message:
-              'Unable to connect to the backend server. Check that it is running and try again.',
+              'Unable to connect. Check your connection and try again.',
           });
         }
       } finally {
@@ -299,7 +299,7 @@ export function SaleDetailPage() {
                 </p>
                 <p className="text-xs text-[color:var(--color-muted)] mt-1">
                   {formatNaira(success.amount)} applied to this sale. The summary below has
-                  been reloaded from the backend.
+                  have been updated.
                 </p>
               </div>
             </div>
@@ -348,7 +348,7 @@ export function SaleDetailPage() {
           </div>
         </section>
       )}
-      {repairSuccess && <p role="status" className="text-sm text-[color:var(--color-success-ink)]">{repairSuccess} Sale details and report status are refreshed from the backend.</p>}
+      {repairSuccess && <p role="status" className="text-sm text-[color:var(--color-success-ink)]">{repairSuccess} Sale details and reports have been updated.</p>}
       {repairOpen && <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"><button className="absolute inset-0 bg-[color:var(--color-scrim)]" aria-label="Cancel repair" onClick={() => !repairing && setRepairOpen(false)} /><section role="dialog" aria-modal="true" aria-labelledby="repair-cost-title" className="relative w-full max-w-xl max-h-[92vh] overflow-y-auto rounded-t-[16px] sm:rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5"><h2 id="repair-cost-title" className="text-lg font-bold text-[color:var(--color-ink)]">Repair historical costs</h2><p className="mt-1 text-sm text-[color:var(--color-muted)]">Review each cost and enter the acquisition cost per pack that applied to {sale.saleNumber}. Current product costs are suggestions only.</p><div className="mt-4 space-y-4">{missingCostItems.map((item) => <label key={item.id} className="block text-sm font-semibold text-[color:var(--color-ink)]">{item.productName} <span className="block text-xs font-normal text-[color:var(--color-muted)]">{item.quantity} × {unitLabel(item.unit)} · {item.quantity * item.packsPerUnit} packs · Suggested now: {item.currentCostPerPack ? formatNaira(item.currentCostPerPack) : 'No current product cost'}</span><input inputMode="decimal" value={repairCosts[item.id] ?? ''} onChange={(event) => setRepairCosts((current) => ({ ...current, [item.id]: event.target.value }))} aria-label={`Confirmed cost per pack for ${item.productName}`} className="mt-2 h-11 w-full rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-canvas)] px-3" placeholder="Cost per pack (₦)" /></label>)}</div>{repairError && <p role="alert" className="mt-3 text-sm text-[color:var(--color-danger-ink)]">{repairError}</p>}<label className="mt-4 flex items-start gap-2 text-sm text-[color:var(--color-ink)]"><input type="checkbox" checked={repairConfirmed} onChange={(event) => setRepairConfirmed(event.target.checked)} className="mt-1" />I confirm these values represent the applicable acquisition costs per pack for this original sale.</label><div className="mt-5 flex flex-col-reverse sm:flex-row sm:justify-end gap-2"><button type="button" disabled={repairing} onClick={() => setRepairOpen(false)} className="h-11 px-4 rounded-[8px] border border-[color:var(--color-border)] text-sm">Cancel</button><button type="button" disabled={repairing || !repairConfirmed} onClick={() => void submitCostRepair()} className="h-11 px-4 rounded-[8px] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] text-sm font-semibold disabled:opacity-50">{repairing ? 'Saving…' : 'Confirm and repair'}</button></div></section></div>}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">

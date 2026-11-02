@@ -35,7 +35,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
         </div>
 
         <p className="mt-6 text-xs font-medium text-[color:var(--color-muted)]">
-          Everybuy &middot; Physical store inventory
+          Everybuy
         </p>
       </main>
     </div>

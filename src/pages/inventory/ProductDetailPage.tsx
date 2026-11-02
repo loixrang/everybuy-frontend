@@ -78,7 +78,7 @@ export function ProductDetailPage() {
           if (err instanceof ApiError) {
             setError({ message: err.message, status: err.status });
           } else {
-            setError({ message: 'Unable to connect to the backend server.' });
+            setError({ message: 'Unable to connect. Check your connection and try again.' });
           }
         }
 

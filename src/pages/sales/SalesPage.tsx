@@ -102,7 +102,7 @@ export function SalesPage() {
             ? { message: err.message, status: err.status }
             : {
                 message:
-                  'Unable to connect to the backend server. Check that it is running and try again.',
+                  'Unable to connect. Check your connection and try again.',
               },
         );
       }

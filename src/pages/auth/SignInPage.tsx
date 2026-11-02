@@ -40,7 +40,7 @@ function describeSignInError(error: unknown): string {
       return 'Your email address is not verified yet. We could not send a verification email. You can try again below.';
     }
     if (code === 'INVALID_ORIGIN') {
-      return 'This site is not trusted by the API. The backend FRONTEND_URL must match the address you are using.';
+      return 'This site could not be verified. Try refreshing the page or contact the shop owner.';
     }
     if (error.status === 401) {
       return 'Email or password is incorrect.';
@@ -49,12 +49,12 @@ function describeSignInError(error: unknown): string {
       return 'Too many sign-in attempts. Wait a moment and try again.';
     }
     if (error.status >= 500) {
-      return 'The API server could not complete the request. Try again shortly.';
+      return 'We could not sign you in. Try again shortly.';
     }
     return error.message || 'Sign-in failed. Try again.';
   }
 
-  return 'Cannot reach the API server. Check your connection and that VITE_API_BASE_URL is correct.';
+  return 'Unable to connect. Check your connection and try again.';
 }
 
 export function SignInPage() {
@@ -301,7 +301,7 @@ export function SignInPage() {
                 Welcome back
               </h1>
               <p className="mt-2 text-base text-[color:var(--color-muted)]">
-                Sign in to the physical store.
+                Sign in to your account.
               </p>
 
               <form
@@ -326,7 +326,7 @@ export function SignInPage() {
                     required
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    placeholder="samuel@example.com"
+                    placeholder="name@example.com"
                     className="w-full h-[46px] px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-muted)] focus:outline-none focus:border-[color:var(--color-accent)]"
                   />
                 </div>
@@ -574,7 +574,7 @@ export function SignInPage() {
         </div>
 
         <p className="mt-6 text-xs font-medium text-[color:var(--color-muted)]">
-          Everybuy &middot; Physical store inventory
+          Everybuy
         </p>
       </main>
     </div>

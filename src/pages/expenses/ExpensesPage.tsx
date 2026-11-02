@@ -49,7 +49,7 @@ export function ExpensesPage() {
         } else {
           setError({
             message:
-              'Unable to connect to the backend server. Check that it is running and try again.',
+              'Unable to connect. Check your connection and try again.',
           });
         }
       } finally {
@@ -158,7 +158,7 @@ export function ExpensesPage() {
         <SummaryCard
           label="All recorded"
           value={formatNaira(fromKobo(totals.all))}
-          detail="Every expense on the backend"
+          detail="All recorded shop expenses"
         />
         <SummaryCard
           label="Expenses recorded"

@@ -64,7 +64,7 @@ export function CustomerEditPage() {
           setLoad({
             status: 'error',
             message:
-              'Unable to connect to the backend server. Check that it is running and try again.',
+              'Unable to connect. Check your connection and try again.',
           });
         }
       }
@@ -97,7 +97,7 @@ export function CustomerEditPage() {
         active,
       });
       if (!result) {
-        setFormError('The customer was updated but the backend returned no record. Reload and try again.');
+        setFormError('The customer was updated. Reload the page to see the latest details.');
         return;
       }
       navigate(`/customers/${id}`, { replace: true });

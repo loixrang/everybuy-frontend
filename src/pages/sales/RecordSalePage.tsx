@@ -100,7 +100,7 @@ export function RecordSalePage() {
         setPageError(
           err instanceof ApiError
             ? err.message
-            : 'Unable to connect to the backend server.',
+            : 'Unable to connect. Check your connection and try again.',
         );
         setLoadingData(false);
         return;

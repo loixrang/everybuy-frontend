@@ -91,9 +91,6 @@ export function InventoryLayout() {
                 Everybuy
               </span>
             </Link>
-            <span className="hidden lg:inline text-xs font-semibold text-[color:var(--color-muted)] pl-4 border-l border-[color:var(--color-border)]">
-              Physical store
-            </span>
           </div>
 
           {/* Right: User and theme toggle */}
@@ -149,9 +146,6 @@ export function InventoryLayout() {
         {/* Desktop Sidebar (228px) */}
         <aside className="hidden lg:flex sticky top-[calc(77px+env(safe-area-inset-top))] h-[calc(100vh-77px-env(safe-area-inset-top))] self-start overflow-y-auto w-[228px] shrink-0 border-r border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 flex-col justify-between">
           <div className="space-y-6">
-            <div className="px-3 pt-2 text-[11px] font-semibold tracking-wider text-[color:var(--color-muted)] uppercase">
-              Physical Store
-            </div>
             <nav aria-label="Sections" className="space-y-1">
               <SidebarNavLink
                 to="/inventory"
@@ -213,7 +207,7 @@ export function InventoryLayout() {
           {/* Sidebar Footer */}
           <div className="pt-6 border-t border-[color:var(--color-border)] px-3 text-xs space-y-1">
             <div className="font-semibold text-[color:var(--color-quiet)] uppercase tracking-wider text-[10px]">
-              Everybuy / Physical store
+              Everybuy
             </div>
             <div
               className="font-semibold text-[color:var(--color-ink)] truncate"
@@ -521,7 +515,7 @@ function MoreSheet({
             <SheetLink
               to="/audit"
               label="Audit log"
-              description="Actions recorded by the backend"
+              description="A record of important shop changes"
               icon={<HistoryIcon size={18} />}
               onNavigate={onClose}
             />

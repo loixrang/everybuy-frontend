@@ -20,11 +20,11 @@ function describeError(error: unknown): string {
       return 'Too many attempts. Wait a moment and try again.';
     }
     if (error.status >= 500) {
-      return 'The API server could not reset the password. Try again shortly.';
+      return 'We could not reset your password. Try again shortly.';
     }
     return error.message || 'Unable to reset the password.';
   }
-  return 'Cannot reach the API server. Check your connection and try again.';
+  return 'Unable to connect. Check your connection and try again.';
 }
 
 /**

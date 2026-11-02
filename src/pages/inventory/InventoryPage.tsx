@@ -57,7 +57,7 @@ export function InventoryPage() {
           if (err instanceof ApiError) {
             setError({ message: err.message, status: err.status });
           } else {
-            setError({ message: 'Unable to connect to the backend server. Please check that the server is running.' });
+            setError({ message: 'Unable to connect. Check your connection and try again.' });
           }
         }
 
@@ -188,7 +188,7 @@ export function InventoryPage() {
               </h2>
               <p className="text-sm text-[color:var(--color-muted)] mt-1">
                 {error.status === 401 || error.status === 403
-                  ? 'Accessing inventory requires staff or owner authorization. Please sign in to the physical store.'
+                  ? 'Please sign in with a staff or owner account to view inventory.'
                   : error.message}
               </p>
             </div>

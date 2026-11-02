@@ -31,7 +31,7 @@ export function SecuritySettingsPage() {
         />
         <p>
           Staff accounts cannot open this page or call these security
-          operations. The backend checks the owner role on every request.
+          Only the shop owner can manage these security settings.
         </p>
       </div>
 

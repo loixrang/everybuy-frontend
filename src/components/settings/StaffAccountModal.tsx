@@ -140,7 +140,7 @@ export function StaffAccountModal({
         }
       } else {
         setError(
-          'Unable to reach the backend. Check that it is running and try again.',
+          'Unable to connect. Check your connection and try again.',
         );
       }
     } finally {

@@ -49,7 +49,7 @@ export function AuditPage() {
         } else {
           setError({
             message:
-              'Unable to connect to the backend server. Check that it is running and try again.',
+              'Unable to connect. Check your connection and try again.',
           });
         }
       } finally {
@@ -84,7 +84,7 @@ export function AuditPage() {
           Audit log
         </h1>
         <p className="text-sm text-[color:var(--color-muted)] mt-1">
-          Read-only record of actions the backend audits.
+          A record of important changes made in the shop.
         </p>
       </div>
 

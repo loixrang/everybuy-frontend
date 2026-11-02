@@ -49,7 +49,7 @@ export function OverviewPage() {
             Overview
           </h1>
           <p className="text-sm text-[color:var(--color-muted)] mt-1">
-            Shop performance from the backend · Africa/Lagos timezone
+            Your shop at a glance
           </p>
         </div>
         <Link
@@ -233,7 +233,7 @@ function DailyOverviewPanel() {
         } else {
           setError({
             message:
-              'Unable to connect to the backend server. Check that it is running and try again.',
+              'Unable to connect. Check your connection and try again.',
           });
         }
       } finally {
@@ -458,7 +458,7 @@ function MonthlyReportPanel({
         } else {
           setError({
             message:
-              'Unable to connect to the backend server. Check that it is running and try again.',
+              'Unable to connect. Check your connection and try again.',
           });
         }
       } finally {
@@ -714,7 +714,7 @@ function ProfitReportPanel({
         } else {
           setError({
             message:
-              'Unable to connect to the backend server. Check that it is running and try again.',
+              'Unable to connect. Check your connection and try again.',
           });
         }
       } finally {
@@ -807,7 +807,7 @@ function ProfitReportPanel({
                 How net profit is calculated
               </h2>
               <p className="text-xs text-[color:var(--color-muted)] mt-1">
-                {formatMonthLabel(month)} · Africa/Lagos calendar month.
+                {formatMonthLabel(month)}
               </p>
             </div>
             <dl className="divide-y divide-[color:var(--color-border)]">

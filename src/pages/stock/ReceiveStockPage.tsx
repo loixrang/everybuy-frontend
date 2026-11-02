@@ -128,7 +128,7 @@ export function ReceiveStockPage() {
 
     if (totalPacksToAdd > MAX_QUANTITY) {
       setSubmitError(
-        `The backend supports a maximum of ${MAX_QUANTITY.toLocaleString()} packs per receipt. Reduce the quantity.`,
+        `You can receive up to ${MAX_QUANTITY.toLocaleString()} packs at a time. Reduce the quantity to continue.`,
       );
       return;
     }

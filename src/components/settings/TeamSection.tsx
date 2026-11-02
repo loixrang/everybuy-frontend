@@ -78,7 +78,7 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
           setTeamError(
             err instanceof ApiError
               ? err.message
-              : 'Unable to reach the backend. Check that it is running and try again.',
+              : 'Unable to connect. Check your connection and try again.',
           );
           setTeamState('error');
           return;

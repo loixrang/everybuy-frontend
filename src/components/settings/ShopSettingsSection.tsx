@@ -77,7 +77,7 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
           message:
             err instanceof ApiError
               ? err.message
-              : 'Unable to reach the backend. Check that it is running and try again.',
+              : 'Unable to connect. Check your connection and try again.',
           code: err instanceof ApiError ? err.status : undefined,
         });
       }
@@ -109,7 +109,6 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
 
     const name = form.name.trim();
     const currency = form.currency.trim();
-    const timezone = form.timezone.trim();
 
     if (!name) {
       setError('Enter the shop name.');
@@ -117,10 +116,6 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
     }
     if (!currency) {
       setError('Enter the currency code, for example NGN.');
-      return;
-    }
-    if (!timezone) {
-      setError('Enter the timezone, for example Africa/Lagos.');
       return;
     }
 
@@ -134,7 +129,7 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
         address: form.address.trim() || null,
         phone: form.phone.trim() || null,
         currency,
-        timezone,
+        timezone: form.timezone,
         receiptFooter: form.receiptFooter.trim() || null,
       });
       setLoad({ status: 'ready', settings: updated });
@@ -145,7 +140,7 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
       setError(
         err instanceof ApiError
           ? err.message
-          : 'Unable to reach the backend. Check that it is running and try again.',
+          : 'Unable to connect. Check your connection and try again.',
       );
     } finally {
       setSaving(false);
@@ -253,14 +248,6 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
               required
             />
           </div>
-          <Field
-            id="shop-timezone"
-            label="Timezone"
-            value={form.timezone}
-            onChange={(value) => update('timezone', value)}
-            disabled={!canEdit || saving}
-            required
-          />
           <div>
             <label
               htmlFor="shop-receipt-footer"
@@ -317,7 +304,6 @@ export function ShopSettingsSection({ canEdit }: { canEdit: boolean }) {
               <ReadOnlyDetail label="Address" value={load.settings.address} />
               <ReadOnlyDetail label="Phone" value={load.settings.phone} />
               <ReadOnlyDetail label="Currency" value={load.settings.currency} />
-              <ReadOnlyDetail label="Timezone" value={load.settings.timezone} />
               <ReadOnlyDetail label="Receipt footer" value={load.settings.receiptFooter} />
             </dl>
             <div className="mt-4 flex items-center justify-between gap-3">

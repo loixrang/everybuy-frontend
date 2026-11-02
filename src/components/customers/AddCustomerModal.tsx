@@ -37,7 +37,7 @@ export function AddCustomerModal({ onClose, onCreated }: AddCustomerModalProps) 
       });
       const customer = result[0];
       if (!customer) {
-        setError('The customer was saved but the backend returned no record. Reload the list.');
+        setError('The customer was saved. Reload the list to see the latest details.');
         return;
       }
       onCreated(customer);

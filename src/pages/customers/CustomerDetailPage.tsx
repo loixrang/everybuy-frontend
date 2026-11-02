@@ -57,7 +57,7 @@ export function CustomerDetailPage() {
         } else {
           setError({
             message:
-              'Unable to connect to the backend server. Check that it is running and try again.',
+              'Unable to connect. Check your connection and try again.',
           });
         }
       } finally {
@@ -205,7 +205,7 @@ export function CustomerDetailPage() {
                 </p>
                 <p className="text-xs text-[color:var(--color-muted)] mt-1">
                   {formatNaira(success.amount)} applied to sale #{success.saleId.slice(0, 8)}. The balance
-                  below reflects the backend’s updated totals.
+                  below reflects the latest totals.
                 </p>
               </div>
             </div>
@@ -292,7 +292,7 @@ export function CustomerDetailPage() {
             <div className="px-5 py-4 border-b border-[color:var(--color-border)]">
               <h2 className="text-sm font-bold text-[color:var(--color-ink)]">Outstanding sales</h2>
               <p className="text-xs text-[color:var(--color-muted)] mt-1">
-                Amounts are calculated by the backend from every payment recorded against each sale.
+                Totals include all payments recorded for each sale.
               </p>
             </div>
 

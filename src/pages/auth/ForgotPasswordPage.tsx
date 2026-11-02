@@ -16,11 +16,11 @@ function describeError(error: unknown): string {
       return 'Too many reset requests. Wait a moment and try again.';
     }
     if (error.status >= 500) {
-      return 'The API server could not send the email. Try again shortly.';
+      return 'We could not send the email. Try again shortly.';
     }
     return error.message || 'Unable to request a password reset.';
   }
-  return 'Cannot reach the API server. Check your connection and try again.';
+  return 'Unable to connect. Check your connection and try again.';
 }
 
 /**
@@ -114,7 +114,7 @@ export function ForgotPasswordPage() {
                 setEmail(event.target.value);
                 setError(null);
               }}
-              placeholder="samuel@example.com"
+              placeholder="name@example.com"
               className="w-full h-[46px] px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-muted)] focus:outline-none focus:border-[color:var(--color-accent)]"
             />
           </div>
