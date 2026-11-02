@@ -146,6 +146,13 @@ export function StockTakeDetailPage() {
   const allCounted =
     stockTake.totalProducts > 0 &&
     stockTake.countedProducts >= stockTake.totalProducts;
+  const unvaluedIncreases = stockTake.items.filter(
+    (item) =>
+      item.countedPacks !== null &&
+      item.stockAtCountPacks !== null &&
+      item.countedPacks > item.stockAtCountPacks &&
+      item.costPerPack === null,
+  );
 
   return (
     <div className="max-w-6xl space-y-6 pb-12">
@@ -194,11 +201,13 @@ export function StockTakeDetailPage() {
                     setActionError(null);
                     setPendingAction('finalize');
                   }}
-                  disabled={actionBusy || !allCounted}
+                  disabled={actionBusy || !allCounted || unvaluedIncreases.length > 0}
                   title={
-                    allCounted
-                      ? undefined
-                      : 'Every product must be counted before approval.'
+                    !allCounted
+                      ? 'Every product must be counted before approval.'
+                      : unvaluedIncreases.length > 0
+                        ? 'Record the known acquisition cost for each stock increase before approval.'
+                        : undefined
                   }
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[color:var(--color-accent)] px-4 text-sm font-semibold text-[color:var(--color-on-accent)] transition-colors hover:bg-[color:var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:text-xs"
                 >
@@ -218,6 +227,24 @@ export function StockTakeDetailPage() {
         >
           <AlertCircleIcon size={18} className="mt-0.5 shrink-0" />
           <span>{actionError}</span>
+        </div>
+      )}
+
+      {isOwner && draft && unvaluedIncreases.length > 0 && (
+        <div className="space-y-2 rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-warning-bg)] p-4 text-sm text-[color:var(--color-warning-ink)]">
+          <p className="font-semibold">Value stock before approving</p>
+          <p className="text-xs">
+            These counts increase stock for products with no recorded acquisition cost. Enter the known opening cost in product setup; physical counts do not set a cost.
+          </p>
+          <ul className="list-disc space-y-1 pl-5 text-xs">
+            {unvaluedIncreases.map((item) => (
+              <li key={item.productId}>
+                <Link className="font-semibold underline" to={`/inventory/${item.productId}/edit`}>
+                  {item.productName}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

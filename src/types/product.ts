@@ -60,6 +60,8 @@ export interface CreateProductInput {
   piecesPerPack?: number | null;
   bagPrice: string;
   retailPrice: string;
+  /** Optional acquisition cost per pack; numeric(14,4). */
+  costPerPack?: string;
   active?: boolean;
 }
 

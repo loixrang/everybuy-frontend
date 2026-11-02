@@ -208,6 +208,12 @@ export function describeStockTakeError(
       : 'This stocktake is no longer available. Reload the page and try again.';
   }
   if (error.status === 409) {
+    if (
+      action === 'finalize' &&
+      error.message.startsWith('Record the acquisition cost per pack')
+    ) {
+      return `${error.message} Enter the known cost in product setup, then reload this stocktake.`;
+    }
     return 'This stocktake is no longer in progress. Reload the page to see its current status.';
   }
   if (error.status === 429) {

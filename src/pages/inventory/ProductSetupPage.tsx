@@ -35,6 +35,7 @@ export function ProductSetupPage() {
   const packsPerBagId = useId();
   const retailPriceId = useId();
   const bagPriceId = useId();
+  const costPerPackId = useId();
   const activeSelectId = useId();
 
   // Form values
@@ -47,6 +48,8 @@ export function ProductSetupPage() {
   const [packsPerBag, setPacksPerBag] = useState('');
   const [retailPrice, setRetailPrice] = useState('');
   const [bagPrice, setBagPrice] = useState('');
+  const [costPerPack, setCostPerPack] = useState('');
+  const [initialCostPerPack, setInitialCostPerPack] = useState<string | null>(null);
   const [active, setActive] = useState(true);
 
   // Reference lists
@@ -96,6 +99,8 @@ export function ProductSetupPage() {
             setPacksPerBag(String(prod.packsPerBag));
             setRetailPrice(prod.retailPrice);
             setBagPrice(prod.bagPrice);
+            setCostPerPack(prod.costPerPack ?? '');
+            setInitialCostPerPack(prod.costPerPack);
             setActive(prod.active);
           } else {
             setFormError('Product not found.');
@@ -152,6 +157,10 @@ export function ProductSetupPage() {
     if (isNaN(bagPriceNum) || bagPriceNum <= 0) {
       errors.bagPrice = 'Bag price must be greater than zero';
     }
+    const costTrimmed = costPerPack.trim();
+    if (costTrimmed && !/^(?=.*[1-9])\d{1,10}(\.\d{1,4})?$/.test(costTrimmed)) {
+      errors.costPerPack = 'Enter a positive acquisition cost with up to 4 decimal places.';
+    }
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -176,6 +185,10 @@ export function ProductSetupPage() {
         retailPrice: String(parseFloat(retailPrice)),
         bagPrice: String(parseFloat(bagPrice)),
         active,
+        ...(costPerPack.trim() &&
+        (!isEdit || costPerPack.trim() !== (initialCostPerPack ?? ''))
+          ? { costPerPack: costPerPack.trim() }
+          : {}),
       };
 
       if (isEdit && id) {
@@ -394,7 +407,7 @@ export function ProductSetupPage() {
 
         <div className="border-t border-[color:var(--color-border)] pt-4">
           <h2 className="text-lg font-bold text-[color:var(--color-ink)] mb-4">
-            Bags & selling prices
+            Bags & prices
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -459,6 +472,30 @@ export function ProductSetupPage() {
                 <p className="text-xs text-[color:var(--color-danger-ink)] mt-1">{validationErrors.bagPrice}</p>
               )}
             </div>
+          </div>
+
+          <div className="mt-4 max-w-md">
+            <label htmlFor={costPerPackId} className="block text-xs font-semibold text-[color:var(--color-ink)] mb-1.5">
+              Acquisition cost per pack (₦) · optional
+            </label>
+            <input
+              id={costPerPackId}
+              type="text"
+              inputMode="decimal"
+              value={costPerPack}
+              onChange={(e) => setCostPerPack(e.target.value)}
+              placeholder="What you paid for one pack"
+              aria-describedby={`${costPerPackId}-help`}
+              className={`w-full h-[46px] px-3 rounded-[8px] border bg-[color:var(--color-surface)] text-[color:var(--color-ink)] text-sm focus:border-[color:var(--color-accent)] focus:outline-none transition-colors ${
+                validationErrors.costPerPack ? 'border-[color:var(--color-danger-ink)]' : 'border-[color:var(--color-border)]'
+              }`}
+            />
+            <p id={`${costPerPackId}-help`} className="text-xs text-[color:var(--color-muted)] mt-1">
+              This is your acquisition cost, separate from pack and bag selling prices. Set it for existing stock only when you know its value; leaving it blank does not change an existing cost.
+            </p>
+            {validationErrors.costPerPack && (
+              <p className="text-xs text-[color:var(--color-danger-ink)] mt-1">{validationErrors.costPerPack}</p>
+            )}
           </div>
 
           <div className="mt-4">

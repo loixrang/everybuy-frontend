@@ -166,6 +166,15 @@ describe('stocktake error copy', () => {
     expect(message).toContain('approve again');
   });
 
+  test('directs owners to value missing-cost stock before approval', () => {
+    expect(
+      describeStockTakeError(
+        new ApiError('Record the acquisition cost per pack for product abc before approving this stock increase.', 409),
+        'finalize',
+      ),
+    ).toContain('Enter the known cost in product setup');
+  });
+
   test('handles closed stocktakes, expired sessions and throttling', () => {
     expect(describeStockTakeError(new ApiError('Conflict', 409), 'count')).toContain(
       'no longer in progress',

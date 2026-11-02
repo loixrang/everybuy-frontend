@@ -35,6 +35,7 @@ export interface StockTakeItem {
   packName: PackName;
   size: string | null;
   packsPerBag: number;
+  costPerPack: string | null;
   /** Stock balance captured when the stocktake was created. */
   expectedPacks: number;
   /** Stock balance captured when the count was submitted. */

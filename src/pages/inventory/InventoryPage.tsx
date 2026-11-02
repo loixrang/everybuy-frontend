@@ -302,6 +302,7 @@ export function InventoryPage() {
                   <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Pack / Category</th>
                   <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Available</th>
                   <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Pack price</th>
+                  {isOwner && <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Acquisition cost</th>}
                   <th className="py-3 px-4 text-xs font-medium text-[color:var(--color-muted)]">Status</th>
                 </tr>
               </thead>
@@ -341,6 +342,14 @@ export function InventoryPage() {
                       <td className="py-4 px-4 text-sm font-medium text-[color:var(--color-ink)]">
                         {formatNaira(p.retailPrice)}
                       </td>
+                      {isOwner && (
+                        <td className="py-4 px-4 text-sm">
+                          <CostStatusBadge
+                            label={p.stockPacks === 0 ? 'No stock' : p.costPerPack === null ? 'Missing cost' : 'Valued'}
+                            missing={p.stockPacks > 0 && p.costPerPack === null}
+                          />
+                        </td>
+                      )}
                       <td className="py-4 px-4 text-sm">
                         <StatusBadge status={status} />
                       </td>
@@ -381,6 +390,14 @@ export function InventoryPage() {
                     <span>Pack price: {formatNaira(p.retailPrice)}</span>
                     <StatusBadge status={status} />
                   </div>
+                  {isOwner && (
+                    <div className="pt-2 text-xs">
+                      <CostStatusBadge
+                        label={p.stockPacks === 0 ? 'No stock' : p.costPerPack === null ? 'Missing cost' : 'Valued'}
+                        missing={p.stockPacks > 0 && p.costPerPack === null}
+                      />
+                    </div>
+                  )}
                 </Link>
               );
             })}
@@ -424,6 +441,20 @@ function StatusBadge({ status }: { status: { label: string; tone: 'in-stock' | '
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold bg-[color:var(--color-success-bg)] text-[color:var(--color-success-ink)]">
       {status.label}
+    </span>
+  );
+}
+
+function CostStatusBadge({ label, missing }: { label: string; missing: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-[4px] px-2 py-0.5 text-xs font-semibold ${
+        missing
+          ? 'bg-[color:var(--color-warning-bg)] text-[color:var(--color-warning-ink)]'
+          : 'bg-[color:var(--color-subtle)] text-[color:var(--color-muted)]'
+      }`}
+    >
+      {label}
     </span>
   );
 }

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Product } from '../../types/product';
 import { createStockAdjustment } from '../../lib/api/stock';
 import type { UpdatedProductStock } from '../../types/stock';
@@ -51,6 +52,10 @@ export function StockAdjustmentModal({ product, onClose, onSuccess }: StockAdjus
     }
     if (note.trim().length > 500) {
       setSubmitError('Reason must be at most 500 characters.');
+      return;
+    }
+    if (!isSub && product.costPerPack === null) {
+      setSubmitError('This product has no recorded acquisition cost. Record its known cost per pack in product setup before increasing stock.');
       return;
     }
 
@@ -133,6 +138,16 @@ export function StockAdjustmentModal({ product, onClose, onSuccess }: StockAdjus
               {product.size ? ` · ${product.size}` : ''}
             </p>
           </div>
+
+          {!isSub && product.costPerPack === null && (
+            <div className="rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-warning-bg)] p-3 text-xs text-[color:var(--color-warning-ink)]">
+              Stock cannot be increased while acquisition cost is missing. Enter the known cost in{' '}
+              <Link className="font-semibold underline" to={`/inventory/${product.id}/edit`}>
+                product setup
+              </Link>
+              . Stock reductions remain available.
+            </div>
+          )}
           <button
             type="button"
             onClick={onClose}

@@ -762,9 +762,10 @@ function ProfitReportPanel({
                 Profit cannot be calculated
               </h2>
               <p className="text-sm text-[color:var(--color-muted)] mt-1">
-                One or more sales in {formatMonthLabel(month)} have no recorded
-                product cost. Record the cost per pack when receiving stock, then
-                run the report again.
+                {error.message} Profit figures are withheld until the affected
+                products' known acquisition costs have been recorded. Use product
+                setup for opening stock or record the cost when receiving stock,
+                then run the report again.
               </p>
             </div>
           </div>
