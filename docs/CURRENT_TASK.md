@@ -1,5 +1,15 @@
 # Current Task
 
+# Historical acquisition cost repair across frontend and backend
+
+Status: WORKING (implementation complete locally; backend Vitest worker startup failed in this environment).
+
+- Owner repair for null sale-item cost snapshots, grouped missing-cost detection, and explicit profit-report unavailable data are integrated across both repositories.
+- Frontend sale details provides owner-only review/confirmation; profit reports link affected sales.
+- Remaining: rerun backend tests in a working Vitest environment and deploy both applications. Production records are untouched; owner repair must be performed through the deployed frontend after deployment.
+
+---
+
 # FE-064: Theme Preferences and Startup Theme Initialization
 
 Status: WORKING

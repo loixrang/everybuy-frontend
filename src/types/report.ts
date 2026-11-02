@@ -64,9 +64,14 @@ export interface DailyOverview {
  * 409 when any sale in the month has no recorded cost.
  */
 export interface ProfitReport {
-  revenue: string;
-  cogs: string;
-  grossProfit: string;
+  revenue: string | null;
+  cogs: string | null;
+  grossProfit: string | null;
   expenses: string;
-  netProfit: string;
+  netProfit: string | null;
+  missingCostCount: number;
+  missingCostSales: Array<{
+    saleId: string; saleNumber: string; soldAt: string;
+    items: Array<{ saleItemId: string; productId: string; productName: string; quantity: number; packsPerUnit: number; currentCostPerPack: string | null }>;
+  }>;
 }

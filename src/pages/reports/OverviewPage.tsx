@@ -729,7 +729,7 @@ function ProfitReportPanel({
   }, [month, reloadKey]);
 
   const retry = useCallback(() => setReloadKey((key) => key + 1), []);
-  const missingCost = error?.status === 409;
+  const missingCost = report !== null && report.missingCostCount > 0;
 
   return (
     <div className="space-y-6">
@@ -750,7 +750,7 @@ function ProfitReportPanel({
         expenses dated in this month.
       </p>
 
-      {error && missingCost && (
+      {missingCost && report && (
         <div className="p-4 rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-warning-bg)]">
           <div className="flex items-start gap-3">
             <AlertCircleIcon
@@ -762,44 +762,42 @@ function ProfitReportPanel({
                 Profit cannot be calculated
               </h2>
               <p className="text-sm text-[color:var(--color-muted)] mt-1">
-                {error.message} Profit figures are withheld until the affected
-                products' known acquisition costs have been recorded. Use product
-                setup for opening stock or record the cost when receiving stock,
-                then run the report again.
+                {report.missingCostCount} sale item cost snapshot{report.missingCostCount === 1 ? ' is' : 's are'} missing. Profit figures are withheld until an owner confirms the applicable historical acquisition costs.
               </p>
+              <ul className="mt-3 space-y-2">{report.missingCostSales.map((sale) => <li key={sale.saleId}><Link to={`/sales/${sale.saleId}`} className="text-sm font-semibold text-[color:var(--color-accent-ink)] hover:underline">{sale.saleNumber} · {formatMovementDate(sale.soldAt)}</Link><ul className="ml-4 mt-1 list-disc">{sale.items.map((item) => <li key={item.saleItemId} className="text-xs text-[color:var(--color-muted)]">{item.productName} · {item.quantity} line units / {item.quantity * item.packsPerUnit} packs · current proposed cost {item.currentCostPerPack ? formatNaira(item.currentCostPerPack) : 'unavailable'}</li>)}</ul></li>)}</ul>
             </div>
           </div>
         </div>
       )}
 
-      {error && !missingCost && <ReportError error={error} onRetry={retry} />}
+      {error && <ReportError error={error} onRetry={retry} />}
 
       {loading ? (
         <OverviewSkeleton />
-      ) : report ? (
+      ) : report && report.missingCostCount === 0 ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <SummaryCard
               label="Revenue"
-              value={formatNaira(report.revenue)}
+              value={formatNaira(report.revenue!)}
               detail="Total value of sales this month"
             />
             <SummaryCard
               label="Cost of goods"
-              value={formatNaira(report.cogs)}
+              value={formatNaira(report.cogs!)}
               detail="Recorded cost of the packs sold"
             />
             <SummaryCard
               label="Gross profit"
-              value={formatNaira(report.grossProfit)}
+              value={formatNaira(report.grossProfit!)}
               detail="Revenue minus cost of goods"
-              tone={toKobo(report.grossProfit) < 0n ? 'warning' : 'default'}
+              tone={toKobo(report.grossProfit!) < 0n ? 'warning' : 'default'}
             />
             <SummaryCard
               label="Net profit"
-              value={formatNaira(report.netProfit)}
+              value={formatNaira(report.netProfit!)}
               detail="Gross profit minus expenses"
-              tone={toKobo(report.netProfit) < 0n ? 'warning' : 'default'}
+              tone={toKobo(report.netProfit!) < 0n ? 'warning' : 'default'}
             />
           </div>
 
@@ -813,11 +811,11 @@ function ProfitReportPanel({
               </p>
             </div>
             <dl className="divide-y divide-[color:var(--color-border)]">
-              <ProfitRow label="Revenue" value={report.revenue} />
-              <ProfitRow label="Less cost of goods sold" value={report.cogs} negative />
-              <ProfitRow label="Gross profit" value={report.grossProfit} strong />
+              <ProfitRow label="Revenue" value={report.revenue!} />
+              <ProfitRow label="Less cost of goods sold" value={report.cogs!} negative />
+              <ProfitRow label="Gross profit" value={report.grossProfit!} strong />
               <ProfitRow label="Less expenses" value={report.expenses} negative />
-              <ProfitRow label="Net profit" value={report.netProfit} strong />
+              <ProfitRow label="Net profit" value={report.netProfit!} strong />
             </dl>
             <div className="px-5 py-3 border-t border-[color:var(--color-border)]">
               <Link

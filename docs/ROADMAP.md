@@ -1,5 +1,11 @@
 # Frontend Roadmap
 
+### Historical acquisition cost repair across both repositories
+Status: WORKING
+
+- Sale details detects missing historical snapshots and supports owner-confirmed repair; profit report withholds incomplete profit and links the affected sales. Backend build and frontend checks pass locally. Backend Vitest could not start a worker in this environment.
+
+
 This roadmap tracks the frontend only. Backend capabilities must be verified before implementation.
 
 Statuses:

@@ -6,6 +6,8 @@ import type {
   SalesFilters,
   SalesPage,
   SalesSummary,
+  MissingCostSale,
+  RepairSaleCostsResult,
 } from '../../types/sale';
 
 /**
@@ -50,6 +52,19 @@ export async function fetchSalesSummary(
  */
 export async function fetchSale(id: string): Promise<SaleDetail> {
   return apiFetch<SaleDetail>(`/api/v1/sales/${encodeURIComponent(id)}`);
+}
+
+export async function fetchSalesWithMissingCosts(): Promise<MissingCostSale[]> {
+  return apiFetch<MissingCostSale[]>('/api/v1/sales/missing-costs');
+}
+
+export async function repairSaleCostSnapshots(
+  id: string,
+  items: Array<{ saleItemId: string; costPerPack: string }>,
+): Promise<RepairSaleCostsResult> {
+  return apiFetch<RepairSaleCostsResult>(`/api/v1/sales/${encodeURIComponent(id)}/cost-snapshots`, {
+    method: 'PATCH', body: JSON.stringify({ items }),
+  });
 }
 
 /**

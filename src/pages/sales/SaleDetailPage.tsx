@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { fetchSale } from '../../lib/api/sales';
+import { fetchSale, fetchSalesWithMissingCosts, repairSaleCostSnapshots } from '../../lib/api/sales';
+import { useAuth } from '../../app/auth/auth-context';
 import { fetchCustomer, fetchCustomerStatement } from '../../lib/api/customers';
 import { ApiError } from '../../lib/api/client';
 import {
@@ -72,6 +73,7 @@ function summariseSale(sale: SaleDetail) {
 }
 
 export function SaleDetailPage() {
+  const { isOwner } = useAuth();
   const { id } = useParams<{ id: string }>();
   const [sale, setSale] = useState<SaleDetail | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -85,6 +87,13 @@ export function SaleDetailPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [repaymentOpen, setRepaymentOpen] = useState(false);
   const [success, setSuccess] = useState<RepaymentSuccess | null>(null);
+  const [repairOpen, setRepairOpen] = useState(false);
+  const [repairCosts, setRepairCosts] = useState<Record<string, string>>({});
+  const [repairConfirmed, setRepairConfirmed] = useState(false);
+  const [repairing, setRepairing] = useState(false);
+  const [repairError, setRepairError] = useState<string | null>(null);
+  const [repairSuccess, setRepairSuccess] = useState<string | null>(null);
+  const [missingSaleCosts, setMissingSaleCosts] = useState<Awaited<ReturnType<typeof fetchSalesWithMissingCosts>>[number] | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -96,6 +105,12 @@ export function SaleDetailPage() {
         if (ignore) return;
         setSale(saleResult);
         setError(null);
+        try {
+          const missing = await fetchSalesWithMissingCosts();
+          if (!ignore) setMissingSaleCosts(missing.find((candidate) => candidate.saleId === saleResult.id) ?? null);
+        } catch {
+          if (!ignore) setMissingSaleCosts(null);
+        }
 
         if (saleResult.customerId) {
           try {
@@ -136,6 +151,22 @@ export function SaleDetailPage() {
   }, []);
 
   const totals = useMemo(() => (sale ? summariseSale(sale) : null), [sale]);
+  const missingCostItems = sale?.items.filter((item) => item.costPerPack === null).map((item) => ({ ...item, currentCostPerPack: missingSaleCosts?.items.find((candidate) => candidate.saleItemId === item.id)?.currentCostPerPack ?? null })) ?? [];
+
+  async function submitCostRepair() {
+    if (!sale || !repairConfirmed || repairing) return;
+    const invalid = missingCostItems.find((item) => !/^(?=.*[1-9])\d{1,10}(\.\d{1,4})?$/.test((repairCosts[item.id] ?? '').trim()));
+    if (invalid) { setRepairError(`Enter a positive cost per pack for ${invalid.productName}, using up to 4 decimal places.`); return; }
+    setRepairing(true); setRepairError(null);
+    try {
+      const result = await repairSaleCostSnapshots(sale.id, missingCostItems.map((item) => ({ saleItemId: item.id, costPerPack: repairCosts[item.id]!.trim() })));
+      setRepairOpen(false); setRepairConfirmed(false);
+      setRepairSuccess(`${result.repaired.length} sale item cost snapshot${result.repaired.length === 1 ? '' : 's'} repaired.`);
+      setReloadKey((key) => key + 1);
+    } catch (err: unknown) {
+      setRepairError(err instanceof ApiError ? err.message : 'Unable to repair these sale costs. Check your connection and try again.');
+    } finally { setRepairing(false); }
+  }
 
   const outstandingSales = useMemo<StatementSale[]>(
     () => statement?.sales.filter((candidate) => toKobo(candidate.balanceDue) > 0n) ?? [],
@@ -305,6 +336,20 @@ export function SaleDetailPage() {
           </div>
         </div>
       )}
+
+      {missingCostItems.length > 0 && (
+        <section role="alert" className="p-4 rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-warning-bg)]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div><h2 className="text-sm font-semibold text-[color:var(--color-warning-ink)]">Missing acquisition cost snapshots</h2>
+              <p className="text-xs text-[color:var(--color-muted)] mt-1">Profit reporting is incomplete until the applicable cost per pack for this sale is confirmed.</p>
+              <ul className="mt-2 space-y-1">{missingCostItems.map((item) => <li key={item.id} className="text-xs text-[color:var(--color-ink)]">{item.productName} · {item.quantity} × {unitLabel(item.unit)} ({item.quantity * item.packsPerUnit} packs) · Current proposed cost: {item.currentCostPerPack ? formatNaira(item.currentCostPerPack) : 'Unavailable'}</li>)}</ul>
+            </div>
+            {isOwner && <button type="button" onClick={() => { setRepairCosts(Object.fromEntries(missingCostItems.map((item) => [item.id, item.currentCostPerPack ?? '']))); setRepairError(null); setRepairOpen(true); }} className="h-10 px-4 rounded-[8px] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] text-sm font-semibold shrink-0">Repair cost snapshots</button>}
+          </div>
+        </section>
+      )}
+      {repairSuccess && <p role="status" className="text-sm text-[color:var(--color-success-ink)]">{repairSuccess} Sale details and report status are refreshed from the backend.</p>}
+      {repairOpen && <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"><button className="absolute inset-0 bg-[color:var(--color-scrim)]" aria-label="Cancel repair" onClick={() => !repairing && setRepairOpen(false)} /><section role="dialog" aria-modal="true" aria-labelledby="repair-cost-title" className="relative w-full max-w-xl max-h-[92vh] overflow-y-auto rounded-t-[16px] sm:rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5"><h2 id="repair-cost-title" className="text-lg font-bold text-[color:var(--color-ink)]">Repair historical costs</h2><p className="mt-1 text-sm text-[color:var(--color-muted)]">Review each cost and enter the acquisition cost per pack that applied to {sale.saleNumber}. Current product costs are suggestions only.</p><div className="mt-4 space-y-4">{missingCostItems.map((item) => <label key={item.id} className="block text-sm font-semibold text-[color:var(--color-ink)]">{item.productName} <span className="block text-xs font-normal text-[color:var(--color-muted)]">{item.quantity} × {unitLabel(item.unit)} · {item.quantity * item.packsPerUnit} packs · Suggested now: {item.currentCostPerPack ? formatNaira(item.currentCostPerPack) : 'No current product cost'}</span><input inputMode="decimal" value={repairCosts[item.id] ?? ''} onChange={(event) => setRepairCosts((current) => ({ ...current, [item.id]: event.target.value }))} aria-label={`Confirmed cost per pack for ${item.productName}`} className="mt-2 h-11 w-full rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-canvas)] px-3" placeholder="Cost per pack (₦)" /></label>)}</div>{repairError && <p role="alert" className="mt-3 text-sm text-[color:var(--color-danger-ink)]">{repairError}</p>}<label className="mt-4 flex items-start gap-2 text-sm text-[color:var(--color-ink)]"><input type="checkbox" checked={repairConfirmed} onChange={(event) => setRepairConfirmed(event.target.checked)} className="mt-1" />I confirm these values represent the applicable acquisition costs per pack for this original sale.</label><div className="mt-5 flex flex-col-reverse sm:flex-row sm:justify-end gap-2"><button type="button" disabled={repairing} onClick={() => setRepairOpen(false)} className="h-11 px-4 rounded-[8px] border border-[color:var(--color-border)] text-sm">Cancel</button><button type="button" disabled={repairing || !repairConfirmed} onClick={() => void submitCostRepair()} className="h-11 px-4 rounded-[8px] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] text-sm font-semibold disabled:opacity-50">{repairing ? 'Saving…' : 'Confirm and repair'}</button></div></section></div>}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <aside className="space-y-4 lg:order-2">

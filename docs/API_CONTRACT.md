@@ -284,3 +284,10 @@ Global pipes: ValidationPipe with whitelist/forbidNonWhitelisted/transform, Stan
 - CORS allows credentials from FRONTEND_URL.
 - No JWT assumed; use cookie-based sessions.
 - Owner vs Staff: role enum exists; OwnerGuard used on some product mutations.
+
+
+## Historical acquisition cost repair (verified from local backend changes, 2026-11-02)
+
+- `GET /api/v1/sales/missing-costs` uses StaffGuard and returns sales grouped with null-cost sale items, sale number/date, item quantity/conversion, snapshot product name, and current product cost suggestion.
+- `PATCH /api/v1/sales/:id/cost-snapshots` requires StaffGuard and OwnerGuard. Body: `{ items: [{ saleItemId, costPerPack }] }`; costs must be positive strings with up to four decimal places. It updates null snapshots only and returns `repaired` and `couldNotRepair` rows.
+- Profit report returns its existing figures when complete. When cost snapshots are missing, revenue/COGS/gross/net are `null`, expense total remains available, and `missingCostCount` plus grouped `missingCostSales` explain the gap. Current product cost is informational only.

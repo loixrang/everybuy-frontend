@@ -693,6 +693,7 @@ export function RecordSalePage() {
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-[color:var(--color-ink)] break-words">{line.product.name}{line.product.size ? ` · ${line.product.size}` : ''}</p>
                           <p className="text-xs text-[color:var(--color-muted)] mt-1">{line.unit === 'Bag' ? `${formatNaira(line.unitPrice)} per bag` : `${formatNaira(line.unitPrice)} each`} · {line.product.stockPacks} packs available</p>
+                          {line.product.costPerPack === null && <p role="status" className="mt-1 text-xs font-medium text-[color:var(--color-warning-ink)]">Acquisition cost missing. An owner will need to review this sale before profit is available.</p>}
                         </div>
                         <button type="button" aria-label={`Remove ${line.product.name}`} onClick={() => handleRemoveItem(index)} className="w-10 h-10 shrink-0 inline-flex items-center justify-center rounded-full text-[color:var(--color-muted)] hover:bg-[color:var(--color-subtle)] hover:text-[color:var(--color-danger-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"><TrashIcon size={18} /></button>
                       </div>

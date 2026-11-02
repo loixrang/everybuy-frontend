@@ -120,6 +120,22 @@ export interface SaleItem {
   lineTotal: string; // numeric(14,2)
 }
 
+export interface MissingCostSale {
+  saleId: string;
+  saleNumber: string;
+  soldAt: string;
+  items: Array<{
+    saleItemId: string; productId: string; productName: string; quantity: number;
+    packsPerUnit: number; unit: SaleUnit; currentCostPerPack: string | null; repairable: boolean;
+  }>;
+}
+
+export interface RepairSaleCostsResult {
+  saleId: string;
+  repaired: Array<{ saleItemId: string; productName: string; costPerPack: string }>;
+  couldNotRepair: Array<{ saleItemId: string; productName: string; reason: string }>;
+}
+
 export interface SaleItemInput {
   productId: string;
   unit: SaleUnit;
