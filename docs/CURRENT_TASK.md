@@ -1,6 +1,39 @@
 # Current Task
 
-# FE-062: Owner Category and Brand Management
+# FE-063: POS Search and Cart Refactor
+
+Status: COMPLETED
+
+## Goal
+
+Refactor Record a sale to a mobile-first search, add, and adjust-in-cart POS flow that follows the supplied mockup and verified backend contract.
+
+## Backend facts verified before implementation
+
+- Products expose `retailPrice`, `bagPrice`, `packsPerBag`, and `stockPacks`; stock is an integer count of packs.
+- Bag quantities deduct `quantity × packsPerBag`; pack quantities deduct quantity packs. The backend has no low-stock threshold, so this screen uses the requested 5-pack threshold.
+- `POST /api/v1/sales` accepts `{ requestId, customerId?, amountPaid, method?, reference?, items }`; item fields are exactly `{ productId, unit, quantity }`. Prices are server-calculated.
+- Sale constraints include 1–100 lines, integer quantity 1–1,000,000, no repeated product/unit pair, amount paid at most total, and customer required for any unpaid balance. Zero payment requires cash and no reference. Stock conflicts return 409; missing product/customer returns 404.
+
+## Implemented
+
+- Search results are an inline, internally scrolling list with two-line names, low-stock warning at five packs or fewer, and disabled out-of-stock rows. Selecting a result adds one Pack and clears the query.
+- Cart lines are unique by product, with Pack/Bag selection, stock-limited stepper, removal, line totals, and a sale total. Bags use each product's `packsPerBag` value.
+- Existing customer, payment, validation, idempotency, and sale submission behavior is retained.
+- Added `src/lib/sales/cart.ts` for pure conversion, stock-limit, explicit stock-validation, and line-total helpers.
+
+## Checks
+
+- `npm.cmd run typecheck`: passed
+- `npm.cmd run lint`: passed
+- `npm.cmd run build`: passed
+- `git diff --check`: passed
+
+## Scope
+
+- Replace the floating product result dropdown with inline add-to-cart rows and cart controls.
+- Preserve customer/payment behavior and submit the existing verified payload shape.
+- Keep conversions, line totals, and stock limits in small pure helpers.
 
 Status: COMPLETED
 

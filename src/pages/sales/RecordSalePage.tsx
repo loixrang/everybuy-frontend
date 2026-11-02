@@ -12,6 +12,7 @@ import { fetchCustomers, createCustomer } from '../../lib/api/customers';
 import { createSale } from '../../lib/api/sales';
 import { toKobo, fromKobo } from '../../lib/utils/money';
 import { formatNaira } from '../../lib/utils/format';
+import { hasStockForQuantity, maxSaleQuantity, packsForQuantity, saleLineTotalKobo } from '../../lib/sales/cart';
 import { ApiError } from '../../lib/api/client';
 import { BackNavigation } from '../../components/ui/BackNavigation';
 import {
@@ -19,6 +20,9 @@ import {
   AlertCircleIcon,
   RefreshCwIcon,
   CheckCircleIcon,
+  PlusIcon,
+  MinusIcon,
+  TrashIcon,
 } from '../../components/ui/Icons';
 
 // Matches the backend createSaleSchema: item quantity is an integer from 1 to 1,000,000.
@@ -35,14 +39,6 @@ interface CartItem {
 }
 
 /** Derives the unit price string from the product row, like the backend does. */
-function unitPriceOf(product: Product, unit: SaleUnit): string {
-  return unit === 'Bag' ? product.bagPrice : product.retailPrice;
-}
-
-function packsPerUnitOf(product: Product, unit: SaleUnit): number {
-  return unit === 'Bag' ? product.packsPerBag : 1;
-}
-
 function unitLabel(unit: SaleUnit): string {
   return unit === 'Bag' ? 'Bag' : 'Pack';
 }
@@ -163,18 +159,16 @@ export function RecordSalePage() {
       const product = productMap.get(item.productId);
       if (!product) return [];
 
-      const packsPerUnit = packsPerUnitOf(product, item.unit);
-      const unitPrice = unitPriceOf(product, item.unit);
-      const lineTotalKobo = toKobo(unitPrice) * BigInt(item.quantity);
+      const unitPrice = item.unit === 'Bag' ? product.bagPrice : product.retailPrice;
+      const lineTotalKobo = saleLineTotalKobo(product, item.unit, item.quantity);
 
       return [
         {
           ...item,
           product,
-          packsPerUnit,
           unitPrice,
           lineTotalKobo,
-          packsRequired: item.quantity * packsPerUnit,
+          packsRequired: packsForQuantity(product, item.unit, item.quantity),
         },
       ];
     });
@@ -222,7 +216,7 @@ export function RecordSalePage() {
     const issues: string[] = [];
     for (const [productId, demanded] of packsDemandedByProduct.entries()) {
       const product = productMap.get(productId);
-      if (product && demanded > product.stockPacks) {
+      if (product && !hasStockForQuantity(product, 'Pack', demanded)) {
         issues.push(
           `Not enough stock for ${product.name}: ${demanded} packs requested, ${product.stockPacks} available.`,
         );
@@ -253,7 +247,7 @@ export function RecordSalePage() {
     }
   };
 
-  const handleAddItem = (product: Product, unit: SaleUnit) => {
+  const handleAddItem = (product: Product) => {
     setSubmitError(null);
     setConflictMessage(null);
     setSearchTerm('');
@@ -266,20 +260,19 @@ export function RecordSalePage() {
         return prev;
       }
 
-      // The backend rejects the same product appearing twice with the same
-      // unit, so adding again increases the quantity of the existing line.
-      const existing = prev.find(
-        (item) => item.productId === product.id && item.unit === unit,
-      );
+      const existing = prev.find((item) => item.productId === product.id);
       if (existing) {
+        const availableQuantity = maxSaleQuantity(product, existing.unit);
+        if (existing.quantity >= availableQuantity) return prev;
         return prev.map((item) =>
           item === existing
-            ? { ...item, quantity: Math.min(MAX_QUANTITY, item.quantity + 1) }
+            ? { ...item, quantity: Math.min(MAX_QUANTITY, availableQuantity, item.quantity + 1) }
             : item,
         );
       }
 
-      return [...prev, { productId: product.id, unit, quantity: 1 }];
+      if (product.stockPacks < 1) return prev;
+      return [...prev, { productId: product.id, unit: 'Pack', quantity: 1 }];
     });
   };
 
@@ -291,13 +284,31 @@ export function RecordSalePage() {
     setItems((prev) =>
       prev.map((item, i) =>
         i === index
-          ? {
+          ? (() => {
+              const product = productMap.get(item.productId);
+              if (!product) return item;
+              return {
               ...item,
-              quantity: Math.max(1, Math.min(MAX_QUANTITY, Math.floor(safeQuantity))),
-            }
+              quantity: Math.max(
+                1,
+                Math.min(MAX_QUANTITY, maxSaleQuantity(product, item.unit), Math.floor(safeQuantity)),
+              ),
+              };
+            })()
           : item,
       ),
     );
+  };
+
+  const handleChangeUnit = (index: number, unit: SaleUnit) => {
+    setSubmitError(null);
+    setConflictMessage(null);
+    setItems((prev) => prev.map((item, itemIndex) => {
+      if (itemIndex !== index) return item;
+      const product = productMap.get(item.productId);
+      if (!product || (unit === 'Bag' && maxSaleQuantity(product, 'Bag') < 1)) return item;
+      return { ...item, unit };
+    }));
   };
 
   const handleRemoveItem = (index: number) => {
@@ -597,15 +608,15 @@ export function RecordSalePage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_336px] gap-6 items-start">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Left column: items + customer & payment */}
         <div className="space-y-6">
           {/* Items */}
           <section className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5 space-y-4">
-            <h2 className="text-lg font-bold text-[color:var(--color-ink)]">Items</h2>
+            <h2 className="text-lg font-bold text-[color:var(--color-ink)]">Items in this sale</h2>
 
             {/* Product search */}
-            <div className="space-y-1.5 relative">
+              <div className="space-y-1.5">
               <label
                 htmlFor="sale-product-search"
                 className="block text-xs font-semibold text-[color:var(--color-ink)]"
@@ -629,44 +640,32 @@ export function RecordSalePage() {
 
               {/* Search results */}
               {searchTerm.trim() && (
-                <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 overflow-y-auto overscroll-contain rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] shadow-lg">
+                <div className="max-h-64 overflow-y-auto overscroll-contain rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)]">
                   {searchResults.length === 0 ? (
                     <p className="px-4 py-3 text-xs text-[color:var(--color-muted)]">
-                      No active products match your search.
+                      No products found
                     </p>
                   ) : (
                     searchResults.map((p) => (
-                      <div
+                      <button
                         key={p.id}
-                        className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-[color:var(--color-border)] last:border-b-0 hover:bg-[color:var(--color-subtle)] transition-colors"
+                        type="button"
+                        aria-label={p.stockPacks > 0 ? `Add ${p.name} to sale` : `${p.name}, out of stock`}
+                        disabled={p.stockPacks === 0}
+                        onClick={() => handleAddItem(p)}
+                        className={`group w-full flex items-center justify-between gap-3 px-4 py-3 text-left border-b border-[color:var(--color-border)] last:border-b-0 transition-colors ${p.stockPacks > 0 ? 'hover:bg-[color:var(--color-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]' : 'opacity-70 cursor-not-allowed'}`}
                       >
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-[color:var(--color-ink)] truncate">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-[color:var(--color-ink)] line-clamp-2 break-words">
                             {p.name}
                             {p.size ? ` · ${p.size}` : ''}
                           </p>
-                          <p className="text-[11px] text-[color:var(--color-muted)]">
-                            {formatNaira(p.retailPrice)}/pack · {formatNaira(p.bagPrice)}/bag ·{' '}
-                            {p.stockPacks} packs available
+                          <p className={`text-xs mt-1 ${p.stockPacks === 0 ? 'text-[color:var(--color-danger-ink)]' : p.stockPacks <= 5 ? 'text-[color:var(--color-warning-ink)]' : 'text-[color:var(--color-muted)]'}`}>
+                            {p.stockPacks === 0 ? 'Out of stock' : `${formatNaira(p.retailPrice)}/pack · ${p.stockPacks} left`}
                           </p>
                         </div>
-                        <div className="flex gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => handleAddItem(p, 'Pack')}
-                            className="h-8 px-3 rounded-[6px] text-xs font-semibold border border-[color:var(--color-border)] text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"
-                          >
-                            Pack
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleAddItem(p, 'Bag')}
-                            className="h-8 px-3 rounded-[6px] text-xs font-semibold bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors"
-                          >
-                            Bag
-                          </button>
-                        </div>
-                      </div>
+                        <span aria-hidden="true" className="w-10 h-10 shrink-0 rounded-full inline-flex items-center justify-center bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] group-disabled:bg-[color:var(--color-subtle)] group-disabled:text-[color:var(--color-muted)]"><PlusIcon size={20} /></span>
+                      </button>
                     ))
                   )}
                 </div>
@@ -688,80 +687,50 @@ export function RecordSalePage() {
                   return (
                     <div
                       key={`${line.productId}-${line.unit}`}
-                      className="rounded-[12px] border border-[color:var(--color-border)] p-4 space-y-2"
+                      className="rounded-[12px] border border-[color:var(--color-border)] p-4 space-y-3"
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <p className="text-sm font-semibold text-[color:var(--color-ink)]">
-                          {line.product.name}
-                          {line.product.size ? ` · ${line.product.size}` : ''}
-                          {line.product.piecesPerPack
-                            ? ` · ${line.product.piecesPerPack} pieces`
-                            : ''}
-                        </p>
-                        <p className="text-lg font-bold text-[color:var(--color-ink)] whitespace-nowrap">
-                          {formatNaira(fromKobo(line.lineTotalKobo))}
-                        </p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-[color:var(--color-ink)] break-words">{line.product.name}{line.product.size ? ` · ${line.product.size}` : ''}</p>
+                          <p className="text-xs text-[color:var(--color-muted)] mt-1">{line.unit === 'Bag' ? `${formatNaira(line.unitPrice)} per bag` : `${formatNaira(line.unitPrice)} each`} · {line.product.stockPacks} packs available</p>
+                        </div>
+                        <button type="button" aria-label={`Remove ${line.product.name}`} onClick={() => handleRemoveItem(index)} className="w-10 h-10 shrink-0 inline-flex items-center justify-center rounded-full text-[color:var(--color-muted)] hover:bg-[color:var(--color-subtle)] hover:text-[color:var(--color-danger-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)]"><TrashIcon size={18} /></button>
                       </div>
-
-                      <p className="text-sm text-[color:var(--color-muted)]">
-                        {line.quantity} × {unitLabel(line.unit)}
-                        {line.unit === 'Bag' ? ` · ${line.packsPerUnit} packs` : ''}
-                      </p>
-
-                      <p
-                        className={`text-xs ${
-                          insufficient
-                            ? 'text-[color:var(--color-danger-ink)] font-semibold'
-                            : 'text-[color:var(--color-muted)]'
-                        }`}
-                      >
-                        Available: {line.product.stockPacks} packs
-                        {insufficient ? ' — not enough for this sale' : ''}
-                      </p>
-
-                      <div className="flex items-center gap-3 pt-1">
-                        <div className="inline-flex items-stretch h-11 rounded-[8px] border border-[color:var(--color-border)] overflow-hidden">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="inline-flex rounded-[8px] border border-[color:var(--color-border)] p-1 bg-[color:var(--color-subtle)]">
+                          {(['Pack', 'Bag'] as const).map((unit) => {
+                            const disabled = unit === 'Bag' && maxSaleQuantity(line.product, 'Bag') < 1;
+                            return <button key={unit} type="button" disabled={disabled} aria-pressed={line.unit === unit} onClick={() => handleChangeUnit(index, unit)} className={`min-h-[36px] px-3 rounded-[6px] text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${line.unit === unit ? 'bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)]' : 'text-[color:var(--color-ink)]'}`}>{unit}</button>;
+                          })}
+                        </div>
+                        <div className="inline-flex items-center gap-1">
                           <button
                             type="button"
                             aria-label={`Decrease quantity of ${line.product.name}`}
                             onClick={() => handleChangeQuantity(index, line.quantity - 1)}
                             disabled={line.quantity <= 1}
-                            className="w-11 flex items-center justify-center text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors disabled:opacity-40"
+                            className="w-[34px] h-[34px] rounded-[8px] border border-[color:var(--color-border)] flex items-center justify-center text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors disabled:opacity-40"
                           >
-                            −
+                            <MinusIcon size={16} />
                           </button>
-                          <input
-                            aria-label={`Quantity of ${line.product.name} in ${unitLabel(line.unit)}s`}
-                            type="number"
-                            min={1}
-                            max={MAX_QUANTITY}
-                            step={1}
-                            value={line.quantity}
-                            onChange={(e) =>
-                              handleChangeQuantity(index, Number(e.target.value))
-                            }
-                            className="w-14 text-center text-sm font-semibold text-[color:var(--color-ink)] bg-[color:var(--color-surface)] focus:outline-none focus:bg-[color:var(--color-subtle)]"
-                          />
+                          <span aria-label={`Quantity of ${line.product.name} in ${unitLabel(line.unit)}s`} className="min-w-8 text-center text-sm font-semibold text-[color:var(--color-ink)]">{line.quantity}</span>
                           <button
                             type="button"
-                            aria-label={`Increase quantity of ${line.product.name}`}
+                            aria-label="Increase quantity"
                             onClick={() => handleChangeQuantity(index, line.quantity + 1)}
-                            className="w-11 flex items-center justify-center text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors"
+                            disabled={line.quantity >= maxSaleQuantity(line.product, line.unit)}
+                            className="w-[34px] h-[34px] rounded-[8px] border border-[color:var(--color-border)] flex items-center justify-center text-[color:var(--color-ink)] hover:bg-[color:var(--color-subtle)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                           >
-                            +
+                            <PlusIcon size={16} />
                           </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(index)}
-                          className="h-11 px-1 -my-1 text-sm font-semibold text-[color:var(--color-ink)] hover:underline"
-                        >
-                          Remove
-                        </button>
                       </div>
+                      {maxSaleQuantity(line.product, 'Bag') < 1 && <p className="text-xs text-[color:var(--color-muted)]">Not enough packs for a bag.</p>}
+                      <p className={`text-right text-sm font-bold ${insufficient ? 'text-[color:var(--color-danger-ink)]' : 'text-[color:var(--color-ink)]'}`}>{formatNaira(fromKobo(line.lineTotalKobo))}</p>
                     </div>
                   );
                 })}
+                <div className="flex items-center justify-between border-t border-[color:var(--color-border)] pt-4"><span className="text-sm font-semibold text-[color:var(--color-ink)]">Total</span><span className="text-xl font-bold text-[color:var(--color-ink)]">{formatNaira(fromKobo(totalKobo))}</span></div>
               </div>
             )}
           </section>

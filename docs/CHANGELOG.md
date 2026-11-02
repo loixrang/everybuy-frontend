@@ -17,6 +17,19 @@ Authorization recheck:
 
 # Changelog
 
+### 2026-11-02: FE-063 POS Search and Cart Refactor
+
+Added:
+- Inline product search rows with wrapped names, stock-aware add actions, and an accessible plus button.
+- Cart line cards with pack/bag selection, stock-limited quantity controls, removal, line totals, and a sale total.
+- Pure pack conversion, max quantity, stock validation, and line-total helpers.
+
+Changed:
+- Product selection now adds one pack, clears the search, and adjusts an existing product line rather than creating duplicates.
+- Customer and payment inputs remain attached to the cart's recalculated total.
+
+Verification: typecheck, lint, production build, and `git diff --check` passed.
+
 ### 2026-10-30: FE-061 Owner Passkey and Authenticator-App Security
 
 Added:

@@ -62,6 +62,8 @@ src/
       sales.ts
       staff.ts
       stock.ts
+    sales/
+      cart.ts
     hooks/
       useTheme.ts
     utils/

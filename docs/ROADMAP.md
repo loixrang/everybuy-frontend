@@ -11,6 +11,13 @@ Statuses:
 
 ## Phase 0: Foundation
 
+### FE-063: POS Search and Cart Refactor
+Status: COMPLETED
+
+- Replace Record a sale's floating product dropdown with inline search results, add-to-cart rows, and an adjustable pack/bag cart.
+- Preserve the verified sale payload and customer/payment workflow; use stock in packs and the backend's per-product `packsPerBag` conversion.
+- Checks passed: typecheck, lint, production build, and `git diff --check`.
+
 ### FE-062: Owner Category and Brand Management
 Status: COMPLETED
 
