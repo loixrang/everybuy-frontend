@@ -206,3 +206,7 @@ Do not stop after providing a plan when the next steps are clear.
 Ask me only when a decision materially affects correctness or cannot be verified from the available code and documentation.
 
 At the end, report what was built, the commands used to verify it, any failures, and the next recommended task.
+
+# Negotiated pricing and Half Bag (2026-11-03)
+
+Implementation adds independent per-unit defaults/minima, optional half-bag config, and sale line price overrides validated by the backend. Half-bag sales require even `packsPerBag` and deduct half that quantity from pack-based stock. Historical sale item `unitPrice` remains the agreed snapshot. Backend migration 0003 must be applied before deploying. Backend and frontend builds, lint, typecheck, and current test suites pass. Live database migration and end-to-end sale workflow were not run in this environment.

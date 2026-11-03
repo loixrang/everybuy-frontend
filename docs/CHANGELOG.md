@@ -557,3 +557,7 @@ Notes:
 Added: grouped missing sale-cost detection and owner-only, transactionally guarded repair of null sale-item snapshots. Profit reporting now returns explicit missing-cost details and withholds incomplete profit. Sale details includes a confirmation dialog; profit reports link affected sales.
 
 Checks: frontend lint, typecheck, 113 tests, build, and diff check passed. Backend lint/build passed; Vitest worker failed to start before tests ran. No production data accessed or modified.
+
+## Unreleased
+
+- Added per-unit negotiated sale pricing, configurable minimums, optional Half Bag pricing, and half-bag stock conversion support.

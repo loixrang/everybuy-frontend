@@ -12,7 +12,7 @@ import { fetchCustomers, createCustomer } from '../../lib/api/customers';
 import { createSale } from '../../lib/api/sales';
 import { toKobo, fromKobo } from '../../lib/utils/money';
 import { formatNaira } from '../../lib/utils/format';
-import { hasStockForQuantity, maxSaleQuantity, packsForQuantity, saleLineTotalKobo } from '../../lib/sales/cart';
+import { defaultUnitPrice, minimumUnitPrice, hasStockForQuantity, isSaleUnitAvailable, maxSaleQuantity, packsForQuantity } from '../../lib/sales/cart';
 import { ApiError } from '../../lib/api/client';
 import { BackNavigation } from '../../components/ui/BackNavigation';
 import {
@@ -36,11 +36,12 @@ interface CartItem {
   productId: string;
   unit: SaleUnit;
   quantity: number;
+  unitPrice: string;
 }
 
 /** Derives the unit price string from the product row, like the backend does. */
 function unitLabel(unit: SaleUnit): string {
-  return unit === 'Bag' ? 'Bag' : 'Pack';
+  return unit;
 }
 
 export function RecordSalePage() {
@@ -159,8 +160,8 @@ export function RecordSalePage() {
       const product = productMap.get(item.productId);
       if (!product) return [];
 
-      const unitPrice = item.unit === 'Bag' ? product.bagPrice : product.retailPrice;
-      const lineTotalKobo = saleLineTotalKobo(product, item.unit, item.quantity);
+      const unitPrice = item.unitPrice;
+      const lineTotalKobo = toKobo(unitPrice) * BigInt(item.quantity);
 
       return [
         {
@@ -191,6 +192,7 @@ export function RecordSalePage() {
     [lines],
   );
 
+  const linePriceIssues = lines.some((line) => !AMOUNT_PAID_PATTERN.test(line.unitPrice) || toKobo(line.unitPrice || '0') < toKobo(minimumUnitPrice(line.product, line.unit)));
   const amountPaidTrimmed = amountPaid.trim();
   // An empty field means nothing is paid yet, which the backend accepts as "0".
   const amountPaidValid =
@@ -272,7 +274,7 @@ export function RecordSalePage() {
       }
 
       if (product.stockPacks < 1) return prev;
-      return [...prev, { productId: product.id, unit: 'Pack', quantity: 1 }];
+      return [...prev, { productId: product.id, unit: 'Pack', quantity: 1, unitPrice: product.retailPrice }];
     });
   };
 
@@ -306,8 +308,8 @@ export function RecordSalePage() {
     setItems((prev) => prev.map((item, itemIndex) => {
       if (itemIndex !== index) return item;
       const product = productMap.get(item.productId);
-      if (!product || (unit === 'Bag' && maxSaleQuantity(product, 'Bag') < 1)) return item;
-      return { ...item, unit };
+      if (!product || (!isSaleUnitAvailable(product, unit) || maxSaleQuantity(product, unit) < 1)) return item;
+      return { ...item, unit, unitPrice: defaultUnitPrice(product, unit) };
     }));
   };
 
@@ -367,6 +369,7 @@ export function RecordSalePage() {
     if (lines.some((line) => !Number.isInteger(line.quantity) || line.quantity < 1)) {
       return 'Every item needs a whole quantity of at least 1.';
     }
+    if (linePriceIssues) return 'Enter a valid unit price at or above the configured minimum for every item.';
     if (stockIssues.length > 0) {
       return stockIssues[0];
     }
@@ -399,6 +402,7 @@ export function RecordSalePage() {
           productId: line.productId,
           unit: line.unit,
           quantity: line.quantity,
+          unitPrice: line.unitPrice,
         }))
         .sort(
           (a, b) =>
@@ -426,6 +430,7 @@ export function RecordSalePage() {
           productId: line.productId,
           unit: line.unit,
           quantity: line.quantity,
+          unitPrice: line.unitPrice,
         })),
       });
 
@@ -699,8 +704,8 @@ export function RecordSalePage() {
                       </div>
                       <div className="flex items-center justify-between gap-3">
                         <div className="inline-flex rounded-[8px] border border-[color:var(--color-border)] p-1 bg-[color:var(--color-subtle)]">
-                          {(['Pack', 'Bag'] as const).map((unit) => {
-                            const disabled = unit === 'Bag' && maxSaleQuantity(line.product, 'Bag') < 1;
+                          {(['Pack', 'Half Bag', 'Bag'] as const).filter((unit) => isSaleUnitAvailable(line.product, unit)).map((unit) => {
+                            const disabled = maxSaleQuantity(line.product, unit) < 1;
                             return <button key={unit} type="button" disabled={disabled} aria-pressed={line.unit === unit} onClick={() => handleChangeUnit(index, unit)} className={`min-h-[36px] px-3 rounded-[6px] text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${line.unit === unit ? 'bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)]' : 'text-[color:var(--color-ink)]'}`}>{unit}</button>;
                           })}
                         </div>
@@ -726,6 +731,9 @@ export function RecordSalePage() {
                           </button>
                         </div>
                       </div>
+                      <label className="block text-xs font-medium text-[color:var(--color-ink)]">Agreed unit price (₦) · minimum {formatNaira(minimumUnitPrice(line.product, line.unit))}<input inputMode="decimal" value={line.unitPrice} onChange={(event) => setItems((current) => current.map((entry, entryIndex) => entryIndex === index ? { ...entry, unitPrice: event.target.value } : entry))} className="mt-1 h-10 w-full rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-canvas)] px-3" aria-label={`Agreed unit price for ${line.product.name}`} /></label>
+                      {toKobo(line.unitPrice || '0') < toKobo(minimumUnitPrice(line.product, line.unit)) && <p role="alert" className="text-xs text-[color:var(--color-danger-ink)]">Price is below the configured minimum.</p>}
+                      {line.unitPrice !== defaultUnitPrice(line.product, line.unit) && <p className="text-xs text-[color:var(--color-warning-ink)]">Negotiated price</p>}
                       {maxSaleQuantity(line.product, 'Bag') < 1 && <p className="text-xs text-[color:var(--color-muted)]">Not enough packs for a bag.</p>}
                       <p className={`text-right text-sm font-bold ${insufficient ? 'text-[color:var(--color-danger-ink)]' : 'text-[color:var(--color-ink)]'}`}>{formatNaira(fromKobo(line.lineTotalKobo))}</p>
                     </div>

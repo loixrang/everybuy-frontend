@@ -4,7 +4,7 @@ import type { StockMovement } from './stock';
  * Selling unit for a sale line. A 'Bag' holds the product's packsPerBag packs;
  * the backend multiplies its quantity by that value to reach packs.
  */
-export type SaleUnit = 'Bag' | 'Pack';
+export type SaleUnit = 'Bag' | 'Half Bag' | 'Pack';
 
 /** Payment methods stored by the backend (`payment_method` enum). */
 export type PaymentMethod = 'cash' | 'transfer' | 'pos';
@@ -140,13 +140,13 @@ export interface SaleItemInput {
   productId: string;
   unit: SaleUnit;
   quantity: number;
+  unitPrice?: string;
 }
 
 /**
  * POST /api/v1/sales (StaffGuard).
  * `requestId` is a client-generated UUID used for idempotent retries.
- * Prices are never sent: the backend prices each line from the product row
- * (bagPrice for 'Bag', retailPrice for 'Pack').
+ * Optional agreed unit prices are sent per line; the backend enforces the configured minimum and records snapshots.
  *
  * When `amountPaid` is zero the backend requires `method` to be `cash` and
  * `reference` to be empty.

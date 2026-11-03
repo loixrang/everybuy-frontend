@@ -40,7 +40,7 @@ interface RepaymentSuccess {
 }
 
 function unitLabel(unit: SaleItem['unit']): string {
-  return unit === 'Bag' ? 'Bag' : 'Pack';
+  return unit;
 }
 
 function methodLabel(method: PaymentMethod): string {
@@ -432,7 +432,7 @@ export function SaleDetailPage() {
                       </td>
                       <td className="py-3 px-4 text-sm text-[color:var(--color-muted)]">
                         {item.quantity} × {unitLabel(item.unit)}
-                        {item.unit === 'Bag' && (
+                        {item.unit !== 'Pack' && (
                           <span className="block text-xs text-[color:var(--color-quiet)]">
                             {item.packsPerUnit} packs each
                           </span>
@@ -459,7 +459,7 @@ export function SaleDetailPage() {
                     </p>
                     <p className="text-xs text-[color:var(--color-muted)] mt-1">
                       {item.quantity} × {unitLabel(item.unit)}
-                      {item.unit === 'Bag' ? ` · ${item.packsPerUnit} packs each` : ''}
+                      {item.unit !== 'Pack' ? ` · ${item.packsPerUnit} packs each` : ''}
                     </p>
                     <p className="text-xs text-[color:var(--color-muted)] mt-0.5">
                       {formatNaira(item.unitPrice)} each

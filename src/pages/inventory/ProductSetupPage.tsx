@@ -48,6 +48,10 @@ export function ProductSetupPage() {
   const [packsPerBag, setPacksPerBag] = useState('');
   const [retailPrice, setRetailPrice] = useState('');
   const [bagPrice, setBagPrice] = useState('');
+  const [minRetailPrice, setMinRetailPrice] = useState('');
+  const [minBagPrice, setMinBagPrice] = useState('');
+  const [halfBagPrice, setHalfBagPrice] = useState('');
+  const [minHalfBagPrice, setMinHalfBagPrice] = useState('');
   const [costPerPack, setCostPerPack] = useState('');
   const [initialCostPerPack, setInitialCostPerPack] = useState<string | null>(null);
   const [active, setActive] = useState(true);
@@ -99,6 +103,10 @@ export function ProductSetupPage() {
             setPacksPerBag(String(prod.packsPerBag));
             setRetailPrice(prod.retailPrice);
             setBagPrice(prod.bagPrice);
+            setMinRetailPrice(prod.minRetailPrice);
+            setMinBagPrice(prod.minBagPrice);
+            setHalfBagPrice(prod.halfBagPrice ?? '');
+            setMinHalfBagPrice(prod.minHalfBagPrice ?? '');
             setCostPerPack(prod.costPerPack ?? '');
             setInitialCostPerPack(prod.costPerPack);
             setActive(prod.active);
@@ -157,6 +165,15 @@ export function ProductSetupPage() {
     if (isNaN(bagPriceNum) || bagPriceNum <= 0) {
       errors.bagPrice = 'Bag price must be greater than zero';
     }
+    const minPack = Number(minRetailPrice);
+    const minBag = Number(minBagPrice);
+    if (!Number.isFinite(minPack) || minPack <= 0 || minPack > retailNum) errors.minRetailPrice = 'Minimum must be greater than zero and no higher than and the default pack price';
+    if (!Number.isFinite(minBag) || minBag <= 0 || minBag > bagPriceNum) errors.minBagPrice = 'Minimum must be greater than zero and no higher than and the default bag price';
+    if (halfBagPrice.trim() || minHalfBagPrice.trim()) {
+      const half = Number(halfBagPrice), minHalf = Number(minHalfBagPrice);
+      if (!halfBagPrice.trim() || !minHalfBagPrice.trim() || half <= 0 || minHalf <= 0 || minHalf > half) errors.minHalfBagPrice = 'Enter valid half-bag default and minimum prices';
+      if (bagNum % 2 !== 0) errors.halfBagPrice = 'Half Bag requires an even packs-per-bag value';
+    }
     const costTrimmed = costPerPack.trim();
     if (costTrimmed && !/^(?=.*[1-9])\d{1,10}(\.\d{1,4})?$/.test(costTrimmed)) {
       errors.costPerPack = 'Enter a positive acquisition cost with up to 4 decimal places.';
@@ -184,6 +201,10 @@ export function ProductSetupPage() {
         packsPerBag: parseInt(packsPerBag, 10),
         retailPrice: String(parseFloat(retailPrice)),
         bagPrice: String(parseFloat(bagPrice)),
+        minRetailPrice: minRetailPrice.trim(),
+        minBagPrice: minBagPrice.trim(),
+        halfBagPrice: halfBagPrice.trim() || null,
+        minHalfBagPrice: minHalfBagPrice.trim() || null,
         active,
         ...(costPerPack.trim() &&
         (!isEdit || costPerPack.trim() !== (initialCostPerPack ?? ''))
@@ -475,6 +496,13 @@ export function ProductSetupPage() {
           </div>
 
           <div className="mt-4 max-w-md">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label className="block text-xs font-semibold text-[color:var(--color-ink)]">Minimum pack price (₦)<input inputMode="decimal" value={minRetailPrice} onChange={(e) => setMinRetailPrice(e.target.value)} className="mt-1.5 h-10 w-full rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-canvas)] px-3" />{validationErrors.minRetailPrice && <span className="block mt-1 text-[color:var(--color-danger-ink)]">{validationErrors.minRetailPrice}</span>}</label>
+              <label className="block text-xs font-semibold text-[color:var(--color-ink)]">Minimum full-bag price (₦)<input inputMode="decimal" value={minBagPrice} onChange={(e) => setMinBagPrice(e.target.value)} className="mt-1.5 h-10 w-full rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-canvas)] px-3" />{validationErrors.minBagPrice && <span className="block mt-1 text-[color:var(--color-danger-ink)]">{validationErrors.minBagPrice}</span>}</label>
+              <label className="block text-xs font-semibold text-[color:var(--color-ink)]">Half-bag default price (₦) · optional<input inputMode="decimal" value={halfBagPrice} onChange={(e) => setHalfBagPrice(e.target.value)} className="mt-1.5 h-10 w-full rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-canvas)] px-3" /></label>
+              <label className="block text-xs font-semibold text-[color:var(--color-ink)]">Half-bag minimum price (₦)<input inputMode="decimal" value={minHalfBagPrice} onChange={(e) => setMinHalfBagPrice(e.target.value)} className="mt-1.5 h-10 w-full rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-canvas)] px-3" />{validationErrors.minHalfBagPrice && <span className="block mt-1 text-[color:var(--color-danger-ink)]">{validationErrors.minHalfBagPrice}</span>}</label>
+            </div>
+
             <label htmlFor={costPerPackId} className="block text-xs font-semibold text-[color:var(--color-ink)] mb-1.5">
               Acquisition cost per pack (₦) · optional
             </label>

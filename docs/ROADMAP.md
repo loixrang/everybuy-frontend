@@ -336,3 +336,13 @@ Status: DEFERRED
 - Test success, validation errors, authentication failures, and network failures.
 - Keep each task focused and reviewable.
 - Deferred tasks must not block the physical shop release.
+
+
+## Negotiated pricing and Half Bag
+
+Status: IMPLEMENTED — backend/frontend checks pass; database migration and live verification are deployment steps.
+
+- Independent default/minimum prices for Pack, Half Bag, and Full Bag.
+- Sale line agreed price snapshots and minimum enforcement.
+- Half Bag consumes half the configured packs per bag; only even pack counts can enable it.
+- Apply backend migration `0003_negotiated_half_bag_pricing.sql`.

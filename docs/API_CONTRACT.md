@@ -291,3 +291,10 @@ Global pipes: ValidationPipe with whitelist/forbidNonWhitelisted/transform, Stan
 - `GET /api/v1/sales/missing-costs` uses StaffGuard and returns sales grouped with null-cost sale items, sale number/date, item quantity/conversion, snapshot product name, and current product cost suggestion.
 - `PATCH /api/v1/sales/:id/cost-snapshots` requires StaffGuard and OwnerGuard. Body: `{ items: [{ saleItemId, costPerPack }] }`; costs must be positive strings with up to four decimal places. It updates null snapshots only and returns `repaired` and `couldNotRepair` rows.
 - Profit report returns its existing figures when complete. When cost snapshots are missing, revenue/COGS/gross/net are `null`, expense total remains available, and `missingCostCount` plus grouped `missingCostSales` explain the gap. Current product cost is informational only.
+
+
+## Negotiated sale prices and Half Bag (verified in source 2026-11-03)
+
+Product records now expose `retailPrice`/`minRetailPrice` (Pack), `halfBagPrice`/`minHalfBagPrice` (optional), and `bagPrice`/`minBagPrice` (Full Bag). Existing products migrate with their current Pack and Bag prices as their minimums; Half Bag is unconfigured until explicitly set. Product create/update remains Owner-only.
+
+`POST /api/v1/sales` item fields are `{ productId, unit, quantity, unitPrice? }`. `unitPrice` is the agreed selling price, decimal string with at most two decimal places; omitted means configured default. The backend enforces the corresponding unit minimum and snapshots the actual price on `sale_items`. `unit` accepts `Pack`, `Half Bag`, or `Bag`. Half Bag is only available when both prices are configured and `packsPerBag` is even, and deducts exactly half the bag's pack count. Sale totals and payment balances are computed from these agreed unit prices.

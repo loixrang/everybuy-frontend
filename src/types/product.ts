@@ -15,8 +15,12 @@ export interface Product {
   size: string | null;
   packsPerBag: number;
   piecesPerPack: number | null;
-  bagPrice: string; // numeric(14,2)
-  retailPrice: string; // numeric(14,2)
+  bagPrice: string;
+  minBagPrice: string;
+  halfBagPrice: string | null;
+  minHalfBagPrice: string | null;
+  retailPrice: string;
+  minRetailPrice: string;
   /**
    * Weighted-average cost per pack (numeric(14,4)), maintained by stock
    * additions. Null until cost has been recorded; never sent by the product
@@ -59,7 +63,11 @@ export interface CreateProductInput {
   packsPerBag: number;
   piecesPerPack?: number | null;
   bagPrice: string;
+  minBagPrice: string;
+  halfBagPrice?: string | null;
+  minHalfBagPrice?: string | null;
   retailPrice: string;
+  minRetailPrice: string;
   /** Optional acquisition cost per pack; numeric(14,4). */
   costPerPack?: string;
   active?: boolean;
