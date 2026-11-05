@@ -17,6 +17,14 @@ Statuses:
 
 ## Phase 0: Foundation
 
+### FE-065: Shared Search and Bottom-Sheet Dropdowns
+Status: COMPLETED
+
+- Added `matchesSearch` for word-order-, case-, and accent-insensitive client-side filtering and applied it to every local text search; the Sales list continues to use the backend `q` parameter.
+- Added the shared `BottomSheet` primitive and `SheetSelect` dropdown. Replaced all 14 native `<select>` elements with unchanged string values, field names, and submission payloads.
+- Long lists search through the shared helper; short lists open at natural height without a search field. The Sale customer picker now uses the same sheet primitive without losing its toggle, avatars, balances, or New customer action.
+- Checks passed: typecheck, lint, 126 tests, production build, `git diff --check`, and a repo-wide `<select>` search. Browser/device automation is unavailable, so 360 px and dark mode were reviewed against the theme tokens.
+
 ### FE-064: Theme Preferences and Startup Theme Initialization
 Status: WORKING
 

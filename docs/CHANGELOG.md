@@ -1,4 +1,24 @@
+# 2026-11-05: Shared Search and Bottom-Sheet Dropdowns
+
+Added:
+- `matchesSearch` and `normalizeSearchText` in `src/lib/utils/search.ts`, with tests for word order, partial words, extra whitespace, accents, empty queries, and the required Softcare examples.
+- `BottomSheet` as the shared accessible portaled sheet: backdrop, 16 px top radius, handle, title and close button, 70dvh limit, scroll lock, focus trap and focus return, Escape/backdrop/close handling, and reduced-motion-aware animation.
+- `SheetSelect`, a controlled bottom-sheet dropdown with a 48 px trigger, 52 px option rows, dividers, accent checkmarks, optional sublabels/leading elements, and shared search for lists of roughly 8+ options. Short lists open at their natural height without a search field.
+- `No match.` feedback and listbox/option keyboard navigation (Arrow keys, Home, End, Enter/Space, Escape).
+
+Changed:
+- Every native `<select>` in the app was replaced with `SheetSelect`: Sale payment method, repayment sale, receive-stock supplier/product, stock-adjust product, movement type, sales payment-status filter, pack type, brand, category, product status, inventory category filter, and the desktop/mobile team role selectors.
+- Client-side text filtering in Sale product search, Inventory, Customers, the customer picker, Stock movements, Expenses, and Audit now uses the shared helper. Multi-field searches join their fields before matching, so phone, brand, category, notes, reference, and movement-type searches continue to work.
+- The Sale customer picker now runs on `BottomSheet`, keeping its Full payment/Customer toggle, avatars, balances, name search, and New customer action.
+- Stored values, form field names, option order, and submission payloads are unchanged.
+
+Untouched:
+- The Sales page search still sends its query as the backend `q` parameter; no API call or contract changed.
+
+Verification: typecheck, lint, 126 tests, production build, and `git diff --check` passed. No `<select>` elements remain. The expense-category `<datalist>` remains intentionally: it suggests values for a free-text input rather than selecting a fixed option, and replacing it would change the accepted value contract.
+
 # 2026-11-05: Sale Customer Bottom-Sheet Picker with Balances
+
 
 Added:
 - `CustomerPicker` trigger and `CustomerPickerSheet` dialog on the Sale screen, with a Full payment/Customer segmented toggle, name search, initials avatars, selected checkmark, and a pinned New customer action.

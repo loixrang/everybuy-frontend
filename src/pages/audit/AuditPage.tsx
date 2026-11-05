@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchAuditLog } from '../../lib/api/audit';
 import { ApiError } from '../../lib/api/client';
 import { formatLongDate } from '../../lib/utils/format';
+import { matchesSearch } from '../../lib/utils/search';
 import {
   AlertCircleIcon,
   HistoryIcon,
@@ -66,14 +67,13 @@ export function AuditPage() {
   const retry = useCallback(() => setReloadKey((key) => key + 1), []);
 
   const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
+    const term = search.trim();
     if (!term) return entries;
-    return entries.filter(
-      (entry) =>
-        entry.actor.toLowerCase().includes(term) ||
-        entry.action.toLowerCase().includes(term) ||
-        entry.entity.toLowerCase().includes(term) ||
-        entry.entityId.toLowerCase().includes(term),
+    return entries.filter((entry) =>
+      matchesSearch(
+        [entry.actor, entry.action, entry.entity, entry.entityId].join(' '),
+        term,
+      ),
     );
   }, [entries, search]);
 

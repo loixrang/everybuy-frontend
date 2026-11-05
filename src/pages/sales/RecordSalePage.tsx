@@ -12,9 +12,11 @@ import { fetchCustomers } from '../../lib/api/customers';
 import { createSale } from '../../lib/api/sales';
 import { toKobo, fromKobo } from '../../lib/utils/money';
 import { formatNaira } from '../../lib/utils/format';
+import { matchesSearch } from '../../lib/utils/search';
 import { defaultUnitPrice, minimumUnitPrice, hasStockForQuantity, isSaleUnitAvailable, maxSaleQuantity, packsForQuantity } from '../../lib/sales/cart';
 import { ApiError } from '../../lib/api/client';
 import { BackNavigation } from '../../components/ui/BackNavigation';
+import { SheetSelect } from '../../components/ui/SheetSelect';
 import { CustomerPicker } from '../../components/customers/CustomerPicker';
 import { AddCustomerModal } from '../../components/customers/AddCustomerModal';
 import {
@@ -153,14 +155,13 @@ export function RecordSalePage() {
 
   // Client-side product search; the backend has no free-text search parameter.
   const searchResults = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
+    const query = searchTerm.trim();
     if (!query) return [];
     return products
       .filter(
         (p) =>
           p.active &&
-          (p.name.toLowerCase().includes(query) ||
-            (p.size ?? '').toLowerCase().includes(query)),
+          matchesSearch([p.name, p.size ?? ''].join(' '), query),
       )
       .slice(0, 8);
   }, [products, searchTerm]);
@@ -818,20 +819,21 @@ export function RecordSalePage() {
                 >
                   Payment method
                 </label>
-                <select
+                <SheetSelect
                   id="sale-method"
+                  label="Payment method"
                   value={effectiveMethod}
                   disabled={isNothingPaid}
-                  onChange={(e) => {
-                    setMethod(e.target.value as PaymentMethod);
+                  options={[
+                    { value: 'cash', label: 'Cash' },
+                    { value: 'transfer', label: 'Bank transfer' },
+                    { value: 'pos', label: 'POS' },
+                  ]}
+                  onChange={(value) => {
+                    setMethod(value as PaymentMethod);
                     setSubmitError(null);
                   }}
-                  className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)] disabled:bg-[color:var(--color-subtle)] disabled:text-[color:var(--color-quiet)] disabled:cursor-not-allowed"
-                >
-                  <option value="cash">Cash</option>
-                  <option value="transfer">Bank transfer</option>
-                  <option value="pos">POS</option>
-                </select>
+                />
                 {isNothingPaid && (
                   <p className="text-[11px] text-[color:var(--color-muted)]">
                     No payment yet, so the method is recorded as cash.

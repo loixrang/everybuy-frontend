@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchCustomers } from '../../lib/api/customers';
 import { ApiError } from '../../lib/api/client';
 import { formatNaira, formatShortDate } from '../../lib/utils/format';
+import { matchesSearch } from '../../lib/utils/search';
 import { AddCustomerModal } from '../../components/customers/AddCustomerModal';
 import { CustomerStatusBadge } from '../../components/customers/CustomerStatusBadge';
 import {
@@ -79,14 +80,14 @@ export function CustomersPage() {
   }, [customers]);
 
   const filteredCustomers = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = search.trim();
     return sortedCustomers.filter((customer) => {
       if (statusFilter === 'ACTIVE' && !customer.active) return false;
       if (statusFilter === 'INACTIVE' && customer.active) return false;
       if (!query) return true;
-      return (
-        customer.name.toLowerCase().includes(query) ||
-        (customer.phone ?? '').toLowerCase().includes(query)
+      return matchesSearch(
+        [customer.name, customer.phone ?? ''].join(' '),
+        query,
       );
     });
   }, [sortedCustomers, search, statusFilter]);

@@ -9,6 +9,7 @@ import {
   lagosMonthOf,
 } from '../../lib/utils/format';
 import { toKobo, fromKobo } from '../../lib/utils/money';
+import { matchesSearch } from '../../lib/utils/search';
 import { RecordExpenseModal } from '../../components/expenses/RecordExpenseModal';
 import {
   AlertCircleIcon,
@@ -84,13 +85,13 @@ export function ExpensesPage() {
   }, [expenses, thisMonth]);
 
   const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
+    const term = search.trim();
     if (!term) return expenses;
-    return expenses.filter(
-      (expense) =>
-        expense.title.toLowerCase().includes(term) ||
-        expense.category.toLowerCase().includes(term) ||
-        (expense.notes ?? '').toLowerCase().includes(term),
+    return expenses.filter((expense) =>
+      matchesSearch(
+        [expense.title, expense.category, expense.notes ?? ''].join(' '),
+        term,
+      ),
     );
   }, [expenses, search]);
 

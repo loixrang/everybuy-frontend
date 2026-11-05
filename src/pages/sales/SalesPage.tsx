@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { fetchSales, fetchSalesSummary } from '../../lib/api/sales';
 import { ApiError } from '../../lib/api/client';
 import { formatMovementDate, formatNaira } from '../../lib/utils/format';
+import { SheetSelect } from '../../components/ui/SheetSelect';
 import {
   AlertCircleIcon,
   ChevronRightIcon,
@@ -259,26 +260,27 @@ export function SalesPage() {
               className="w-full h-10 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent)]"
             />
           </label>
-          <label className="block">
+          <div className="block">
             <span className="block text-xs font-semibold text-[color:var(--color-muted)] mb-1">
               Payment status
             </span>
-            <select
+            <SheetSelect
+              label="Payment status"
               value={draft.paymentStatus}
-              onChange={(event) =>
+              options={[
+                { value: '', label: 'All' },
+                { value: 'PAID', label: 'Paid' },
+                { value: 'PARTIAL', label: 'Partly paid' },
+                { value: 'UNPAID', label: 'Unpaid' },
+              ]}
+              onChange={(value) =>
                 setDraft((current) => ({
                   ...current,
-                  paymentStatus: event.target.value as SalesListPaymentStatus | '',
+                  paymentStatus: value as SalesListPaymentStatus | '',
                 }))
               }
-              className="w-full h-10 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-accent)]"
-            >
-              <option value="">All</option>
-              <option value="PAID">Paid</option>
-              <option value="PARTIAL">Partly paid</option>
-              <option value="UNPAID">Unpaid</option>
-            </select>
-          </label>
+            />
+          </div>
         </div>
         <div className="mt-3 flex items-center gap-2">
           <button

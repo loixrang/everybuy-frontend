@@ -5,7 +5,9 @@ import type { Product } from '../../types/product';
 import { fetchAllStockMovements } from '../../lib/api/stock';
 import { fetchProducts } from '../../lib/api/products';
 import { StockAdjustmentModal } from '../../components/stock/StockAdjustmentModal';
+import { SheetSelect } from '../../components/ui/SheetSelect';
 import { formatMovementDate, formatMovementLabel } from '../../lib/utils/format';
+import { matchesSearch } from '../../lib/utils/search';
 import {
   SearchIcon,
   AlertCircleIcon,
@@ -106,20 +108,19 @@ export function StockMovementsPage() {
 
       // Free-text search
       if (searchTerm.trim()) {
-        const query = searchTerm.toLowerCase().trim();
         const prod = productMap.get(m.productId);
-        const prodName = prod?.name?.toLowerCase() || '';
-        const prodSize = prod?.size?.toLowerCase() || '';
-        const note = m.note?.toLowerCase() || '';
-        const ref = (m.requestId || m.saleItemId || '').toLowerCase();
-        const typeLabel = formatMovementLabel(m.type, m.note).toLowerCase();
+        const ref = m.requestId || m.saleItemId || '';
+        const typeLabel = formatMovementLabel(m.type, m.note);
 
-        return (
-          prodName.includes(query) ||
-          prodSize.includes(query) ||
-          note.includes(query) ||
-          ref.includes(query) ||
-          typeLabel.includes(query)
+        return matchesSearch(
+          [
+            prod?.name ?? '',
+            prod?.size ?? '',
+            m.note ?? '',
+            ref,
+            typeLabel,
+          ].join(' '),
+          searchTerm,
         );
       }
 
@@ -163,20 +164,23 @@ export function StockMovementsPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <select
+          <SheetSelect
+            label="Adjust stock product"
+            ariaLabel="Product to adjust"
+            placeholder="Select product to adjust…"
+            searchPlaceholder="Search products"
             value={adjustProductId}
-            onChange={(e) => setAdjustProductId(e.target.value)}
-            aria-label="Product to adjust"
-            className="h-10 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-xs text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)]"
-          >
-            <option value="">Select product to adjust…</option>
-            {products.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-                {p.size ? ` · ${p.size}` : ''}
-              </option>
-            ))}
-          </select>
+            onChange={setAdjustProductId}
+            options={[
+              { value: '', label: 'Select product to adjust…' },
+              ...products.map((p) => ({
+                value: p.id,
+                label: p.name,
+                sublabel: p.size || undefined,
+              })),
+            ]}
+            className="w-full sm:w-64"
+          />
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsAdjustmentOpen(true)}
@@ -230,17 +234,18 @@ export function StockMovementsPage() {
 
         {/* Movement Type Dropdown */}
         <div className="w-full sm:w-56 shrink-0">
-          <select
+          <SheetSelect
+            label="Movement type"
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)]"
-          >
-            <option value="ALL">All movement types</option>
-            <option value="Receipt">Receipts</option>
-            <option value="Sale">Shop sales</option>
-            <option value="Adjustment">Adjustments & stocktakes</option>
-            <option value="Opening">Opening stock</option>
-          </select>
+            onChange={setTypeFilter}
+            options={[
+              { value: 'ALL', label: 'All movement types' },
+              { value: 'Receipt', label: 'Receipts' },
+              { value: 'Sale', label: 'Shop sales' },
+              { value: 'Adjustment', label: 'Adjustments & stocktakes' },
+              { value: 'Opening', label: 'Opening stock' },
+            ]}
+          />
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import { ApiError } from '../../lib/api/client';
 import { formatNaira, formatShortDate, trimMoney } from '../../lib/utils/format';
 import { fromKobo, toKobo } from '../../lib/utils/money';
 import { AlertCircleIcon, XIcon } from '../ui/Icons';
+import { SheetSelect } from '../ui/SheetSelect';
 
 interface RecordRepaymentModalProps {
   customerId: string;
@@ -187,18 +188,18 @@ export function RecordRepaymentModal({
               >
                 Apply to sale
               </label>
-              <select
+              <SheetSelect
                 id="repayment-sale"
+                label="Apply to sale"
+                searchPlaceholder="Search sales"
                 value={saleId}
-                onChange={(e) => changeSale(e.target.value)}
-                className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)] cursor-pointer"
-              >
-                {sales.map((sale) => (
-                  <option key={sale.id} value={sale.id}>
-                    Sale #{sale.id.slice(0, 8)} · {formatShortDate(sale.soldAt)} — {formatNaira(sale.balanceDue)} owed
-                  </option>
-                ))}
-              </select>
+                onChange={changeSale}
+                options={sales.map((sale) => ({
+                  value: sale.id,
+                  label: `Sale #${sale.id.slice(0, 8)} · ${formatShortDate(sale.soldAt)}`,
+                  sublabel: `${formatNaira(sale.balanceDue)} owed`,
+                }))}
+              />
             </div>
 
             <div className="px-4 py-3 rounded-[8px] bg-[color:var(--color-subtle)] flex items-center justify-between gap-3">

@@ -4,6 +4,17 @@
 
 `index.html` synchronously reads `everybuy-theme` (`light`, `dark`, or `device`) before the module entry point. Missing, invalid, or inaccessible storage defaults to Device, which resolves through `prefers-color-scheme`. An inline base background keeps the document themed before the application stylesheet loads. `useTheme` owns the runtime preference store, local persistence, OS change listener, and cross-tab storage synchronization; React and the HTML initializer use the same storage key and `data-theme` attribute.
 
+## Shared search
+
+`src/lib/utils/search.ts` is the single client-side text-search predicate. `normalizeSearchText` lowercases and strips diacritics with NFD; `matchesSearch(text, query)` splits the query on whitespace and requires every word to occur in the text in any order. An empty query matches everything. Screens that search across several fields join those fields with spaces before calling it, preserving existing behaviour for phone numbers, brands, categories, notes, references, and movement labels. Backend searches such as the Sales list `q` parameter are not routed through this helper.
+
+## Bottom sheets and dropdowns
+
+`src/components/ui/BottomSheet.tsx` is the shared modal sheet primitive. It portals over the app, locks body scroll, traps focus, restores focus to the previously focused element, closes on Escape/backdrop/close, and uses the theme token palette plus the existing reduced-motion-aware sheet animations.
+
+`src/components/ui/SheetSelect.tsx` builds the app's dropdown on that primitive. It is a controlled string-value component, so it replaces native `<select>` elements without changing form state or payloads. Lists of roughly eight or more options get a search field backed by `matchesSearch`; shorter lists open at natural height without one. The Sale customer picker (`CustomerPickerSheet`) also uses `BottomSheet`, keeping its Full payment/Customer mode, avatars, balances, and New customer action.
+
+
 ## Purpose
 
 This document describes the intended frontend structure.
@@ -57,8 +68,10 @@ src/
     stock/
       StockAdjustmentModal.tsx
     ui/
+      BottomSheet.tsx
       ConfirmDialog.tsx
       Icons.tsx
+      SheetSelect.tsx
   lib/
     api/
       auth.ts
@@ -78,6 +91,7 @@ src/
       format.ts
       initials.ts
       money.ts
+      search.ts
     auth-client.ts
     browser-files.ts
     invitations.ts

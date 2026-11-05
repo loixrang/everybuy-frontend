@@ -12,6 +12,7 @@ import {
 import { ApiError } from '../../lib/api/client';
 import { formatNaira } from '../../lib/utils/format';
 import { BackNavigation } from '../../components/ui/BackNavigation';
+import { SheetSelect } from '../../components/ui/SheetSelect';
 
 // Matches the backend createStockSchema: quantity is an integer from 1 to 1,000,000.
 const MAX_QUANTITY = 1_000_000;
@@ -292,21 +293,21 @@ export function ReceiveStockPage() {
             >
               Supplier
             </label>
-            <select
+            <SheetSelect
               id="receive-supplier"
+              label="Supplier"
               value={selectedSupplierId}
-              onChange={(e) => setSelectedSupplierId(e.target.value)}
-              className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)]"
-            >
-              <option value="">Local wholesaler / Unspecified</option>
-              {suppliers
-                .filter((s) => s.active)
-                .map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-            </select>
+              onChange={setSelectedSupplierId}
+              options={[
+                {
+                  value: '',
+                  label: 'Local wholesaler / Unspecified',
+                },
+                ...suppliers
+                  .filter((s) => s.active)
+                  .map((s) => ({ value: String(s.id), label: s.name })),
+              ]}
+            />
           </div>
         </div>
 
@@ -326,19 +327,18 @@ export function ReceiveStockPage() {
             >
               Product
             </label>
-            <select
+            <SheetSelect
               id="receive-product"
+              label="Product"
               value={selectedProductId}
-              onChange={(e) => setSelectedProductId(e.target.value)}
-              className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)]"
+              onChange={setSelectedProductId}
               required
-            >
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} {p.size ? `· ${p.size}` : ''} ({p.packsPerBag} packs/bag, current stock: {p.stockPacks} packs)
-                </option>
-              ))}
-            </select>
+              options={products.map((p) => ({
+                value: p.id,
+                label: p.name,
+                sublabel: `${p.size ? `${p.size} · ` : ''}${p.packsPerBag} packs/bag · ${p.stockPacks} packs in stock`,
+              }))}
+            />
           </div>
 
           {/* Quantities: Sealed bags & Loose packs */}

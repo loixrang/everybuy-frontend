@@ -1,5 +1,16 @@
 # Architecture and Project Decisions
 
+## DEC-033: Shared Search Predicate and Bottom-Sheet Select
+
+Decision:
+All client-side typed search uses `matchesSearch(text, query)` from `src/lib/utils/search.ts`. It normalizes with NFD, strips combining marks, lowercases, splits the query on whitespace, and requires every word to appear in the text in any order. Screens with several searchable fields join them with spaces first. All dropdowns use `SheetSelect`, built on the shared `BottomSheet` primitive; lists of roughly eight or more options get a search field, short lists do not. The Sale customer picker also uses `BottomSheet` and keeps its existing extra controls.
+
+Reason:
+The previous `includes(wholeQuery)` behaviour failed when users typed words out of order or omitted later words. Replacing native selects also gives every dropdown consistent mobile behaviour, focus handling, and theming without changing stored values or payloads.
+
+Consequence:
+Search is client-side and synchronous only; the Sales list keeps its server-side `q` parameter. `SheetSelect` is a controlled string-value component, so callers must use the same string conversion they used with native selects (for example numeric supplier ids are converted with `String(id)`). The expense-category `<datalist>` stays because it is a free-text suggestion helper, not a fixed-option selector.
+
 ## DEC-031: Device-First Theme Preference and Pre-React Initialization
 
 Decision:

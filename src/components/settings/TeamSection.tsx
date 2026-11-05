@@ -20,6 +20,7 @@ import type {
   StaffRole,
 } from '../../types/staff';
 import { StaffAccountModal } from './StaffAccountModal';
+import { SheetSelect } from '../ui/SheetSelect';
 import {
   AlertCircleIcon,
   CheckCircleIcon,
@@ -434,9 +435,7 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
                             </button>
                             <div id={`member-actions-${member.staffId}`} hidden={editingMemberId !== member.staffId} className={`${editingMemberId === member.staffId ? 'flex' : 'hidden'} items-center gap-2`}>
                                 <label className="sr-only" htmlFor={`role-${member.staffId}`}>Role for {member.name}</label>
-                                <select id={`role-${member.staffId}`} value={member.role} disabled={busy} onChange={(event) => void changeRole(member, event.target.value as StaffRole)} className="h-9 px-2 rounded-[6px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-xs font-semibold text-[color:var(--color-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60">
-                                  <option value="Staff">Staff</option><option value="Owner">Owner</option>
-                                </select>
+                                <SheetSelect id={`role-${member.staffId}`} label={`Role for ${member.name}`} value={member.role} disabled={busy} onChange={(value) => void changeRole(member, value as StaffRole)} options={[{ value: 'Staff', label: 'Staff' }, { value: 'Owner', label: 'Owner' }]} className="w-[130px] shrink-0" />
                                 <button type="button" onClick={() => void toggleActive(member)} disabled={busy} className="h-9 px-2 rounded-[6px] text-xs font-semibold text-[color:var(--color-muted)] hover:bg-[color:var(--color-subtle)] disabled:opacity-60">
                                   {busy ? 'Saving…' : member.active ? 'Deactivate' : 'Reactivate'}
                                 </button>
@@ -485,9 +484,7 @@ export function TeamSection({ currentUserId }: TeamSectionProps) {
                         </button>
                         <div id={`member-mobile-actions-${member.staffId}`} hidden={editingMemberId !== member.staffId} className={`${editingMemberId === member.staffId ? 'flex' : 'hidden'} flex-wrap items-center gap-2`}>
                           <label className="sr-only" htmlFor={`role-m-${member.staffId}`}>Role for {member.name}</label>
-                          <select id={`role-m-${member.staffId}`} value={member.role} disabled={busy} onChange={(event) => void changeRole(member, event.target.value as StaffRole)} className="h-11 rounded-[6px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-2 text-xs font-semibold text-[color:var(--color-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--color-accent)] disabled:opacity-60 sm:h-9">
-                            <option value="Staff">Staff</option><option value="Owner">Owner</option>
-                          </select>
+                          <SheetSelect id={`role-m-${member.staffId}`} label={`Role for ${member.name}`} value={member.role} disabled={busy} onChange={(value) => void changeRole(member, value as StaffRole)} options={[{ value: 'Staff', label: 'Staff' }, { value: 'Owner', label: 'Owner' }]} className="w-[130px] shrink-0" />
                           <button type="button" onClick={() => void toggleActive(member)} disabled={busy} className="h-11 rounded-[6px] px-2 text-xs font-semibold text-[color:var(--color-muted)] hover:bg-[color:var(--color-subtle)] disabled:opacity-60 sm:h-9">{busy ? 'Saving…' : member.active ? 'Deactivate' : 'Reactivate'}</button>
                         </div>
                       </>}

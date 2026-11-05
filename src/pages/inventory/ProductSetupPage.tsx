@@ -10,6 +10,7 @@ import {
 import { ApiError } from '../../lib/api/client';
 import { AlertCircleIcon } from '../../components/ui/Icons';
 import { BackNavigation } from '../../components/ui/BackNavigation';
+import { SheetSelect } from '../../components/ui/SheetSelect';
 import type { Category, Brand, PackName } from '../../types/product';
 
 const PACK_NAMES: PackName[] = [
@@ -311,18 +312,13 @@ export function ProductSetupPage() {
             <label htmlFor={packNameSelectId} className="block text-xs font-semibold text-[color:var(--color-ink)] mb-1.5">
               Pack type *
             </label>
-            <select
+            <SheetSelect
               id={packNameSelectId}
+              label="Pack type"
               value={packName}
-              onChange={(e) => setPackName(e.target.value as PackName)}
-              className="w-full h-[46px] px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-ink)] text-sm focus:border-[color:var(--color-accent)] focus:outline-none transition-colors"
-            >
-              {PACK_NAMES.map((pn) => (
-                <option key={pn} value={pn}>
-                  {pn}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setPackName(value as PackName)}
+              options={PACK_NAMES.map((pn) => ({ value: pn, label: pn }))}
+            />
           </div>
         </div>
 
@@ -332,21 +328,17 @@ export function ProductSetupPage() {
             <label htmlFor={brandSelectId} className="block text-xs font-semibold text-[color:var(--color-ink)] mb-1.5">
               Brand *
             </label>
-            <select
+            <SheetSelect
               id={brandSelectId}
+              label="Brand"
               value={brandId}
-              onChange={(e) => setBrandId(e.target.value)}
-              className={`w-full h-[46px] px-3 rounded-[8px] border bg-[color:var(--color-surface)] text-[color:var(--color-ink)] text-sm focus:border-[color:var(--color-accent)] focus:outline-none transition-colors ${
-                validationErrors.brandId ? 'border-[color:var(--color-danger-ink)]' : 'border-[color:var(--color-border)]'
-              }`}
-            >
-              <option value="">Select brand</option>
-              {brands.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+              onChange={setBrandId}
+              invalid={Boolean(validationErrors.brandId)}
+              options={[
+                { value: '', label: 'Select brand' },
+                ...brands.map((b) => ({ value: b.id, label: b.name })),
+              ]}
+            />
             {validationErrors.brandId && (
               <p className="text-xs text-[color:var(--color-danger-ink)] mt-1">{validationErrors.brandId}</p>
             )}
@@ -356,21 +348,17 @@ export function ProductSetupPage() {
             <label htmlFor={categorySelectId} className="block text-xs font-semibold text-[color:var(--color-ink)] mb-1.5">
               Category *
             </label>
-            <select
+            <SheetSelect
               id={categorySelectId}
+              label="Category"
               value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className={`w-full h-[46px] px-3 rounded-[8px] border bg-[color:var(--color-surface)] text-[color:var(--color-ink)] text-sm focus:border-[color:var(--color-accent)] focus:outline-none transition-colors ${
-                validationErrors.categoryId ? 'border-[color:var(--color-danger-ink)]' : 'border-[color:var(--color-border)]'
-              }`}
-            >
-              <option value="">Select category</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              onChange={setCategoryId}
+              invalid={Boolean(validationErrors.categoryId)}
+              options={[
+                { value: '', label: 'Select category' },
+                ...categories.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+            />
             {validationErrors.categoryId && (
               <p className="text-xs text-[color:var(--color-danger-ink)] mt-1">{validationErrors.categoryId}</p>
             )}
@@ -530,15 +518,17 @@ export function ProductSetupPage() {
             <label htmlFor={activeSelectId} className="block text-xs font-semibold text-[color:var(--color-ink)] mb-1.5">
               Product status
             </label>
-            <select
+            <SheetSelect
               id={activeSelectId}
+              label="Product status"
               value={active ? 'true' : 'false'}
-              onChange={(e) => setActive(e.target.value === 'true')}
-              className="w-full md:w-48 h-[46px] px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-ink)] text-sm focus:border-[color:var(--color-accent)] focus:outline-none transition-colors"
-            >
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
-            </select>
+              onChange={(value) => setActive(value === 'true')}
+              options={[
+                { value: 'true', label: 'Active' },
+                { value: 'false', label: 'Inactive' },
+              ]}
+              className="w-full md:w-48"
+            />
           </div>
         </div>
 

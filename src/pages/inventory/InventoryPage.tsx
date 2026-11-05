@@ -4,6 +4,8 @@ import { fetchProducts, fetchCategories, fetchBrands } from '../../lib/api/produ
 import { ApiError } from '../../lib/api/client';
 import { useAuth } from '../../app/auth/auth-context';
 import { formatNaira, getStockStatus } from '../../lib/utils/format';
+import { matchesSearch } from '../../lib/utils/search';
+import { SheetSelect } from '../../components/ui/SheetSelect';
 import {
   PackageIcon,
   SearchIcon,
@@ -122,17 +124,16 @@ export function InventoryPage() {
       if (selectedCategoryId !== 'ALL' && p.categoryId !== selectedCategoryId) {
         return false;
       }
-      // Search query (matches name, size, brand name, category name)
+      // Search query (matches name, size, brand name, category name and pack)
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const brandName = brandMap.get(p.brandId)?.toLowerCase() || '';
-        const catName = categoryMap.get(p.categoryId)?.toLowerCase() || '';
-        const matchName = p.name.toLowerCase().includes(q);
-        const matchSize = p.size ? p.size.toLowerCase().includes(q) : false;
-        const matchBrand = brandName.includes(q);
-        const matchCat = catName.includes(q);
-        const matchPack = p.packName.toLowerCase().includes(q);
-        if (!matchName && !matchSize && !matchBrand && !matchCat && !matchPack) {
+        const brandName = brandMap.get(p.brandId) ?? '';
+        const catName = categoryMap.get(p.categoryId) ?? '';
+        if (
+          !matchesSearch(
+            [p.name, p.size ?? '', brandName, catName, p.packName].join(' '),
+            searchQuery,
+          )
+        ) {
           return false;
         }
       }
@@ -238,19 +239,19 @@ export function InventoryPage() {
           <label htmlFor="category-select" className="block text-xs font-semibold text-[color:var(--color-ink)] mb-1.5">
             Category
           </label>
-          <select
+          <SheetSelect
             id="category-select"
+            label="Category"
             value={selectedCategoryId}
-            onChange={(e) => setSelectedCategoryId(e.target.value)}
-            className="w-full h-[46px] px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-ink)] text-sm focus:border-[color:var(--color-accent)] focus:outline-none transition-colors cursor-pointer"
-          >
-            <option value="ALL">All categories</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedCategoryId}
+            options={[
+              { value: 'ALL', label: 'All categories' },
+              ...categories.map((cat) => ({
+                value: cat.id,
+                label: cat.name,
+              })),
+            ]}
+          />
         </div>
       </div>
 
