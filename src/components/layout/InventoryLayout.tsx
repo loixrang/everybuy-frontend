@@ -465,7 +465,7 @@ function MoreSheet({
         type="button"
         aria-label="Close menu"
         onClick={onClose}
-        className="absolute inset-0 bg-[color:var(--color-scrim)] cursor-pointer"
+        className="absolute inset-0 glass-backdrop cursor-pointer"
       />
       <div
         ref={panelRef}
@@ -473,7 +473,7 @@ function MoreSheet({
         aria-modal="true"
         aria-labelledby="more-sheet-title"
         tabIndex={-1}
-        className="relative w-full max-h-[85vh] overflow-y-auto overscroll-contain rounded-t-[16px] border-t border-[color:var(--color-border)] bg-[color:var(--color-surface)] pb-[env(safe-area-inset-bottom)] focus:outline-none"
+        className="glass-panel relative w-full max-h-[85vh] overflow-y-auto overscroll-contain rounded-t-[16px] pb-[env(safe-area-inset-bottom)] focus:outline-none"
       >
         <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-2">
           <h2

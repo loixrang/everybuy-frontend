@@ -93,7 +93,7 @@ export function ConfirmDialog({
         onClick={() => {
           if (!busy) onCancel();
         }}
-        className="absolute inset-0 cursor-pointer bg-[color:var(--color-scrim)]"
+        className="absolute inset-0 cursor-pointer glass-backdrop"
       />
       <div
         ref={panelRef}
@@ -101,7 +101,7 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
-        className="relative max-h-[92vh] w-full overflow-y-auto rounded-t-[16px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:max-w-[480px] sm:rounded-[12px] sm:p-6 sm:pb-6"
+        className="glass-panel relative max-h-[92vh] w-full overflow-y-auto rounded-t-[16px] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:max-w-[480px] sm:rounded-[12px] sm:p-6 sm:pb-6"
       >
         <div className="flex items-start justify-between gap-4">
           <div>

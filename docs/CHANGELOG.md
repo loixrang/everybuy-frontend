@@ -595,3 +595,9 @@ Checks: frontend lint, typecheck, 113 tests, build, and diff check passed. Backe
 ## Unreleased
 
 - Added per-unit negotiated sale pricing, configurable minimums, optional Half Bag pricing, and half-bag stock conversion support.
+
+# 2026-11-05: Shared acrylic overlay surfaces
+
+- Standardized modal and sheet backdrops as a 15% tint with no blur, and panel surfaces as 72% theme surface with a 24 px backdrop blur with 2.2× saturation, theme-aware edge, and shared soft shadow.
+- Added an 84% compact glass style with 14 px blur for future small floating panels. Solid surface and 60% dim fallbacks cover unsupported backdrop filters and reduced-transparency preference.
+- Muted text inside panels uses the primary text token for legibility at the stronger translucency. Existing dialogs and sheets already use the shared classes; no overlay behavior or backend contract changed.

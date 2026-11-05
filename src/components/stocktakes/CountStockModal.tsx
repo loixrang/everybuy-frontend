@@ -95,14 +95,14 @@ export function CountStockModal({
         type="button"
         aria-label="Close dialog"
         onClick={onClose}
-        className="absolute inset-0 cursor-pointer bg-[color:var(--color-scrim)]"
+        className="absolute inset-0 cursor-pointer glass-backdrop"
       />
 
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative z-10 max-h-[92vh] w-full overflow-y-auto rounded-t-[16px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] pb-[env(safe-area-inset-bottom)] shadow-xl sm:max-w-[520px] sm:rounded-[12px] sm:pb-0"
+        className="glass-panel relative z-10 max-h-[92vh] w-full overflow-y-auto rounded-t-[16px] pb-[env(safe-area-inset-bottom)] sm:max-w-[520px] sm:rounded-[12px] sm:pb-0"
       >
         <div className="flex items-start justify-between gap-4 border-b border-[color:var(--color-border)] px-6 pb-4 pt-5">
           <div className="min-w-0">

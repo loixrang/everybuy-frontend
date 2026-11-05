@@ -148,13 +148,13 @@ export function RecordExpenseModal({
         onClick={() => {
           if (!submitting) onClose();
         }}
-        className="absolute inset-0 bg-[color:var(--color-scrim)] cursor-pointer"
+        className="absolute inset-0 glass-backdrop cursor-pointer"
       />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="expense-modal-title"
-        className="relative w-full sm:max-w-[520px] max-h-[92vh] overflow-y-auto rounded-t-[16px] sm:rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5 sm:p-6 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-6"
+        className="glass-panel relative w-full sm:max-w-[520px] max-h-[92vh] overflow-y-auto rounded-t-[16px] sm:rounded-[12px] p-5 sm:p-6 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-6"
       >
         <div className="flex items-start justify-between gap-4">
           <div>

@@ -116,7 +116,7 @@ export function BottomSheet({
         tabIndex={-1}
         aria-label="Close"
         onClick={onClose}
-        className="sheet-backdrop-enter absolute inset-0 cursor-default bg-[color:var(--color-scrim)]"
+        className="sheet-backdrop-enter glass-backdrop absolute inset-0 cursor-default"
       />
 
       <div
@@ -125,7 +125,7 @@ export function BottomSheet({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`sheet-panel-enter relative z-10 flex max-h-[70dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[16px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] pb-[env(safe-area-inset-bottom)] shadow-xl focus:outline-none ${panelClassName}`}
+        className={`sheet-panel-enter glass-panel relative z-10 flex max-h-[70dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[16px] pb-[env(safe-area-inset-bottom)] focus:outline-none ${panelClassName}`}
       >
         <div
           aria-hidden="true"

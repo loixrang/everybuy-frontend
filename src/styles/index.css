@@ -93,6 +93,70 @@ html {
   }
 }
 
+/* Shared frosted acrylic styles. The backdrop is tinted only; blur belongs to
+   the panel so page colors remain visible through its surface. */
+.glass-backdrop {
+  background-color: var(--color-overlay-backdrop);
+}
+
+.glass-panel {
+  background-color: var(--color-glass-panel);
+  -webkit-backdrop-filter: blur(24px) saturate(2.2);
+  backdrop-filter: blur(24px) saturate(2.2);
+  border: 1px solid var(--color-glass-border);
+  box-shadow: var(--shadow-glass);
+}
+
+/* The stronger translucency lets more page color through. Keep secondary text
+   at the theme's primary text color so it remains legible on varied backdrops. */
+.glass-panel [class*="text-[color:var(--color-muted)]"] {
+  color: var(--color-ink);
+}
+
+/* Compact floating surfaces should be given this class alongside
+   glass-panel when standalone popovers, menus, tooltips or toasts are added. */
+.glass-panel-compact {
+  background-color: var(--color-glass-panel-compact);
+  -webkit-backdrop-filter: blur(14px) saturate(1.8);
+  backdrop-filter: blur(14px) saturate(1.8);
+}
+
+/* Older browsers: fall back to a solid surface and a 60% black dim. */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-panel {
+    background-color: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .glass-backdrop {
+    background-color: var(--color-glass-fallback-backdrop);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Safari's reduced-transparency preference: solid surfaces, no blur. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-panel {
+    background-color: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .glass-panel-compact {
+    background-color: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .glass-backdrop {
+    background-color: var(--color-glass-fallback-backdrop);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 /* Keep the fixed bottom navigation clear of the iOS home indicator. */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);

@@ -67,14 +67,14 @@ export function AddCustomerModal({ onClose, onCreated }: AddCustomerModalProps) 
         type="button"
         aria-label="Close modal"
         onClick={onClose}
-        className="absolute inset-0 bg-[color:var(--color-scrim)]"
+        className="absolute inset-0 glass-backdrop"
       />
 
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-customer-title"
-        className="relative z-10 w-full max-w-md max-h-[92vh] overflow-y-auto rounded-t-[16px] sm:rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] shadow-xl pb-[env(safe-area-inset-bottom)] sm:pb-0"
+        className="glass-panel relative z-10 w-full max-w-md max-h-[92vh] overflow-y-auto rounded-t-[16px] sm:rounded-[12px] pb-[env(safe-area-inset-bottom)] sm:pb-0"
       >
         <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-[color:var(--color-border)]">
           <div>

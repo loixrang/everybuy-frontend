@@ -160,8 +160,8 @@ function SupplierFormDialog({
   }, [busy, onClose]);
 
   return <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-    <button type="button" aria-label="Close dialog" onClick={() => { if (!busy) onClose(); }} className="absolute inset-0 bg-[color:var(--color-scrim)]" />
-    <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="relative max-h-[92dvh] w-full overflow-y-auto rounded-t-[16px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:max-w-[480px] sm:rounded-[12px] sm:p-6">
+    <button type="button" aria-label="Close dialog" onClick={() => { if (!busy) onClose(); }} className="absolute inset-0 glass-backdrop" />
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="glass-panel relative max-h-[92dvh] w-full overflow-y-auto rounded-t-[16px] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:max-w-[480px] sm:rounded-[12px] sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <h2 id={titleId} className="text-lg font-bold text-[color:var(--color-ink)]">{supplier ? 'Edit supplier' : 'Add supplier'}</h2>
         <button type="button" aria-label="Close" disabled={busy} onClick={onClose} className="h-11 w-11 rounded-[8px] text-xl text-[color:var(--color-muted)] hover:bg-[color:var(--color-subtle)] disabled:opacity-50">×</button>

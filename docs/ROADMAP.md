@@ -1,3 +1,10 @@
+## Acrylic glass overlays (2026-11-05)
+Status: COMPLETED
+
+- Standardized modal and sheet backdrops to a 15% tint without blur and glass panels to a 72% theme surface with a 24 px blur with 2.2× saturation. Compact panel token is 95% with a 14 px blur.
+- Added solid-surface and 60% dim fallbacks for unsupported backdrop filters and reduced transparency. Muted panel text uses the primary text token for legibility.
+- Checks passed: frontend typecheck, lint, and diff check.
+
 # Frontend Roadmap
 
 ### Historical acquisition cost repair across both repositories
