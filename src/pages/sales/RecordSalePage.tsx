@@ -1,20 +1,22 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import type { Product } from '../../types/product';
-import type { CustomerListItem } from '../../types/customer';
+import type { Customer, CustomerListItem } from '../../types/customer';
 import type {
   PaymentMethod,
   SaleUnit,
   CreateSaleResult,
 } from '../../types/sale';
 import { fetchProducts } from '../../lib/api/products';
-import { fetchCustomers, createCustomer } from '../../lib/api/customers';
+import { fetchCustomers } from '../../lib/api/customers';
 import { createSale } from '../../lib/api/sales';
 import { toKobo, fromKobo } from '../../lib/utils/money';
 import { formatNaira } from '../../lib/utils/format';
 import { defaultUnitPrice, minimumUnitPrice, hasStockForQuantity, isSaleUnitAvailable, maxSaleQuantity, packsForQuantity } from '../../lib/sales/cart';
 import { ApiError } from '../../lib/api/client';
 import { BackNavigation } from '../../components/ui/BackNavigation';
+import { CustomerPicker } from '../../components/customers/CustomerPicker';
+import { AddCustomerModal } from '../../components/customers/AddCustomerModal';
 import {
   SearchIcon,
   AlertCircleIcon,
@@ -62,12 +64,8 @@ export function RecordSalePage() {
   const [method, setMethod] = useState<PaymentMethod>('cash');
   const [reference, setReference] = useState<string>('');
 
-  // Inline customer creation
+  // New customer form, shared with the Customers tab.
   const [showAddCustomer, setShowAddCustomer] = useState<boolean>(false);
-  const [newCustomerName, setNewCustomerName] = useState<string>('');
-  const [newCustomerPhone, setNewCustomerPhone] = useState<string>('');
-  const [addingCustomer, setAddingCustomer] = useState<boolean>(false);
-  const [addCustomerError, setAddCustomerError] = useState<string | null>(null);
 
   // Submission
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -83,6 +81,19 @@ export function RecordSalePage() {
    * cleared only after the backend confirms success.
    */
   const requestIdRef = useRef<{ id: string; payload: string } | null>(null);
+
+  /*
+   * Customer balances come from GET /api/v1/customers, the same source the
+   * Customers tab displays. Refreshing keeps the picker in step after a sale
+   * or a new customer without any extra per-customer requests.
+   */
+  const refreshCustomers = useCallback(async () => {
+    try {
+      setCustomers(await fetchCustomers());
+    } catch {
+      // Keep the current list; cash sales do not require customer data.
+    }
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -238,6 +249,7 @@ export function RecordSalePage() {
     setConflictMessage(null);
     setResult(null);
     requestIdRef.current = null;
+    void refreshCustomers();
   };
 
   const refreshProducts = async () => {
@@ -319,47 +331,29 @@ export function RecordSalePage() {
     setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleAddCustomer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAddCustomerError(null);
+  const handleCustomerChange = (nextCustomerId: string | null) => {
+    setCustomerId(nextCustomerId ?? '');
+    setSubmitError(null);
+    setConflictMessage(null);
+  };
 
-    const name = newCustomerName.trim();
-    if (!name) {
-      setAddCustomerError('Customer name is required.');
-      return;
-    }
-
-    setAddingCustomer(true);
-    try {
-      const created = await createCustomer({
-        name,
-        phone: newCustomerPhone.trim() || null,
-      });
-      const customer = created[0];
-      if (customer) {
-        setCustomers((prev) => [
-          ...prev,
-          {
-            ...customer,
-            balance: '0.00',
-            lastSaleAt: null,
-            totalPurchases: '0.00',
-          },
-        ]);
-        setCustomerId(customer.id);
-      }
-      setNewCustomerName('');
-      setNewCustomerPhone('');
-      setShowAddCustomer(false);
-    } catch (err: unknown) {
-      setAddCustomerError(
-        err instanceof ApiError
-          ? err.message
-          : 'Unable to save the customer. Check your connection and try again.',
-      );
-    } finally {
-      setAddingCustomer(false);
-    }
+  const handleCustomerCreated = (customer: Customer) => {
+    // The customer is new, so the backend balance is zero until a sale exists.
+    // The follow-up refresh replaces this optimistic row with server data.
+    const listItem: CustomerListItem = {
+      ...customer,
+      balance: '0.00',
+      lastSaleAt: null,
+      totalPurchases: '0.00',
+    };
+    setCustomers((current) => [
+      listItem,
+      ...current.filter((entry) => entry.id !== customer.id),
+    ]);
+    setCustomerId(customer.id);
+    setSubmitError(null);
+    setConflictMessage(null);
+    void refreshCustomers();
   };
 
   const validateForSubmit = (): string | null => {
@@ -437,8 +431,9 @@ export function RecordSalePage() {
       // Only clear the idempotency key once the backend confirms success.
       requestIdRef.current = null;
       setResult(saleResult);
-      // Stock changed; refresh balances for the next sale.
+      // Stock and customer balances changed; refresh both for the next sale.
       refreshProducts();
+      void refreshCustomers();
     } catch (err: unknown) {
       const apiErr = err instanceof ApiError ? err : null;
       if (apiErr?.status === 409) {
@@ -757,89 +752,14 @@ export function RecordSalePage() {
               >
                 Customer
               </label>
-              <select
+              <CustomerPicker
                 id="sale-customer"
-                value={customerId}
-                onChange={(e) => {
-                  setCustomerId(e.target.value);
-                  setSubmitError(null);
-                  setConflictMessage(null);
-                }}
-                className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)]"
-              >
-                <option value="">No customer (full payment)</option>
-                {activeCustomers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                    {c.phone ? ` · ${c.phone}` : ''}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAddCustomer((v) => !v);
-                  setAddCustomerError(null);
-                }}
-                className="text-xs font-semibold text-[color:var(--color-accent)] hover:underline"
-              >
-                {showAddCustomer ? 'Cancel' : 'Add a customer'}
-              </button>
+                customers={activeCustomers}
+                value={customerId || null}
+                onChange={handleCustomerChange}
+                onAddCustomer={() => setShowAddCustomer(true)}
+              />
             </div>
-
-            {/* Inline customer creation */}
-            {showAddCustomer && (
-              <form
-                onSubmit={handleAddCustomer}
-                className="space-y-3 p-4 rounded-[8px] bg-[color:var(--color-subtle)]"
-              >
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="new-customer-name"
-                    className="block text-xs font-semibold text-[color:var(--color-ink)]"
-                  >
-                    Name
-                  </label>
-                  <input
-                    id="new-customer-name"
-                    type="text"
-                    value={newCustomerName}
-                    onChange={(e) => setNewCustomerName(e.target.value)}
-                    className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)]"
-                    placeholder="Customer name"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="new-customer-phone"
-                    className="block text-xs font-semibold text-[color:var(--color-ink)]"
-                  >
-                    Phone (optional)
-                  </label>
-                  <input
-                    id="new-customer-phone"
-                    type="tel"
-                    value={newCustomerPhone}
-                    onChange={(e) => setNewCustomerPhone(e.target.value)}
-                    className="w-full h-11 px-3 rounded-[8px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-sm text-[color:var(--color-ink)] focus:outline-none focus:border-[color:var(--color-accent)]"
-                    placeholder="0803 000 0000"
-                  />
-                </div>
-                {addCustomerError && (
-                  <p className="text-xs text-[color:var(--color-danger-ink)] flex items-start gap-1.5">
-                    <AlertCircleIcon size={14} className="shrink-0 mt-0.5" />
-                    {addCustomerError}
-                  </p>
-                )}
-                <button
-                  type="submit"
-                  disabled={addingCustomer}
-                  className="h-9 px-4 rounded-[8px] font-semibold text-xs bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] transition-colors disabled:opacity-50"
-                >
-                  {addingCustomer ? 'Saving…' : 'Save customer'}
-                </button>
-              </form>
-            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -1047,6 +967,13 @@ export function RecordSalePage() {
           )}
         </aside>
       </form>
+
+      {showAddCustomer && (
+        <AddCustomerModal
+          onClose={() => setShowAddCustomer(false)}
+          onCreated={handleCustomerCreated}
+        />
+      )}
     </div>
   );
 }

@@ -316,6 +316,25 @@ export function CheckCircleIcon({ size = 20, className = '', ...props }: IconPro
   );
 }
 
+export function CheckIcon({ size = 20, className = '', ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
 export function ArrowLeftIcon({ size = 20, className = '', ...props }: IconProps) {
   return (
     <svg
@@ -398,6 +417,25 @@ export function ChevronRightIcon({ size = 20, className = '', ...props }: IconPr
       {...props}
     >
       <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+export function ChevronDownIcon({ size = 20, className = '', ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      <polyline points="6 9 12 15 18 9" />
     </svg>
   );
 }

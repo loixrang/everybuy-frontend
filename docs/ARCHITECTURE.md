@@ -41,6 +41,10 @@ src/
   components/
     customers/
       AddCustomerModal.tsx
+      CustomerBalanceLine.tsx
+      CustomerPicker.tsx
+      CustomerPickerSheet.tsx
+      CustomerRow.tsx
       CustomerStatusBadge.tsx
       RecordRepaymentModal.tsx
     layout/
@@ -72,6 +76,7 @@ src/
       useTheme.ts
     utils/
       format.ts
+      initials.ts
       money.ts
     auth-client.ts
     browser-files.ts
@@ -195,12 +200,13 @@ Do not implement a separate authentication system.
 
 Implemented (FE-022, also covering FE-040's supported scope):
 
-- `CustomersPage` (`/customers`) loads the full customer list once, filters name/phone and active status client-side, and creates customers through `AddCustomerModal`. It does not request a statement per row.
+- `CustomersPage` (`/customers`) loads the full customer list once, filters name/phone and active status client-side, and creates customers through `AddCustomerModal`. Outstanding balances come from the list response (`balance`); it does not request a statement per row.
 - `CustomerDetailPage` (`/customers/:id`) makes a single `GET /api/v1/customers/:id/statement` request. All balances, per-sale paid/owed amounts, payment statuses, and totals come from that response; the frontend does not assemble authoritative balances from separate calls.
 - `RecordRepaymentModal` posts `{ requestId, saleId, amount }` to the selected customer's repayment endpoint. It keeps the same `requestId` across retries of an unchanged repayment and resets it when the sale or amount changes. After success, the detail page refetches the statement and shows the backend's updated totals.
 - `CustomerEditPage` (`/customers/:id/edit`) updates only `name`, `phone`, and `active`; deactivated customers retain their statements and payment history.
 - Sale and payment identifiers are UUIDs, so list/detail tables render a short `#` prefix plus the first 8 characters and keep the full id in the `title` attribute. There is no frontend-only sale numbering.
-- The repayment method/date/reference fields and the directory's balance/last-sale columns are intentionally absent because the backend does not store or aggregate them. See `DECISIONS.md`.
+- The repayment method/date/reference fields are intentionally absent because the backend does not store them. Directory balances use the list aggregate, while last-sale dates are also supplied by the list response. See `DECISIONS.md`.
+- `RecordSalePage` uses `CustomerPicker` instead of a native select. The trigger opens `CustomerPickerSheet`, a modal bottom sheet that shows each active customer's initials, name, and `balance` from the same customer-list request. Selecting a customer closes the sheet; the "Full payment" mode stores `null`. The sheet reuses `AddCustomerModal` and refreshes the customer list after creation. The sale submission payload still sends only the same `customerId` or `null` as before.
 
 ## Sales History and Detail
 

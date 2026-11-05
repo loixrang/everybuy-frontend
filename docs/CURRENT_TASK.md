@@ -1,7 +1,7 @@
 # Current Task
 
-## Negotiated sale pricing and half-bag selling
+## Sale customer bottom-sheet picker with balances
 
-Status: IMPLEMENTED — typecheck, lint, tests, and production builds pass; migration application and live workflow verification remain deployment steps.
+Status: COMPLETED — typecheck, lint, 118 tests, and the production build pass. Browser/device automation is unavailable in this environment, so 360 px and dark-mode rendering were checked by code review against the theme tokens.
 
-Add independent default/minimum prices per selling unit, optional Half Bag pricing and exact stock conversion, and per-sale negotiated price snapshots. Backend and frontend changes are coordinated; apply backend migration `0003_negotiated_half_bag_pricing.sql` before deployment.
+Replace the Sale screen's native customer dropdown with a modal bottom sheet. The trigger and each customer row show the customer's outstanding `balance` from `GET /api/v1/customers`, the same field the Customers tab uses. The sheet supports Full payment/Customer modes, live name search, initials avatars, a pinned New customer action reusing `AddCustomerModal`, body scroll locking, focus trapping, and theme-aware slide/fade motion. The sale submission payload is unchanged: the selected customer id or `null`.

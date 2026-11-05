@@ -13,6 +13,17 @@ Device remains the default across reloads and follows OS changes. Browser storag
 
 Record important decisions here so future sessions do not repeat them.
 
+## DEC-032: Customer Picker Reuses List Balances
+
+Decision:
+The Sale screen replaces its customer `<select>` with a bottom-sheet picker backed by the existing `GET /api/v1/customers` response. Each row and the trigger display `customer.balance`, the server-computed outstanding amount, using `formatNaira`; `0` renders "No balance" and a missing value renders no second line. The sheet keeps the existing customer order, filters active customers by name client-side, reuses `AddCustomerModal` for creation, and refreshes the same list after a sale or a new customer.
+
+Reason:
+The list endpoint already returns `balance` (sum of each sale's `itemsTotal` minus payments, floored at 0), which is the same field the Customers tab displays. Using it avoids a second balance calculation and avoids one statement request per customer under the backend's request throttle.
+
+Consequence:
+The picker has no independent balance state. If the customer list request fails, existing rows remain but new balances are not available; cash sales still work. Inactive customers remain hidden, matching the backend's active-customer rule for sale submission.
+
 ## DEC-001: Separate Repositories
 
 Decision:
@@ -156,13 +167,13 @@ Related:
 ## DEC-015: No Per-Customer Statement Fan-Out
 
 Decision:
-`GET /api/v1/customers` is loaded once for the directory and never followed by one statement request per customer. The directory shows only backend-supported fields (name, phone, active, timestamps) and links each row to the customer statement, where balance owed and last purchase are shown.
+`GET /api/v1/customers` is loaded once for the directory and never followed by one statement request per customer. The directory reads the list response's `balance` and `lastSaleAt` aggregates and links each row to the customer statement for sale-by-sale detail. See DEC-032 for the sale picker.
 
 Reason:
-The list endpoint has no balance/last-sale aggregates, and the backend's global throttler allows 3 requests/second per route. A statement-per-row fan-out would be throttled and would make the directory slow and unreliable. The detail screen already provides authoritative totals in one statement request.
+The backend's global throttler allows 3 requests/second per route, so a statement-per-row fan-out would be slow and unreliable. The list endpoint already computes the authoritative aggregates in one query.
 
 Consequence:
-The supplied directory's "Balance owed" and "Last sale" columns are intentionally absent. Adding them requires a backend aggregate endpoint or an agreed server-side list response.
+Directory and picker balances are server-computed but only as fresh as the last customer-list refresh. The detail screen remains the place for per-sale paid/owed amounts and repayments.
 
 ## DEC-016: Server-Authoritative Repayment Balances
 

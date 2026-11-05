@@ -59,6 +59,40 @@ html {
   display: none;
 }
 
+/* Bottom-sheet entrance used by the customer picker. */
+@keyframes everybuy-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes everybuy-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sheet-panel-enter {
+  animation: everybuy-sheet-up 200ms ease-out;
+}
+
+.sheet-backdrop-enter {
+  animation: everybuy-fade-in 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-panel-enter,
+  .sheet-backdrop-enter {
+    animation: none;
+  }
+}
+
 /* Keep the fixed bottom navigation clear of the iOS home indicator. */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);

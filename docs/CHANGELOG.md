@@ -1,3 +1,17 @@
+# 2026-11-05: Sale Customer Bottom-Sheet Picker with Balances
+
+Added:
+- `CustomerPicker` trigger and `CustomerPickerSheet` dialog on the Sale screen, with a Full payment/Customer segmented toggle, name search, initials avatars, selected checkmark, and a pinned New customer action.
+- Customer rows and the trigger show `Owes ₦X` or `No balance` from the existing `GET /api/v1/customers` `balance` field, the same source as the Customers tab.
+- Body scroll lock, focus trap and trigger focus return, Escape/backdrop/close handling, ARIA dialog/radiogroup/button semantics, and reduced-motion-aware slide/fade animations.
+- `getInitials` helper and tests.
+
+Changed:
+- The native customer `<select>` and sale-screen inline customer form were replaced by the picker and the existing `AddCustomerModal`.
+- Sale submission still sends the same `customerId` or `null`; completing a sale or adding a customer refreshes the customer list so balances stay current.
+
+Verification: typecheck, lint, 118 tests, and production build passed.
+
 # 2026-11-02: FE-064 Theme Preferences and Startup Initialization
 
 Added:
