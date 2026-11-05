@@ -173,6 +173,14 @@ Record meaningful frontend changes here.
 
 ## Unreleased
 
+### 2026-11-05: Consistent frosted glass overlay surfaces
+
+- Centralized overlay appearance in theme tokens and the global `glass-panel`, `glass-panel-compact`, and `glass-backdrop` utilities.
+- Large surfaces use 92% theme surface opacity and 24px blur; compact floating surfaces use 95% opacity and 16px blur. Backdrops use a 30% black tint and 6px blur.
+- Added solid surface / 60% dim fallbacks for unsupported backdrop filtering and reduced-transparency preferences.
+- Applied the compact style to fixed authentication theme toggles. Existing sheets, dialogs, focus behavior, scroll locking, and layout remain unchanged.
+- See `docs/CURRENT_TASK.md` for the complete overlay audit and the header/tab-bar items left for user direction.
+
 ### 2026-10-30: FE-057 Two-Factor Authentication and OTP
 
 Added:

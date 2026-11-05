@@ -279,7 +279,7 @@ export function SignInPage() {
         <button
           type="button"
           onClick={toggleTheme}
-          className="w-10 h-10 rounded-[8px] flex items-center justify-center border border-[color:var(--color-border)] bg-[color:var(--color-surface)] hover:bg-[color:var(--color-subtle)] text-[color:var(--color-ink)] transition-colors"
+          className="glass-panel-compact w-10 h-10 rounded-[8px] flex items-center justify-center border border-[color:var(--color-border)] bg-[color:var(--color-surface)] hover:bg-[color:var(--color-subtle)] text-[color:var(--color-ink)] transition-colors"
           aria-label="Toggle light/dark theme"
         >
           {theme === 'light' ? <MoonIcon size={18} /> : <SunIcon size={18} />}

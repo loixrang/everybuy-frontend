@@ -26,9 +26,9 @@
   --color-hero: #EDEEE4;
   --color-glass: #FFFFFFE8;
   --color-scrim: #14201966;
-  --color-overlay-backdrop: #00000026;
-  --color-glass-panel: color-mix(in srgb, var(--color-surface) 72%, transparent);
-  --color-glass-panel-compact: color-mix(in srgb, var(--color-surface) 84%, transparent);
+  --color-overlay-backdrop: #0000004D;
+  --color-glass-panel: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  --color-glass-panel-compact: color-mix(in srgb, var(--color-surface) 95%, transparent);
   --color-glass-border: #00000014;
   --color-glass-fallback-backdrop: #00000099;
   --shadow-glass: 0 24px 48px -16px #14201940, 0 4px 16px -8px #14201926;
@@ -64,9 +64,9 @@
   --color-hero: #141614;
   --color-glass: #0F110FE8;
   --color-scrim: #000000A6;
-  --color-overlay-backdrop: #00000026;
-  --color-glass-panel: color-mix(in srgb, var(--color-surface) 72%, transparent);
-  --color-glass-panel-compact: color-mix(in srgb, var(--color-surface) 84%, transparent);
+  --color-overlay-backdrop: #0000004D;
+  --color-glass-panel: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  --color-glass-panel-compact: color-mix(in srgb, var(--color-surface) 95%, transparent);
   --color-glass-border: #FFFFFF1A;
   --color-glass-fallback-backdrop: #00000099;
   --shadow-glass: 0 24px 48px -16px #000000B3, 0 4px 16px -8px #00000080;
