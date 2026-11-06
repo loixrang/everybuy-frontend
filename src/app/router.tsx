@@ -7,6 +7,11 @@ const InventoryLayout = lazy(() =>
     default: module.InventoryLayout,
   })),
 );
+const SubPageLayout = lazy(() =>
+  import('../components/layout/SubPageLayout').then((module) => ({
+    default: module.SubPageLayout,
+  })),
+);
 const SignInPage = lazy(() =>
   import('../pages/auth/SignInPage').then((module) => ({
     default: module.SignInPage,
@@ -147,32 +152,102 @@ export function AppRouter() {
           <Route path="/signin" element={<SignInPage />} />
         </Route>
         <Route element={<ProtectedRoute />}>
+          {/* Top-level destinations keep the five-tab mobile navigation. */}
           <Route element={<InventoryLayout />}>
             <Route index element={<Navigate to="/inventory" replace />} />
             <Route path="/inventory" element={<InventoryPage />} />
-            <Route path="/inventory/new" element={<ProductSetupPage />} />
-            <Route path="/inventory/receive" element={<ReceiveStockPage />} />
-            <Route path="/inventory/:id" element={<ProductDetailPage />} />
-            <Route path="/inventory/:id/edit" element={<ProductSetupPage />} />
             <Route path="/movements" element={<StockMovementsPage />} />
             <Route path="/stocktakes" element={<StockTakesPage />} />
-            <Route path="/stocktakes/:id" element={<StockTakeDetailPage />} />
             <Route path="/sales" element={<SalesPage />} />
-            <Route path="/sales/new" element={<RecordSalePage />} />
-            <Route path="/sales/:id" element={<SaleDetailPage />} />
             <Route path="/customers" element={<CustomersPage />} />
-            <Route path="/customers/:id" element={<CustomerDetailPage />} />
-            <Route path="/customers/:id/edit" element={<CustomerEditPage />} />
             <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/audit" element={<AuditPage />} />
             <Route path="/overview" element={<OverviewPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route element={<OwnerRoute />}>
+            <Route path="/team" element={<Navigate to="/settings" replace />} />
+          </Route>
+
+          {/* Sub-pages render without the mobile tab bar. Form screens get a
+              back button in the header; read-only detail screens keep their
+              existing in-content back link. */}
+          <Route
+            element={
+              <SubPageLayout
+                back={{ fallback: '/inventory', label: 'Back to inventory' }}
+              />
+            }
+          >
+            <Route path="/inventory/new" element={<ProductSetupPage />} />
+            <Route path="/inventory/receive" element={<ReceiveStockPage />} />
+          </Route>
+          <Route
+            element={
+              <SubPageLayout
+                back={{
+                  fallback: (pathname) => pathname.replace(/\/edit$/, ''),
+                  label: 'Back to product',
+                }}
+              />
+            }
+          >
+            <Route path="/inventory/:id/edit" element={<ProductSetupPage />} />
+          </Route>
+          <Route element={<SubPageLayout />}>
+            <Route path="/inventory/:id" element={<ProductDetailPage />} />
+          </Route>
+
+          <Route
+            element={
+              <SubPageLayout back={{ fallback: '/sales', label: 'Back to sales' }} />
+            }
+          >
+            <Route path="/sales/new" element={<RecordSalePage />} />
+          </Route>
+          <Route element={<SubPageLayout />}>
+            <Route path="/sales/:id" element={<SaleDetailPage />} />
+          </Route>
+
+          <Route
+            element={
+              <SubPageLayout
+                back={{
+                  fallback: (pathname) => pathname.replace(/\/edit$/, ''),
+                  label: 'Back to customer',
+                }}
+              />
+            }
+          >
+            <Route path="/customers/:id/edit" element={<CustomerEditPage />} />
+          </Route>
+          <Route element={<SubPageLayout />}>
+            <Route path="/customers/:id" element={<CustomerDetailPage />} />
+          </Route>
+
+          <Route
+            element={
+              <SubPageLayout
+                back={{ fallback: '/stocktakes', label: 'Back to stocktakes' }}
+              />
+            }
+          >
+            <Route path="/stocktakes/:id" element={<StockTakeDetailPage />} />
+          </Route>
+
+          <Route element={<OwnerRoute />}>
+            <Route
+              element={
+                <SubPageLayout
+                  back={{ fallback: '/settings', label: 'Back to settings' }}
+                />
+              }
+            >
               <Route path="/settings/security" element={<SecuritySettingsPage />} />
               <Route path="/settings/catalog" element={<CatalogManagementPage />} />
               <Route path="/settings/suppliers" element={<SupplierManagementPage />} />
             </Route>
-            <Route path="/team" element={<Navigate to="/settings" replace />} />
+          </Route>
+
+          <Route element={<SubPageLayout />}>
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Route>

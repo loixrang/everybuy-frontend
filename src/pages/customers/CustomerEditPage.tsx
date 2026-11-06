@@ -5,7 +5,6 @@ import { ApiError } from '../../lib/api/client';
 import { CustomerStatusBadge } from '../../components/customers/CustomerStatusBadge';
 import {
   AlertCircleIcon,
-  ArrowLeftIcon,
   RefreshCwIcon,
 } from '../../components/ui/Icons';
 import type { Customer } from '../../types/customer';
@@ -138,13 +137,6 @@ export function CustomerEditPage() {
 
     return (
       <div className="max-w-2xl space-y-4">
-        <Link
-          to="/customers"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] transition-colors"
-        >
-          <ArrowLeftIcon size={14} />
-          Customers
-        </Link>
         <div className="rounded-[12px] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-6">
           <div className="flex items-start gap-3">
             <AlertCircleIcon className="text-[color:var(--color-danger-ink)] shrink-0 mt-0.5" size={22} />
@@ -186,14 +178,7 @@ export function CustomerEditPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <Link
-          to={`/customers/${customer.id}`}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] transition-colors"
-        >
-          <ArrowLeftIcon size={14} />
-          {customer.name}
-        </Link>
-        <h1 className="text-2xl lg:text-[32px] font-bold tracking-tight text-[color:var(--color-ink)] mt-3">
+        <h1 className="text-2xl lg:text-[32px] font-bold tracking-tight text-[color:var(--color-ink)]">
           Customer details
         </h1>
         <p className="text-sm text-[color:var(--color-muted)] mt-1">

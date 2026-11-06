@@ -1,3 +1,15 @@
+# 2026-11-06: Keyboard-Safe Navigation Layout
+
+Changed:
+- Split the authenticated shell into `InventoryLayout` (top-level destinations with the five-tab mobile bar) and `SubPageLayout` (forms and other sub-pages without it). Form routes now show the back action in the shared `AppHeader`; read-only detail screens keep their in-content back link.
+- Extracted `AppHeader`, `DesktopSidebar` and `useSignOut` so both shells share the same header, sidebar and sign-out behavior.
+
+Added:
+- A `body:has(input:focus, textarea:focus, select:focus) .bottom-nav` fallback that hides the tab bar while a text control is focused, covering list search fields and modal forms.
+- `interactive-widget=resizes-visual` in the viewport meta, explicit `env(safe-area-inset-bottom)` padding on the tab bar, tab-bar-height bottom padding on tabbed content, and `100dvh` sizing for full-page states.
+
+Verification: typecheck, lint, 126 tests, and production build pass. Real-device keyboard behavior still needs a manual Firefox/Chrome for Android pass.
+
 # 2026-11-05: Shared Search and Bottom-Sheet Dropdowns
 
 Added:

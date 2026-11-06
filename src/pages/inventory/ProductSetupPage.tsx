@@ -9,7 +9,6 @@ import {
 } from '../../lib/api/products';
 import { ApiError } from '../../lib/api/client';
 import { AlertCircleIcon } from '../../components/ui/Icons';
-import { BackNavigation } from '../../components/ui/BackNavigation';
 import { SheetSelect } from '../../components/ui/SheetSelect';
 import type { Category, Brand, PackName } from '../../types/product';
 
@@ -249,11 +248,6 @@ export function ProductSetupPage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      {/* Back breadcrumb */}
-      <div>
-        <BackNavigation fallback={isEdit && id ? `/inventory/${id}` : '/inventory'} label={isEdit ? 'Back to product' : 'Back to inventory'} />
-      </div>
-
       {/* Page Heading */}
       <div>
         <h1 className="text-2xl lg:text-[32px] font-bold tracking-tight text-[color:var(--color-ink)]">

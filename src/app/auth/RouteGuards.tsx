@@ -5,7 +5,7 @@ import { ShoppingBagIcon } from '../../components/ui/Icons';
 /** Full-page state shown while the initial session check is in flight. */
 export function AuthLoadingScreen() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[color:var(--color-canvas)] text-[color:var(--color-ink)]">
+    <div className="min-h-dvh flex flex-col items-center justify-center gap-4 bg-[color:var(--color-canvas)] text-[color:var(--color-ink)]">
       <div className="flex items-center gap-2.5">
         <div className="w-7 h-[26px] rounded-[6px] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] flex items-center justify-center">
           <ShoppingBagIcon size={16} />

@@ -20,7 +20,6 @@ import { useAuth } from '../../app/auth/auth-context';
 import { StockTakeStatusBadge } from '../../components/stocktakes/StockTakeStatusBadge';
 import { CountStockModal } from '../../components/stocktakes/CountStockModal';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { BackNavigation } from '../../components/ui/BackNavigation';
 import {
   AlertCircleIcon,
   CheckCircleIcon,
@@ -157,13 +156,6 @@ export function StockTakeDetailPage() {
   return (
     <div className="max-w-6xl space-y-6 pb-12">
       <div className="space-y-4">
-        <Link
-          to="/stocktakes"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[color:var(--color-muted)] transition-colors hover:text-[color:var(--color-ink)]"
-        >
-          <BackNavigation fallback="/stocktakes" label="Back to stocktakes" />
-        </Link>
-
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">

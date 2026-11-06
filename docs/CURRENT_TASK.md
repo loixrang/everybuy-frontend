@@ -1,5 +1,11 @@
 # Current Task
 
+## Keyboard-safe bottom navigation (2026-11-06)
+
+Status: COMPLETED — typecheck, lint, 126 tests, and the production build pass. Real-device Firefox/Chrome for Android keyboard verification remains manual.
+
+The authenticated shell is split into `InventoryLayout` (top-level destinations with the five-tab mobile bar) and `SubPageLayout` (forms and other sub-pages without it). Form routes render a back button in the shared `AppHeader`; read-only detail screens keep their in-content back link. A `body:has(input:focus, textarea:focus, select:focus) .bottom-nav` rule hides the bar while a text control is focused, covering list search fields and modal forms. The viewport now requests `interactive-widget=resizes-visual`, the tab bar owns `env(safe-area-inset-bottom)` padding, tabbed content reserves tab-bar-height bottom padding, and full-page states use `100dvh`.
+
 ## Shared word-order-insensitive search and bottom-sheet dropdowns
 
 Status: COMPLETED — typecheck, lint, 126 tests, and the production build pass. Browser/device automation is unavailable in this environment, so 360 px and dark-mode rendering were checked by code review against the theme tokens.

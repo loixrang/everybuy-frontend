@@ -1,30 +1,25 @@
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   PackageIcon,
   ShoppingBagIcon,
-  MoonIcon,
-  SunIcon,
   UsersIcon,
   SlidersIcon,
   PlusIcon,
   HistoryIcon,
-  LogOutIcon,
   MoreHorizontalIcon,
   WalletIcon,
   XIcon,
   ClipboardListIcon,
 } from '../ui/Icons';
 import { useAuth } from '../../app/auth/auth-context';
-import { ApiError } from '../../lib/api/client';
-import { useTheme } from '../../lib/hooks/useTheme';
+import { useSignOut } from '../../lib/hooks/useSignOut';
+import { AppHeader } from './AppHeader';
+import { DesktopSidebar } from './DesktopSidebar';
 
 export function InventoryLayout() {
-  const { theme, toggleTheme } = useTheme();
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const [signingOut, setSigningOut] = useState(false);
-  const [signOutError, setSignOutError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { signingOut, signOutError, clearSignOutError, signOut } = useSignOut();
   const [moreOpen, setMoreOpen] = useState(false);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
@@ -46,24 +41,6 @@ export function InventoryLayout() {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [location.pathname]);
 
-  async function handleSignOut() {
-    if (signingOut) return;
-    setSigningOut(true);
-    setSignOutError(null);
-    try {
-      await signOut();
-      navigate('/signin', { replace: true });
-    } catch (err: unknown) {
-      setSignOutError(
-        err instanceof ApiError
-          ? err.message
-          : 'Unable to sign out. Check your connection and try again.',
-      );
-    } finally {
-      setSigningOut(false);
-    }
-  }
-
   // Closing returns focus to the tab that opened the sheet, otherwise the
   // keyboard user is dropped back at the top of the document.
   const closeMore = useCallback(() => {
@@ -73,161 +50,20 @@ export function InventoryLayout() {
 
   return (
     <div className="min-h-dvh bg-[color:var(--color-canvas)] text-[color:var(--color-ink)] flex flex-col">
-      {/* Top sticky header with backdrop blur. Safe-area padding keeps the
-          controls clear of notches when `viewport-fit=cover` is active. */}
-      <header className="sticky top-0 z-30 backdrop-blur-[16px] bg-[color:var(--color-glass)] border-b border-[color:var(--color-border)] pt-[env(safe-area-inset-top)]">
-        <div className="h-16 lg:h-[77px] px-4 sm:px-5 lg:px-12 flex items-center justify-between gap-3">
-          {/* Left: Brand */}
-          <div className="flex items-center gap-3 min-w-0">
-            <Link
-              to="/inventory"
-              className="flex items-center gap-2.5 min-w-0"
-              aria-label="Everybuy inventory"
-            >
-              <div className="w-7 h-[26px] shrink-0 rounded-[6px] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] flex items-center justify-center">
-                <ShoppingBagIcon size={16} />
-              </div>
-              <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-[color:var(--color-ink)] truncate">
-                Everybuy
-              </span>
-            </Link>
-          </div>
-
-          {/* Right: User and theme toggle */}
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            <span
-              className="hidden sm:inline max-w-[180px] truncate text-sm font-normal text-[color:var(--color-muted)]"
-              title={user?.email}
-            >
-              {displayName}
-            </span>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="w-11 h-11 lg:w-10 lg:h-10 rounded-[8px] flex items-center justify-center border border-[color:var(--color-border)] bg-[color:var(--color-surface)] hover:bg-[color:var(--color-subtle)] text-[color:var(--color-ink)] transition-colors"
-              aria-label={
-                theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'
-              }
-            >
-              {theme === 'light' ? <MoonIcon size={18} /> : <SunIcon size={18} />}
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleSignOut()}
-              disabled={signingOut}
-              className="w-11 h-11 lg:w-10 lg:h-10 rounded-[8px] flex items-center justify-center border border-[color:var(--color-border)] bg-[color:var(--color-surface)] hover:bg-[color:var(--color-subtle)] text-[color:var(--color-ink)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              aria-label="Sign out"
-              title="Sign out"
-            >
-              <LogOutIcon size={18} />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {signOutError && (
-        <div
-          role="alert"
-          className="px-4 sm:px-5 lg:px-12 py-2 flex items-center justify-between gap-3 border-b border-[color:var(--color-border)] bg-[color:var(--color-danger-bg)] text-xs text-[color:var(--color-danger-ink)]"
-        >
-          <span>{signOutError}</span>
-          <button
-            type="button"
-            onClick={() => setSignOutError(null)}
-            className="font-semibold underline underline-offset-2 shrink-0"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+      <AppHeader
+        signingOut={signingOut}
+        signOutError={signOutError}
+        onSignOut={() => void signOut()}
+        onDismissSignOutError={clearSignOutError}
+      />
 
       {/* Main Workspace with Desktop Sidebar & Main Content */}
       <div className="flex-1 flex max-w-[1440px] w-full mx-auto">
-        {/* Desktop Sidebar (228px) */}
-        <aside className="hidden lg:flex sticky top-[calc(77px+env(safe-area-inset-top))] h-[calc(100vh-77px-env(safe-area-inset-top))] self-start overflow-y-auto w-[228px] shrink-0 border-r border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 flex-col justify-between">
-          <div className="space-y-6">
-            <nav aria-label="Sections" className="space-y-1">
-              <SidebarNavLink
-                to="/inventory"
-                label="Inventory"
-                active={isInventoryActive}
-                icon={<PackageIcon size={18} />}
-              />
-              <SidebarNavLink
-                to="/overview"
-                label="Overview"
-                active={isOverviewActive}
-                icon={<ShoppingBagIcon size={18} />}
-              />
-              <SidebarNavLink
-                to="/sales"
-                label="Sales"
-                active={isSalesActive}
-                icon={<PlusIcon size={18} />}
-              />
-              <SidebarNavLink
-                to="/customers"
-                label="Customers"
-                active={isCustomersActive}
-                icon={<UsersIcon size={18} />}
-              />
-              <SidebarNavLink
-                to="/expenses"
-                label="Expenses"
-                active={isExpensesActive}
-                icon={<WalletIcon size={18} />}
-              />
-              <SidebarNavLink
-                to="/audit"
-                label="Audit log"
-                active={isAuditActive}
-                icon={<HistoryIcon size={18} />}
-              />
-              <SidebarNavLink
-                to="/movements"
-                label="Movements"
-                active={isMovementsActive}
-                icon={<HistoryIcon size={18} />}
-              />
-              <SidebarNavLink
-                to="/stocktakes"
-                label="Stocktakes"
-                active={isStockTakesActive}
-                icon={<ClipboardListIcon size={18} />}
-              />
-              <SidebarNavLink
-                to="/settings"
-                label="Settings"
-                active={isSettingsActive}
-                icon={<SlidersIcon size={18} />}
-              />
-            </nav>
-          </div>
+        <DesktopSidebar />
 
-          {/* Sidebar Footer */}
-          <div className="pt-6 border-t border-[color:var(--color-border)] px-3 text-xs space-y-1">
-            <div className="font-semibold text-[color:var(--color-quiet)] uppercase tracking-wider text-[10px]">
-              Everybuy
-            </div>
-            <div
-              className="font-semibold text-[color:var(--color-ink)] truncate"
-              title={displayName}
-            >
-              {displayName}
-            </div>
-            {user?.name && user.email && (
-              <div
-                className="text-[color:var(--color-muted)] truncate"
-                title={user.email}
-              >
-                {user.email}
-              </div>
-            )}
-          </div>
-        </aside>
-
-        {/* Workspace Content */}
-        <main className="flex-1 min-w-0 px-4 sm:px-5 py-5 sm:py-6 lg:px-12 lg:py-8">
+        {/* Workspace Content. The bottom padding clears the fixed tab bar so
+            the last field on a long screen is never hidden behind it. */}
+        <main className="flex-1 min-w-0 px-4 sm:px-5 pt-5 sm:pt-6 lg:px-12 lg:pt-8 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-8">
           <Outlet />
         </main>
       </div>
@@ -235,7 +71,7 @@ export function InventoryLayout() {
       {/* Mobile Bottom Navigation (< 1024px) */}
       <nav
         aria-label="Primary"
-        className="lg:hidden fixed bottom-0 inset-x-0 z-30 backdrop-blur-[16px] bg-[color:var(--color-glass)] border-t border-[color:var(--color-border)] pb-[env(safe-area-inset-bottom)]"
+        className="bottom-nav lg:hidden fixed bottom-0 inset-x-0 z-30 backdrop-blur-[16px] bg-[color:var(--color-glass)] border-t border-[color:var(--color-border)]"
       >
         <div className="grid grid-cols-5 h-16">
           <MobileTab
@@ -279,8 +115,6 @@ export function InventoryLayout() {
           />
         </div>
       </nav>
-      {/* Spacer for the fixed mobile nav, including the safe-area inset */}
-      <div className="h-[calc(4rem+env(safe-area-inset-bottom))] lg:hidden shrink-0" />
 
       {moreOpen && (
         <MoreSheet
@@ -293,37 +127,10 @@ export function InventoryLayout() {
           showExpenses={!isExpensesActive}
           showAudit={!isAuditActive}
           signingOut={signingOut}
-          onSignOut={() => void handleSignOut()}
+          onSignOut={() => void signOut()}
         />
       )}
     </div>
-  );
-}
-
-function SidebarNavLink({
-  to,
-  label,
-  active,
-  icon,
-}: {
-  to: string;
-  label: string;
-  active?: boolean;
-  icon?: ReactNode;
-}) {
-  return (
-    <Link
-      to={to}
-      aria-current={active ? 'page' : undefined}
-      className={`flex items-center gap-3 px-3 h-11 rounded-[8px] text-sm font-semibold transition-colors ${
-        active
-          ? 'bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent-ink)]'
-          : 'text-[color:var(--color-muted)] hover:bg-[color:var(--color-subtle)] hover:text-[color:var(--color-ink)]'
-      }`}
-    >
-      <span className="shrink-0">{icon}</span>
-      <span>{label}</span>
-    </Link>
   );
 }
 

@@ -11,7 +11,6 @@ import {
 } from '../../components/ui/Icons';
 import { ApiError } from '../../lib/api/client';
 import { formatNaira } from '../../lib/utils/format';
-import { BackNavigation } from '../../components/ui/BackNavigation';
 import { SheetSelect } from '../../components/ui/SheetSelect';
 
 // Matches the backend createStockSchema: quantity is an integer from 1 to 1,000,000.
@@ -240,11 +239,6 @@ export function ReceiveStockPage() {
 
   return (
     <div className="space-y-6 max-w-4xl pb-12">
-      {/* Back breadcrumb */}
-      <div>
-        <BackNavigation fallback={selectedProductId ? `/inventory/${selectedProductId}` : '/inventory'} label="Back to inventory" />
-      </div>
-
       {/* Heading */}
       <div className="space-y-1">
         <h1 className="text-2xl lg:text-[32px] font-bold tracking-tight text-[color:var(--color-ink)]">

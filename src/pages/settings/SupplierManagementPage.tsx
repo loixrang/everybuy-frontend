@@ -1,6 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { BackNavigation } from '../../components/ui/BackNavigation';
 import { ApiError } from '../../lib/api/client';
 import { createSupplier, fetchSuppliers, updateSupplier } from '../../lib/api/stock';
 import type { Supplier } from '../../types/stock';
@@ -82,11 +81,10 @@ export function SupplierManagementPage() {
   return <div className="max-w-4xl space-y-6">
     <div className="flex items-start justify-between gap-4">
       <div>
-      <BackNavigation fallback="/settings" label="Back to settings" />
-      <h1 className="mt-3 text-2xl font-bold tracking-tight text-[color:var(--color-ink)] sm:text-[32px]">Suppliers</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-[color:var(--color-ink)] sm:text-[32px]">Suppliers</h1>
       <p className="mt-1 text-sm text-[color:var(--color-muted)]">Maintain supplier contacts for stock receipts.</p>
       </div>
-      <button type="button" onClick={() => { setEditing(null); setDialogError(null); setDialogOpen(true); }} className="mt-7 h-11 shrink-0 rounded-[8px] bg-[color:var(--color-accent)] px-4 text-sm font-semibold text-[color:var(--color-on-accent)]">Add supplier</button>
+      <button type="button" onClick={() => { setEditing(null); setDialogError(null); setDialogOpen(true); }} className="h-11 shrink-0 rounded-[8px] bg-[color:var(--color-accent)] px-4 text-sm font-semibold text-[color:var(--color-on-accent)]">Add supplier</button>
     </div>
 
     {notice && <p role="status" className="rounded-[8px] bg-[color:var(--color-success-bg)] p-3 text-sm text-[color:var(--color-success-ink)]">{notice}</p>}

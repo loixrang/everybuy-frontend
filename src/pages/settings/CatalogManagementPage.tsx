@@ -10,7 +10,6 @@ import {
 } from '../../lib/api/products';
 import type { Brand, Category } from '../../types/product';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { BackNavigation } from '../../components/ui/BackNavigation';
 
 type CatalogTab = 'categories' | 'brands';
 type CatalogRecord = Category | Brand;
@@ -95,7 +94,6 @@ export function CatalogManagementPage() {
   return (
     <div className="max-w-4xl space-y-6">
       <header>
-        <BackNavigation fallback="/settings" label="Back to settings" />
         <h1 className="text-2xl font-bold tracking-tight text-[color:var(--color-ink)] sm:text-[32px]">Categories &amp; brands</h1>
         <p className="mt-1 text-sm text-[color:var(--color-muted)]">Manage product categories and brands used in your inventory.</p>
       </header>

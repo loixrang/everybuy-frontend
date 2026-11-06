@@ -169,6 +169,22 @@ html {
 }
 
 /*
+ * Mobile tab bar. The padding keeps it above the home indicator when
+ * `viewport-fit=cover` is active. The `:has()` rule is a safety net for
+ * browsers that shrink the visual viewport when the keyboard opens (notably
+ * Firefox for Android): while a text control is focused, the fixed bar is
+ * removed so it cannot ride up over the field. The route layouts already omit
+ * the bar on form screens; this covers list/search inputs and modal forms.
+ */
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+body:has(input:focus, textarea:focus, select:focus) .bottom-nav {
+  display: none;
+}
+
+/*
  * iOS Safari zooms the page when a form control smaller than 16px receives
  * focus. Bumping text-entry controls on phones avoids that jumpy resize
  * without changing the desktop typography.

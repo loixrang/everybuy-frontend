@@ -15,7 +15,6 @@ import { formatNaira } from '../../lib/utils/format';
 import { matchesSearch } from '../../lib/utils/search';
 import { defaultUnitPrice, minimumUnitPrice, hasStockForQuantity, isSaleUnitAvailable, maxSaleQuantity, packsForQuantity } from '../../lib/sales/cart';
 import { ApiError } from '../../lib/api/client';
-import { BackNavigation } from '../../components/ui/BackNavigation';
 import { SheetSelect } from '../../components/ui/SheetSelect';
 import { CustomerPicker } from '../../components/customers/CustomerPicker';
 import { AddCustomerModal } from '../../components/customers/AddCustomerModal';
@@ -598,9 +597,8 @@ export function RecordSalePage() {
 
   return (
     <div className="space-y-6 max-w-6xl pb-12">
-      {/* Breadcrumb & heading */}
+      {/* Heading */}
       <div className="space-y-2">
-        <BackNavigation fallback="/sales" label="Back to sales" />
         <h1 className="text-2xl lg:text-[32px] font-bold tracking-tight text-[color:var(--color-ink)]">
           Record a sale
         </h1>
